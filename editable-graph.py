@@ -123,10 +123,29 @@ class GraphWithEditor():
         radius = self.vertex_radii.get(v, self.default_radius)
  
         # The border
-        canvas.line_width = 3
+        canvas.line_width = 2
         canvas.stroke_style = color
         canvas.stroke_arc(x, y, radius, 0, 2*pi)
 
+    def _redraw_vertex(self, v, canvas=None, highlight=True, neighbors=True):
+        '''Redraw a vertex.
+        If `highlight == True` and `v == self.selected_vertes`, the colored
+        border around `v` is also drawn.
+        If `neighbors == True`, the incident edges are also redrawn, as well
+        as its neighbors, so that the edges incident to the neighbors do not
+        overlap their shapes.
+        '''
+        if canvas is None:
+            canvas = self.canvas
+            
+        with hold_canvas(canvas):
+            if neighbors:
+                self._draw_edges((u, v, '') for u in self.graph.neighbor_iterator(v))
+                self._draw_vertices((u for u in self.graph.neighbor_iterator(v)), canvas=canvas)
+            self._draw_vertex(v)
+            if self.selected_vertex is not None and highlight:
+                self._highlight_vertex(self.selected_vertex)
+            
     def _draw_edge(self, e, canvas=None):
         u, v, _ = e
         if canvas is None:
@@ -180,14 +199,18 @@ class GraphWithEditor():
                         # We unselect vertex v
                         self.selected_vertex = None
                         self.output_text("No vertex selected")
-                        self._draw_graph()
+                        self._redraw_vertex(v) # Redraw without highlight
                         return
                     else:
                         # We link v and the previously selected vertex
                         self.add_edge(self.selected_vertex, v)
+                        # We draw the edge and the nodes shapes on top of it
+                        with hold_canvas(self.canvas):
+                            self._draw_edges([(self.selected_vertex, v, None)])
+                            self._draw_vertex(v)
+                            self._draw_vertex(self.selected_vertex)
                         self.output_text("Added edge from " + str(self.selected_vertex) + " to " + str(v))
                         self.selected_vertex = None
-                        self._draw_graph()
                         return
                     
                 # At this point, no vertex is currently selected
@@ -208,12 +231,17 @@ class GraphWithEditor():
                     #                   canvas=self.interact_canvas, color='gray')
                     self._draw_vertices((u for u in self.vertex_iterator()
                                         if u is not v))
-                    self._draw_vertex(v, canvas=self.interact_canvas) 
-
+                    #self._draw_vertex(v, canvas=self.interact_canvas) 
+                    self._redraw_vertex(v, canvas=self.interact_canvas)
                 return
 
         # If we reach this point, the click was not an an existing vertex mark
         self.output_text("Click not on a vertex")
+        if self.selected_vertex is not None:
+            # If a vertex is selected and we click on the background, we
+            # un-select it
+            self._redraw_vertex(self.selected_vertex, highlight=False) # Redraw it without highlight
+            self.selected_vertex = None
         self.add_vertex(pixel_x, pixel_y)
         
     @output.capture()
@@ -254,11 +282,12 @@ class GraphWithEditor():
                 assert self.selected_vertex is None
                 self.selected_vertex = self.dragged_vertex
                 self.output_text("Selected vertex " + str(self.selected_vertex))
-
+                self._redraw_vertex(self.selected_vertex)
+                
             else:
                 self.output_text("Done draging vertex.")
-
-            self._draw_graph()
-            self.interact_canvas.clear()            
-            
+                self._draw_graph()
             self.dragged_vertex = None
+            #self._draw_graph()
+            # Should be after _draw_graph to prevent screen flickering:
+            self.interact_canvas.clear()
