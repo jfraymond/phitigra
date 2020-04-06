@@ -3,21 +3,7 @@ from ipywidgets import Label, VBox, Output
 from random import randint, randrange
 from math import pi
 
-import asyncio
-
-class Timer:
-    def __init__(self, timeout, callback):
-        self._timeout = timeout
-        self._callback = callback
-        self._task = asyncio.ensure_future(self._job())
-
-    async def _job(self):
-        await asyncio.sleep(self._timeout)
-        self._callback()
-
-    def cancel(self):
-        self._task.cancel()
-
+# Todo: récupérer l'évènement que la souris sort du canvas pour déselectionner l'éventel noeud tiré
 
 class GraphWithEditor():
     output = Output(layout={'border': '1px solid black'})
@@ -51,25 +37,10 @@ class GraphWithEditor():
         self.interact_canvas.on_mouse_down(self.mouse_down_handler)
         self.interact_canvas.on_mouse_move(self.mouse_move_handler)
         self.interact_canvas.on_mouse_up(self.mouse_up_handler)
-
+        # When the mouse leaves the canvas, we free the node that
+        # was being dragged, if any:
+        self.interact_canvas.on_mouse_out(self.mouse_up_handler)
         self.dragged_vertex = None
-
-    @output.capture()
-    def debounce(wait):
-        """ Decorator that will postpone a function's
-            execution until after `wait` seconds
-            have elapsed since the last time it was invoked. """
-        def decorator(fn):
-            timer = None
-            def debounced(*args, **kwargs):
-                nonlocal timer
-                def call_it():
-                    fn(*args, **kwargs)
-                if timer is not None:
-                    timer.cancel()
-                timer = Timer(wait, call_it)
-            return debounced
-        return decorator
 
         
     def vertex_iterator(self):
@@ -178,7 +149,6 @@ class GraphWithEditor():
         self.output_text("Click not on a vertex")
 
     @output.capture()
-    #@debounce(0.01)
     def mouse_move_handler(self, pixel_x, pixel_y):
         self.output_text("Moving mouse to (" + str(pixel_x) + ", " + str(pixel_y) + ")")
 
