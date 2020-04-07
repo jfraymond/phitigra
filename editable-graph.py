@@ -1,5 +1,5 @@
 from ipycanvas import Canvas, MultiCanvas, hold_canvas
-from ipywidgets import Label, VBox, HBox, Output, Button, Dropdown
+from ipywidgets import Label, VBox, HBox, Output, Button, Dropdown, ColorPicker
 from random import randint, randrange
 from math import pi
 
@@ -46,11 +46,20 @@ class GraphWithEditor():
             description='Set layout:',
         )
         self.layout_selector.observe(self.layout_selector_callback)
+                
+        # Selector to change the color of the selected vertex
+        self.color_selector = ColorPicker(
+            concise=False,
+            description='Vertex color',
+            value='#437FC0',
+            disabled=False
+        )
+        self.color_selector.observe(self.color_selector_callback)
 
         #self.output = Output(layout={'border': '1px solid black'})
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
-                            self.layout_selector,
+                            HBox([self.layout_selector, self.color_selector]),
                             self.output])
         
         # Registering callbacks for mouse interaction
@@ -95,6 +104,17 @@ class GraphWithEditor():
                 self.pos = self.graph.get_pos()
                 self.normalize_layout()
             self._draw_graph()
+            self.layout_selector.value=''
+
+    @output.capture()
+    def color_selector_callback(self, change):
+        if change['name']=='value':
+            new_color = change['new']
+
+            if self.selected_vertex is not None:
+                # Change the color of the selected vertex
+                self.colors[self.selected_vertex] = new_color
+                self._redraw_vertex(self.selected_vertex, neighbors=False)
         
     def normalize_layout(self):
         '''Rescale the vertices coordinates so that they fit in the canvas.'''
@@ -126,7 +146,7 @@ class GraphWithEditor():
     def output_text(self, text):
         self.text_output.value = text
 
-    def add_vertex(self, x, y, name=None):
+    def add_vertex(self, x, y, name=None, color=None):
         '''Add a vertex that will be drawn at position x,y.'''
         if name is None:
             name = self.graph.add_vertex()
@@ -136,7 +156,10 @@ class GraphWithEditor():
             return_name = False
             
         self.pos[name] = (x, y)
-        self.colors[name] = 'blue'
+        if color is None:
+            self.colors[name] = self.color_selector.value
+        else:
+            self.colors[name] = color
         self._draw_vertex(name)
 
         # In order to have the same behavior as the graph add_vertex function:
@@ -355,6 +378,7 @@ class GraphWithEditor():
                 assert self.selected_vertex is None
                 self.selected_vertex = self.dragged_vertex
                 self.output_text("Selected vertex " + str(self.selected_vertex))
+                self.color_selector.value = self.colors[self.selected_vertex]
                 self._redraw_vertex(self.selected_vertex)
                 
             else:
