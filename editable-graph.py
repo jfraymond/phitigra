@@ -1,5 +1,5 @@
 from ipycanvas import Canvas, MultiCanvas, hold_canvas
-from ipywidgets import Label, VBox, Output
+from ipywidgets import Label, VBox, HBox, Output, Button, Dropdown
 from random import randint, randrange
 from math import pi
 
@@ -23,18 +23,35 @@ class GraphWithEditor():
         # Radii, positions and colors of the vertices on the drawing
         self.default_radius = 20 # Default radius of vertex marks
         self.vertex_radii = dict()
-        self.pos = {v:
-                    (randint(self.default_radius, self.canvas.width - self.default_radius - 1),
-                     randint(self.default_radius, self.canvas.height - self.default_radius - 1))
-                    for v in self.graph.vertex_iterator()}
+
+        self.pos = self.graph.get_pos()
+        if self.pos is None: # The graph has no predefined positions:
+            self.random_layout() # We pick some
+        else:
+            self.normalize_layout()
+            
         self.colors = {v: f"#{randrange(0x1000000):06x}" # A random HTML color
                        for v in self.graph.vertex_iterator()}
 
         self._draw_graph()
 
+        # Some widgets:
+        # Where to display messages:
         self.text_output = Label("Graph Editor")
+
+        # Selector to change layout
+        self.layout_selector = Dropdown(
+            options=['', 'random', 'spring', 'circular', 'planar', 'acyclic'],
+            value='',
+            description='Set layout:',
+        )
+        self.layout_selector.observe(self.layout_selector_callback)
+
         #self.output = Output(layout={'border': '1px solid black'})
-        self.widget = VBox([self.multi_canvas, self.text_output, self.output])
+        self.widget = VBox([self.multi_canvas,
+                            self.text_output,
+                            self.layout_selector,
+                            self.output])
         
         # Registering callbacks for mouse interaction
         self.interact_canvas.on_mouse_down(self.mouse_down_handler)
@@ -45,6 +62,60 @@ class GraphWithEditor():
         self.interact_canvas.on_mouse_out(self.mouse_up_handler)
         self.dragged_vertex = None
 
+
+    def random_layout(self):
+        '''Randomly pick positions for the vertices.'''
+        self.pos = {v:
+                (randint(self.default_radius, self.canvas.width - self.default_radius - 1),
+                 randint(self.default_radius, self.canvas.height - self.default_radius - 1))
+                for v in self.graph.vertex_iterator()}
+
+    def random_layout_button_callback(self, _):
+        self.random_layout()
+        self._draw_graph()
+
+    @output.capture()
+    def layout_button_callback(self, layout, _):
+        self.graph.layout(layout=layout, save_pos=True)
+        self.pos = self.graph.get_pos()
+        self.normalize_layout()
+        self._draw_graph()
+
+    @output.capture()
+    def layout_selector_callback(self, change):
+        if change['name']=='value':
+            new_layout = change['new']
+
+            if new_layout == '':
+                return
+            elif new_layout == 'random':
+                self.random_layout()
+            else:
+                self.graph.layout(layout=new_layout, save_pos=True)
+                self.pos = self.graph.get_pos()
+                self.normalize_layout()
+            self._draw_graph()
+        
+    def normalize_layout(self):
+        '''Rescale the vertices coordinates so that they fit in the canvas.'''
+        x_min = min(self.pos[v][0] for v in self.vertex_iterator())
+        x_max = max(self.pos[v][0] for v in self.vertex_iterator())
+        y_min = min(self.pos[v][1] for v in self.vertex_iterator())
+        y_max = max(self.pos[v][1] for v in self.vertex_iterator())
+
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+
+        
+        for v in self.vertex_iterator():
+            x, y = self.pos[v]
+            radius = self.vertex_radii.get(v, self.default_radius)
+            
+            new_x = (x - x_min) * (self.multi_canvas.width - 2*radius) / x_range + radius
+            new_y = self.multi_canvas.height - ((y - y_min) * (self.multi_canvas.height - 2*radius) / y_range + radius)
+            assert new_x >=0 and new_x <= self.multi_canvas.width
+            assert new_y >= 0 and new_y <= self.multi_canvas.height, "y = " + str(new_y)
+            self.pos[v] = (new_x, new_y)
         
     def vertex_iterator(self):
         return self.graph.vertex_iterator()
