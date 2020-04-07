@@ -41,7 +41,7 @@ class GraphWithEditor():
 
         # Selector to change layout
         self.layout_selector = Dropdown(
-            options=['', 'random', 'spring', 'circular', 'planar', 'acyclic'],
+            options=['', 'random', 'spring', 'circular', 'planar', 'tree'],
             value='',
             description='Set layout:',
         )
@@ -109,7 +109,7 @@ class GraphWithEditor():
         
         for v in self.vertex_iterator():
             x, y = self.pos[v]
-            radius = self.vertex_radii.get(v, self.default_radius)
+            radius = self.vertex_radii.get(v, self.default_radius) + 5 # + 5 to get some margin
             
             new_x = (x - x_min) * (self.multi_canvas.width - 2*radius) / x_range + radius
             new_y = self.multi_canvas.height - ((y - y_min) * (self.multi_canvas.height - 2*radius) / y_range + radius)
