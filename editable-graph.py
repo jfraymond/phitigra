@@ -24,8 +24,8 @@ class GraphWithEditor():
         self.default_radius = 20 # Default radius of vertex marks
         self.vertex_radii = dict()
         self.pos = {v:
-                    [randint(self.default_radius, self.canvas.width - self.default_radius - 1),
-                     randint(self.default_radius, self.canvas.height - self.default_radius - 1)]
+                    (randint(self.default_radius, self.canvas.width - self.default_radius - 1),
+                     randint(self.default_radius, self.canvas.height - self.default_radius - 1))
                     for v in self.graph.vertex_iterator()}
         self.colors = {v: f"#{randrange(0x1000000):06x}" # A random HTML color
                        for v in self.graph.vertex_iterator()}
@@ -64,7 +64,7 @@ class GraphWithEditor():
             self.graph.add_vertex(name)
             return_name = False
             
-        self.pos[name] = [x,y]
+        self.pos[name] = (x, y)
         self.colors[name] = 'blue'
         self._draw_vertex(name)
 
@@ -145,7 +145,7 @@ class GraphWithEditor():
             
         with hold_canvas(canvas):
             if neighbors:
-                self._draw_edges((u, v, '') for u in self.graph.neighbor_iterator(v))
+                self._draw_edges((u, v, None) for u in self.graph.neighbor_iterator(v))
                 self._draw_vertices((u for u in self.graph.neighbor_iterator(v)), canvas=canvas)
             self._draw_vertex(v)
             if self.selected_vertex is not None and highlight:
@@ -215,7 +215,7 @@ class GraphWithEditor():
 
                 # At this point, no vertex is currently selected
                 self.dragged_vertex = v
-                self.initial_click_pos = [pixel_x, pixel_y]
+                self.initial_click_pos = (pixel_x, pixel_y)
                 self.output_text("Clicked on vertex " + str(v))
                 with hold_canvas(self.multi_canvas):
                     # On the main canvas we draw everything,
@@ -227,7 +227,7 @@ class GraphWithEditor():
                     self._draw_edges(((u1, u2, l) for (u1, u2, l) in self.edge_iterator()
                                     if v is not u1 and v is not u2))
                     # Commenting below otherwise the edges are not cleaned (why?)
-                    # self._draw_edges(((v, u, '') for u in self.graph.neighbor_iterator(v)),
+                    # self._draw_edges(((v, u, None) for u in self.graph.neighbor_iterator(v)),
                     #                   canvas=self.interact_canvas, color='gray')
                     self._draw_vertices((u for u in self.vertex_iterator()
                                         if u is not v))
@@ -254,7 +254,7 @@ class GraphWithEditor():
             # We are dragging a vertex...
             self.output_text("Draging vertex " + str(self.dragged_vertex))
             v = self.dragged_vertex
-            self.pos[v] = [pixel_x, pixel_y]
+            self.pos[v] = (pixel_x, pixel_y)
             
             with hold_canvas(self.interact_canvas):
                 # We only redraw what changes: the position of the dragged
