@@ -11,7 +11,7 @@ class GraphWithEditor():
         self.graph = Graph(*args, **kwargs)
 
         # The two canvas where we draw
-        self.multi_canvas = MultiCanvas(2, width=600, height=300, sync_image_data=True)
+        self.multi_canvas = MultiCanvas(2, width=800, height=600, sync_image_data=True)
         self.canvas = self.multi_canvas[0] # The main layer
         # The layer where we draw objects in interaction
         # (moved vertices, tooltips, etc.):
@@ -73,8 +73,14 @@ class GraphWithEditor():
             return name
 
     def add_edge(self, u, v):
+        '''Add an edge to the undelying graph and draw it on the main canvas.'''
         self.graph.add_edge(u,v)
-        
+        # We draw the edge and the nodes shapes on top of it
+        with hold_canvas(self.canvas):
+            self._draw_edges([(self.selected_vertex, v, None)])
+            self._draw_vertex(v)
+            self._draw_vertex(self.selected_vertex)
+
     def _draw_vertex(self, v, canvas=None, color=None):
         x, y = self.pos[v]
         if canvas is None:
@@ -110,7 +116,6 @@ class GraphWithEditor():
         for v in vertices:
             self._draw_vertex(v)
 
-    
     def _highlight_vertex(self, v, canvas=None, color=None):
         '''Draw a thicker border on `v` with color `color`.'''
         
@@ -145,7 +150,7 @@ class GraphWithEditor():
             self._draw_vertex(v)
             if self.selected_vertex is not None and highlight:
                 self._highlight_vertex(self.selected_vertex)
-            
+
     def _draw_edge(self, e, canvas=None):
         u, v, _ = e
         if canvas is None:
@@ -178,7 +183,7 @@ class GraphWithEditor():
                 
     def show(self):
         return self.widget
-    
+
     @output.capture()
     def mouse_down_handler(self, pixel_x, pixel_y):
         # To be called when one clicks on pixel_x, pixel_y
@@ -204,15 +209,10 @@ class GraphWithEditor():
                     else:
                         # We link v and the previously selected vertex
                         self.add_edge(self.selected_vertex, v)
-                        # We draw the edge and the nodes shapes on top of it
-                        with hold_canvas(self.canvas):
-                            self._draw_edges([(self.selected_vertex, v, None)])
-                            self._draw_vertex(v)
-                            self._draw_vertex(self.selected_vertex)
                         self.output_text("Added edge from " + str(self.selected_vertex) + " to " + str(v))
                         self.selected_vertex = None
                         return
-                    
+
                 # At this point, no vertex is currently selected
                 self.dragged_vertex = v
                 self.initial_click_pos = [pixel_x, pixel_y]
@@ -242,8 +242,10 @@ class GraphWithEditor():
             # un-select it
             self._redraw_vertex(self.selected_vertex, highlight=False) # Redraw it without highlight
             self.selected_vertex = None
-        self.add_vertex(pixel_x, pixel_y)
-        
+        else:
+            # Otherwise, we add a new vertex
+            self.add_vertex(pixel_x, pixel_y)
+
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
 #        self.output_text("Moving mouse to (" + str(pixel_x) + ", " + str(pixel_y) + ")")
