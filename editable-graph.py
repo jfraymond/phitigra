@@ -211,7 +211,7 @@ class GraphWithEditor():
         if canvas is None:
             canvas = self.canvas
         if color is None:
-            color = 'red'
+            color = 'black'
             
         radius = self.vertex_radii.get(v, self.default_radius)
  
@@ -219,6 +219,12 @@ class GraphWithEditor():
         canvas.line_width = 2
         canvas.stroke_style = color
         canvas.stroke_arc(x, y, radius, 0, 2*pi)
+
+        canvas.stroke_style = 'white'
+        canvas.set_line_dash([4,4])
+        canvas.stroke_arc(x, y, radius, 0, 2*pi)
+        canvas.set_line_dash([])
+
 
     def _redraw_vertex(self, v, canvas=None, highlight=True, neighbors=True, color=None):
         '''Redraw a vertex.
@@ -250,13 +256,12 @@ class GraphWithEditor():
             
     def _draw_edges(self, edges=None, canvas=None, color='black'):
         # To use within a "with hold_canvas" block, preferably
-
         if edges is None:
             edges = self.edge_iterator()
         if canvas is None:
             canvas = self.canvas
         canvas.stroke_style = color
-        canvas.line_width = 2
+        canvas.line_width = 3
         for e in edges:
             self._draw_edge(e, canvas=canvas)
 
