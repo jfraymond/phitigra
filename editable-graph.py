@@ -208,7 +208,7 @@ class GraphWithEditor():
             canvas = self.canvas
 
         for v in vertices:
-            self._draw_vertex(v)
+            self._draw_vertex(v, canvas)
 
     def _highlight_vertex(self, v, canvas=None, color=None):
         '''Draw a thicker border on `v` with color `color`.'''
@@ -226,7 +226,7 @@ class GraphWithEditor():
         canvas.stroke_style = color
         canvas.stroke_arc(x, y, radius, 0, 2*pi)
 
-    def _redraw_vertex(self, v, canvas=None, highlight=True, neighbors=True):
+    def _redraw_vertex(self, v, canvas=None, highlight=True, neighbors=True, color=None):
         '''Redraw a vertex.
         If `highlight == True` and `v == self.selected_vertes`, the colored
         border around `v` is also drawn.
@@ -238,10 +238,10 @@ class GraphWithEditor():
             canvas = self.canvas
             
         with hold_canvas(canvas):
-            if neighbors:
-                self._draw_edges((u, v, None) for u in self.graph.neighbor_iterator(v))
+            if neighbors: # We also redraw the incident edges and the neighbors
+                self._draw_edges(((u, v, None) for u in self.graph.neighbor_iterator(v)), canvas=canvas)
                 self._draw_vertices((u for u in self.graph.neighbor_iterator(v)), canvas=canvas)
-            self._draw_vertex(v)
+            self._draw_vertex(v, canvas=canvas, color=color)
             if self.selected_vertex is not None and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
@@ -249,10 +249,10 @@ class GraphWithEditor():
         u, v, _ = e
         if canvas is None:
             canvas = self.canvas
-        self.canvas.begin_path()
-        self.canvas.move_to(*self.pos[u])
-        self.canvas.line_to(*self.pos[v])
-        self.canvas.stroke()
+        canvas.begin_path()
+        canvas.move_to(*self.pos[u])
+        canvas.line_to(*self.pos[v])
+        canvas.stroke()
             
     def _draw_edges(self, edges=None, canvas=None, color='black'):
         # To use within a "with hold_canvas" block, preferably
@@ -320,13 +320,12 @@ class GraphWithEditor():
                     self.interact_canvas.clear()
                     self._draw_edges(((u1, u2, l) for (u1, u2, l) in self.edge_iterator()
                                     if v is not u1 and v is not u2))
-                    # Commenting below otherwise the edges are not cleaned (why?)
-                    # self._draw_edges(((v, u, None) for u in self.graph.neighbor_iterator(v)),
-                    #                   canvas=self.interact_canvas, color='gray')
                     self._draw_vertices((u for u in self.vertex_iterator()
                                         if u is not v))
-                    #self._draw_vertex(v, canvas=self.interact_canvas) 
-                    self._redraw_vertex(v, canvas=self.interact_canvas)
+                    self._redraw_vertex(v, canvas=self.interact_canvas,
+                                        neighbors=True,
+                                        highlight=False,
+                                        color='gray')
                 return
 
         # If we reach this point, the click was not an an existing vertex mark
@@ -334,7 +333,7 @@ class GraphWithEditor():
         if self.selected_vertex is not None:
             # If a vertex is selected and we click on the background, we
             # un-select it
-            self._redraw_vertex(self.selected_vertex, highlight=False) # Redraw it without highlight
+            self._redraw_vertex(self.selected_vertex, highlight=False) # Redraw it without highlighting
             self.selected_vertex = None
         else:
             # Otherwise, we add a new vertex
@@ -356,17 +355,10 @@ class GraphWithEditor():
                 # (so that the redrawn edges are not drawn on the neighbors
                 # shapes):
                 self.interact_canvas.clear()
-                for u in self.graph.neighbor_iterator(v):
-                    # The edge:
-                    self.interact_canvas.stroke_style = 'gray'
-                    self.interact_canvas.line_width = 2
-                    self.interact_canvas.begin_path()
-                    self.interact_canvas.move_to(*self.pos[u])
-                    self.interact_canvas.line_to(*self.pos[v])
-                    self.interact_canvas.stroke()
-                    # The neighbor:
-                    self._draw_vertex(u, canvas=self.interact_canvas)
-                self._draw_vertex(v, canvas=self.interact_canvas, color='gray')
+                self._redraw_vertex(v, canvas=self.interact_canvas,
+                                    neighbors=True,
+                                    highlight=False,
+                                    color='gray')
 
     @output.capture()
     def mouse_up_handler(self, pixel_x, pixel_y):
@@ -379,7 +371,8 @@ class GraphWithEditor():
                 self.selected_vertex = self.dragged_vertex
                 self.output_text("Selected vertex " + str(self.selected_vertex))
                 self.color_selector.value = self.colors[self.selected_vertex]
-                self._redraw_vertex(self.selected_vertex)
+                self._draw_graph()
+                #self._redraw_vertex(self.selected_vertex)
                 
             else:
                 self.output_text("Done draging vertex.")
