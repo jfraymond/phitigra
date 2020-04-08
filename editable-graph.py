@@ -71,24 +71,12 @@ class GraphWithEditor():
         self.interact_canvas.on_mouse_out(self.mouse_up_handler)
         self.dragged_vertex = None
 
-
     def random_layout(self):
         '''Randomly pick positions for the vertices.'''
         self.pos = {v:
                 (randint(self.default_radius, self.canvas.width - self.default_radius - 1),
                  randint(self.default_radius, self.canvas.height - self.default_radius - 1))
                 for v in self.graph.vertex_iterator()}
-
-    def random_layout_button_callback(self, _):
-        self.random_layout()
-        self._draw_graph()
-
-    @output.capture()
-    def layout_button_callback(self, layout, _):
-        self.graph.layout(layout=layout, save_pos=True)
-        self.pos = self.graph.get_pos()
-        self.normalize_layout()
-        self._draw_graph()
 
     @output.capture()
     def layout_selector_callback(self, change):
@@ -100,9 +88,15 @@ class GraphWithEditor():
             elif new_layout == 'random':
                 self.random_layout()
             else:
-                self.graph.layout(layout=new_layout, save_pos=True)
-                self.pos = self.graph.get_pos()
-                self.normalize_layout()
+                if new_layout == 'tree' and not self.graph.is_tree():
+                    self.output_text("\'tree\' layout impossible: the graph is not a forest!")
+                elif new_layout == 'planar' and not self.graph.is_planar():
+                    self.output_text("\'planar\' layout impossible: the graph is not planar!")
+                else:
+                    self.graph.layout(layout=new_layout, save_pos=True)
+                    self.pos = self.graph.get_pos()
+                    self.normalize_layout()
+
             self._draw_graph()
             self.layout_selector.value=''
 
