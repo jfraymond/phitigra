@@ -7,8 +7,8 @@ from math import pi
 
 class GraphWithEditor():
     output = Output(layout={'border': '1px solid black'})
-    def __init__(self, *args, **kwargs):
-        self.graph = Graph(*args, **kwargs)
+    def __init__(self, G, *args, **kwargs):
+        self.graph = G #Graph(*args, **kwargs)
 
         # The two canvas where we draw
         self.multi_canvas = MultiCanvas(2, width=800, height=600, sync_image_data=True)
@@ -19,9 +19,17 @@ class GraphWithEditor():
 
         self.selected_vertex = None
         self.dragged_vertex = None
-        
+
+        self.drawing_parameters = {
+            'default_radius': 20,
+            # An arrow tip is defined by two values: the distance on the edge
+            # taken by the arrow (arrow_tip_length) and the distance between
+            # the two symmetric angles of the arrow (arrow_tip_height is half
+            # this value).
+            'arrow_tip_width': 15,
+            'arrow_tip_height': 8
+        }
         # Radii, positions and colors of the vertices on the drawing
-        self.default_radius = 20 # Default radius of vertex marks
         self.vertex_radii = dict()
 
         self.pos = self.graph.get_pos()
@@ -71,11 +79,17 @@ class GraphWithEditor():
         self.interact_canvas.on_mouse_out(self.mouse_up_handler)
         self.dragged_vertex = None
 
+    def get_radius(self, v):
+        '''Return the radius of v if it has been predefined, or the default
+        radius otherwise.'''
+        return self.vertex_radii.get(v, self.drawing_parameters['default_radius'])
+        
     def random_layout(self):
         '''Randomly pick positions for the vertices.'''
+        radius = self.drawing_parameters['default_radius']
         self.pos = {v:
-                (randint(self.default_radius, self.canvas.width - self.default_radius - 1),
-                 randint(self.default_radius, self.canvas.height - self.default_radius - 1))
+                (randint(radius, self.canvas.width - radius - 1),
+                 randint(radius, self.canvas.height - radius - 1))
                 for v in self.graph.vertex_iterator()}
 
     @output.capture()
@@ -123,7 +137,7 @@ class GraphWithEditor():
         
         for v in self.vertex_iterator():
             x, y = self.pos[v]
-            radius = self.vertex_radii.get(v, self.default_radius) + 5 # + 5 to get some margin
+            radius = self.get_radius(v) + 5 # + 5 to get some margin
             
             new_x = (x - x_min) * (self.multi_canvas.width - 2*radius) / x_range + radius
             new_y = self.multi_canvas.height - ((y - y_min) * (self.multi_canvas.height - 2*radius) / y_range + radius)
@@ -176,7 +190,7 @@ class GraphWithEditor():
         if color is None:
             color = self.colors[v]
             
-        radius = self.vertex_radii.get(v, self.default_radius)
+        radius = self.get_radius(v)
  
         # The inside of the node
         canvas.fill_style = color
@@ -213,7 +227,7 @@ class GraphWithEditor():
         if color is None:
             color = 'black'
             
-        radius = self.vertex_radii.get(v, self.default_radius)
+        radius = self.get_radius(v)
  
         # The border
         canvas.line_width = 2
@@ -239,7 +253,12 @@ class GraphWithEditor():
             
         with hold_canvas(canvas):
             if neighbors: # We also redraw the incident edges and the neighbors
-                self._draw_edges(((u, v, None) for u in self.graph.neighbor_iterator(v)), canvas=canvas)
+                if self.graph.is_directed():
+                    # We independently consider in- and out-edges
+                    self._draw_edges((e for e in self.graph.incoming_edge_iterator(v)), canvas=canvas)
+                    self._draw_edges((e for e in self.graph.outgoing_edge_iterator(v)), canvas=canvas)
+                else:
+                    self._draw_edges((e for e in self.graph.edge_iterator(vertices=v)), canvas=canvas)
                 self._draw_vertices((u for u in self.graph.neighbor_iterator(v)), canvas=canvas)
             self._draw_vertex(v, canvas=canvas, color=color)
             if self.selected_vertex is not None and highlight:
@@ -247,13 +266,31 @@ class GraphWithEditor():
 
     def _draw_edge(self, e, canvas=None):
         u, v, _ = e
+        pos_u, pos_v = self.pos[u], self.pos[v]
         if canvas is None:
             canvas = self.canvas
         canvas.begin_path()
-        canvas.move_to(*self.pos[u])
-        canvas.line_to(*self.pos[v])
+        canvas.move_to(*pos_u)
+        canvas.line_to(*pos_v)
         canvas.stroke()
-            
+        if self.graph.is_directed():
+            # If the graph is directed, we also have to draw the arrow tip
+            canvas.save()
+            canvas.translate(*pos_v)
+            canvas.rotate(float(atan2(pos_u[1] - pos_v[1],
+                                      pos_u[0] - pos_v[0])))
+            a_x = self.drawing_parameters['arrow_tip_width']
+            a_y = self.drawing_parameters['arrow_tip_height']
+            radius = self.get_radius(v)
+            canvas.begin_path()
+            canvas.move_to(radius, 0)
+            canvas.line_to(radius + a_x, a_y)
+            canvas.line_to(radius + 0.75*a_x, 0)
+            canvas.line_to(radius + a_x, -a_y)
+            canvas.move_to(radius, 0)
+            canvas.fill()
+            canvas.restore()
+
     def _draw_edges(self, edges=None, canvas=None, color='black'):
         # To use within a "with hold_canvas" block, preferably
         if edges is None:
@@ -285,7 +322,7 @@ class GraphWithEditor():
         # Find the clicked node (if any):
         for v in self.vertex_iterator():
             mark_x, mark_y = self.pos[v]
-            mark_radius = self.vertex_radii.get(v, self.default_radius)
+            mark_radius = self.get_radius(v)
 
             if (abs(pixel_x - mark_x) < mark_radius
                 and
@@ -300,7 +337,8 @@ class GraphWithEditor():
                         self._redraw_vertex(v) # Redraw without highlight
                         return
                     else:
-                        # We link v and the previously selected vertex
+                        # A node was selected and we clicked on a new node v:
+                        # we link v and the previously selected vertex
                         self.add_edge(self.selected_vertex, v)
                         self.output_text("Added edge from " + str(self.selected_vertex) + " to " + str(v))
                         self.selected_vertex = None
