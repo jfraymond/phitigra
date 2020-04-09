@@ -262,15 +262,35 @@ class GraphWithEditor():
             if self.selected_vertex is not None and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
-    def _draw_edge(self, e, canvas=None):
-        u, v, _ = e
+    def _draw_edge(self, e, canvas=None, curve=0):
+        u, v, l = e
         pos_u, pos_v = self.pos[u], self.pos[v]
         if canvas is None:
             canvas = self.canvas
-        canvas.begin_path()
-        canvas.move_to(*pos_u)
-        canvas.line_to(*pos_v)
-        canvas.stroke()
+
+        if curve:
+            canvas.begin_path()
+            canvas.move_to(*pos_u)
+            # u-v distance:
+            duv = math.sqrt((pos_u[0] - pos_v[0])**2
+                            + (pos_u[1] - pos_v[1])**2)
+            # Halfway from u to v:
+            huv = (pos_u[0] + (pos_v[0] - pos_u[0])/2,
+                   pos_u[1] + (pos_v[1] - pos_u[1])/2)
+            # Unit normal vector to uv:
+            nuv = ((pos_v[1] - pos_u[1]) / duv,
+                  -(pos_v[0] - pos_u[0]) / duv)
+            # Control point of the curve
+            cp = (huv[0] + nuv[0] * curve,
+                  huv[1] + nuv[1] * curve)
+            canvas.quadratic_curve_to(*cp, *pos_v)
+            canvas.stroke()
+        else:
+            canvas.begin_path()
+            canvas.move_to(*pos_u)
+            canvas.line_to(*pos_v)
+            canvas.stroke()
+            
         if self.graph.is_directed():
             # If the graph is directed, we also have to draw the arrow tip
             radius_v = self.get_radius(v)
