@@ -3,8 +3,6 @@ from ipywidgets import Label, VBox, HBox, Output, Button, Dropdown, ColorPicker
 from random import randint, randrange
 from math import pi
 
-# Todo: récupérer l'évènement que la souris sort du canvas pour déselectionner l'éventel noeud tiré
-
 class GraphWithEditor():
     output = Output(layout={'border': '1px solid black'})
     def __init__(self, G, *args, **kwargs):
@@ -275,21 +273,27 @@ class GraphWithEditor():
         canvas.stroke()
         if self.graph.is_directed():
             # If the graph is directed, we also have to draw the arrow tip
-            canvas.save()
-            canvas.translate(*pos_v)
-            canvas.rotate(float(atan2(pos_u[1] - pos_v[1],
-                                      pos_u[0] - pos_v[0])))
-            a_x = self.drawing_parameters['arrow_tip_width']
-            a_y = self.drawing_parameters['arrow_tip_height']
-            radius = self.get_radius(v)
-            canvas.begin_path()
-            canvas.move_to(radius, 0)
-            canvas.line_to(radius + a_x, a_y)
-            canvas.line_to(radius + 0.75*a_x, 0)
-            canvas.line_to(radius + a_x, -a_y)
-            canvas.move_to(radius, 0)
-            canvas.fill()
-            canvas.restore()
+            radius_v = self.get_radius(v)
+            dist_min = radius_v + self.get_radius(v)
+
+            # We only do it if the vertex shapes do not overlap.
+            if (abs(pos_u[0] - pos_v[0]) > dist_min
+                or abs(pos_u[1] - pos_v[1]) > dist_min):
+                canvas.save()
+                canvas.translate(*pos_v)
+                canvas.rotate(float(atan2(pos_u[1] - pos_v[1],
+                                          pos_u[0] - pos_v[0])))
+                a_x = self.drawing_parameters['arrow_tip_width']
+                a_y = self.drawing_parameters['arrow_tip_height']
+                radius = self.get_radius(v)
+                canvas.begin_path()
+                canvas.move_to(radius_v, 0)
+                canvas.line_to(radius_v + a_x, a_y)
+                canvas.line_to(radius_v + 0.75*a_x, 0)
+                canvas.line_to(radius_v + a_x, -a_y)
+                canvas.move_to(radius_v, 0)
+                canvas.fill()
+                canvas.restore()
 
     def _draw_edges(self, edges=None, canvas=None, color='black'):
         # To use within a "with hold_canvas" block, preferably
