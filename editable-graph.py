@@ -609,32 +609,24 @@ class GraphWithEditor(Graph):
 
                     if p_u[0] < click_x:
                         continue
-                    # now vx <= click_c <= ux
-                    #print('Almost found!')
                     if (click_y > self.pos[v][1] and
                          click_y > self.pos[u][1]):
                         continue
-                    #print('low enough!')
                     if (click_y < self.pos[v][1] and
                         click_y < self.pos[u][1]):
                         #print('nope')
                         continue
-                    #print('Found!')
-                    if self.pos[v][1] < self.pos[u][1]:
-                        # Swap
-                        w = v
-                        v = u
-                        u = w
-                    # Now the click lies in the rectangle with diagonally
-                    # opposed corners u and v and v is on the top-left
-                    slope = ((p_u[1] - p_v[1]) / (p_u[0] - p_v[0]))
+                    delta_y = p_u[1] - p_v[1]
+                    delta_x = p_u[0] - p_v[0]
+                    slope =  ((delta_y if abs(delta_y) > 0.1 else 0.1) /
+                              (delta_x if abs(delta_x) > 0.1 else 0.1))
                     uv_edge_at_c_x = (p_v[1] - (p_v[0] - click_x) * slope)
                     uv_edge_at_c_y = (p_v[0] - (p_v[1] - click_y) / slope)
                     dh = abs(click_y - uv_edge_at_c_x)
                     dv = abs(click_x - uv_edge_at_c_y)
-                    if dh<thresold or dv<thresold:
-                        self.output_text('Edge ' + str(u) + ', ' + str(v) + ' clicked')
-                        self.canvas.stroke_style = 'green'
+                    if dh < thresold or dv < thresold:
+                        self.output_text('Deleted edge ' + str(u) + ', ' + str(v))
+                        self.canvas.stroke_style = f"#{randrange(0x1000000):06x}"
                         self._draw_edge((u,v,''))
                         return
                                         
