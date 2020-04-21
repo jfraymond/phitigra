@@ -4,10 +4,11 @@ from random import randint, randrange
 from math import pi
 from itertools import chain
 
-class GraphWithEditor():
+class GraphWithEditor(Graph):
     output = Output(layout={'border': '1px solid black'})
-    def __init__(self, G, *args, **kwargs):
-        self.graph = G #Graph(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        Graph.__init__(self, *args, **kwargs)
+        self.graph = self
 
         # The two canvas where we draw
         self.multi_canvas = MultiCanvas(2, width=800, height=600, sync_image_data=True)
@@ -49,7 +50,7 @@ class GraphWithEditor():
         if self.pos is None: # The graph has no predefined positions:
             self.random_layout() # We pick some
         else:
-            self.normalize_layout()
+            self.normalize_layout(y_flip=True)
             
         self.colors = {v: f"#{randrange(0x1000000):06x}" # A random HTML color
                        for v in self.graph.vertex_iterator()}
@@ -59,6 +60,15 @@ class GraphWithEditor():
         # Some widgets:
         # Where to display messages:
         self.text_output = Label("Graph Editor")
+
+        # Button to rescale:
+        self.zoom_to_fit_button = Button(description="Zoom to fit",
+                                         disabled=False,
+                                         button_style='',
+                                         tooltip='Rescale so that the graph fills the canvas',
+                                         icon='')
+        self.zoom_to_fit_button.on_click(lambda x:(self.normalize_layout(), self._draw_graph()))
+
 
         # Selector to change layout
         self.layout_selector = Dropdown(
@@ -80,9 +90,9 @@ class GraphWithEditor():
         #self.output = Output(layout={'border': '1px solid black'})
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
-                            HBox([self.layout_selector, self.color_selector]),
+                            HBox([self.layout_selector, self.color_selector, self.zoom_to_fit_button]),
                             self.output])
-        
+
         # Registering callbacks for mouse interaction
         self.interact_canvas.on_mouse_down(self.mouse_down_handler)
         self.interact_canvas.on_mouse_move(self.mouse_move_handler)
@@ -96,14 +106,13 @@ class GraphWithEditor():
         '''Return the radius of v if it has been predefined, or the default
         radius otherwise.'''
         return self.vertex_radii.get(v, self.drawing_parameters['default_radius'])
-        
+
     def random_layout(self):
         '''Randomly pick positions for the vertices.'''
         radius = self.drawing_parameters['default_radius']
-        self.pos = {v:
-                (randint(radius, self.canvas.width - radius - 1),
-                 randint(radius, self.canvas.height - radius - 1))
-                for v in self.graph.vertex_iterator()}
+        self.pos = {v:(randint(radius, self.canvas.width - radius - 1),
+                       randint(radius, self.canvas.height - radius - 1))
+                    for v in self.graph.vertex_iterator()}
 
     @output.capture()
     def layout_selector_callback(self, change):
@@ -134,76 +143,96 @@ class GraphWithEditor():
 
             if self.selected_vertex is not None:
                 # Change the color of the selected vertex
-                self.colors[self.selected_vertex] = new_color
+                self._set_vertex_color(self.selected_vertex, new_color)
                 self._redraw_vertex(self.selected_vertex, neighbors=False)
-        
-    def normalize_layout(self):
-        '''Rescale the vertices coordinates so that they fit in the canvas.'''
+
+    def normalize_layout(self, flip_y=False):
+        '''
+        Shift and rescale the vertices coordinates so that they fit in the
+        canvas.
+
+        ``x`` and ``y`` coordinates are scaled by the same factor and the
+        graph is centered. If ``flip_y`` is ``False``, the ``y`` coordinates
+        is reversed. This is useful for graphs that come with predefined
+        vertex positions with the ``y`` axis pointing upwards.
+        '''
         x_min = min(self.pos[v][0] for v in self.vertex_iterator())
         x_max = max(self.pos[v][0] for v in self.vertex_iterator())
         y_min = min(self.pos[v][1] for v in self.vertex_iterator())
         y_max = max(self.pos[v][1] for v in self.vertex_iterator())
 
-        x_range = x_max - x_min
-        y_range = y_max - y_min
+        x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
+        y_range = max(y_max - y_min, 0.1)
 
+        radius = self.drawing_parameters['default_radius'] + 5 
+        # We scale xs and ys with the same factor to keep proportions
+        factor = min((self.multi_canvas.width - 2*radius) / x_range,
+                     (self.multi_canvas.height - 2*radius) / y_range)
+
+        factor_x = (self.multi_canvas.width - 2*radius) / x_range
+        factor_y = (self.multi_canvas.height - 2*radius) / y_range
+
+        if factor_x < factor_y:
+            factor = factor_x
+            x_shift = radius
+            y_shift = (self.multi_canvas.height - y_range * factor_x) / 2
+        else:
+            factor = factor_y
+            x_shift = (self.multi_canvas.width - x_range * factor_y) / 2
+            y_shift = radius
         
         for v in self.vertex_iterator():
             x, y = self.pos[v]
-            radius = self.get_radius(v) + 5 # + 5 to get some margin
-            
-            new_x = (x - x_min) * (self.multi_canvas.width - 2*radius) / x_range + radius
-            new_y = self.multi_canvas.height - ((y - y_min) * (self.multi_canvas.height - 2*radius) / y_range + radius)
+            new_x = (x - x_min) * factor + x_shift
+            if flip_y:
+                new_y = (y - y_min) * factor + y_shift
+            else:
+                self.multi_canvas.height - ((y - y_min) * factor + y_shift)
             assert new_x >=0 and new_x <= self.multi_canvas.width
-            assert new_y >= 0 and new_y <= self.multi_canvas.height, "y = " + str(new_y)
+            assert new_y >= 0 and new_y <= self.multi_canvas.height
             self.pos[v] = (new_x, new_y)
-        
-    def vertex_iterator(self):
-        return self.graph.vertex_iterator()
-
-    def edge_iterator(self):
-        return self.graph.edge_iterator()
 
     def output_text(self, text):
         self.text_output.value = text
 
-    def add_vertex(self, x, y, name=None, color=None):
-        '''Add a vertex that will be drawn at position x,y.'''
+    def _set_vertex_pos(self, v, x, y):
+        '''Give the position (x,y) to vertex v.'''
+        self.pos[v] = [x, y]
+
+    def _set_vertex_color(self, v, color=None):
+        '''
+        Set the color of a vertex.
+
+        If ``color`` is ``None``, use the color of the color selector.
+        Does not redraw the graph.
+        '''
+        if color is None:
+            self.colors[v] = self.color_selector.value
+        else:
+            self.colors[v] = color
+            
+    def add_vertex_at(self, x, y, name=None, color=None):
+        '''
+        Add a vertex to a given position, color it and draw it.
+
+        If the color is ``None``, use the color of the color selector.
+        '''
+        
         if name is None:
             name = self.graph.add_vertex()
             return_name = True
         else:
             self.graph.add_vertex(name)
             return_name = False
-            
-        self.pos[name] = (x, y)
-        if color is None:
-            self.colors[name] = self.color_selector.value
-        else:
-            self.colors[name] = color
+
+        self._set_vertex_pos(name, x, y)
+        self._set_vertex_color(name)
         self._draw_vertex(name)
 
         # In order to have the same behavior as the graph add_vertex function:
         if return_name:
             return name
-
-    def add_edge(self, u, v):
-        '''Add an edge to the undelying graph and draw it on the main canvas.'''
-
-        if (self.graph.allows_multiple_edges() and
-            (self.graph.has_edge(u,v) or self.graph.has_edge(v,u))):
-            self.graph.add_edge(u,v)
-            # As there are other arcs already, we need to redraw everything
-            self._draw_graph()
-        else:
-            self.graph.add_edge(u,v)
-            # We draw the new edge and the nodes shapes on top of what is
-            # already drawn
-            with hold_canvas(self.canvas):
-                self._draw_edges([(self.selected_vertex, v, None)])
-                self._draw_vertex(v)
-                self._draw_vertex(self.selected_vertex)
-
+                
     def _draw_vertex(self, v, canvas=None, color=None):
         x, y = self.pos[v]
         if canvas is None:
@@ -458,10 +487,11 @@ class GraphWithEditor():
                 if self.selected_vertex is not None and self.selected_vertex != v:
                     # A node was selected and we clicked on a new node v:
                     # we link v and the previously selected vertex
-                    self.add_edge(self.selected_vertex, v)
+                    self.graph.add_edge(self.selected_vertex, v)
                     self.output_text("Added edge from " + str(self.selected_vertex) + " to " + str(v))
                     self.selected_vertex = None
-                    self._redraw_vertex(v, neighbors=False) # Redraw v without highlight
+                    self._draw_graph()
+                    #                    self._redraw_vertex(v, neighbors=False) # Redraw v without highlight
                     return
 
                 # At this point, no vertex is currently selected
@@ -495,7 +525,7 @@ class GraphWithEditor():
             self.selected_vertex = None
         else:
             # Otherwise, we add a new vertex
-            self.add_vertex(pixel_x, pixel_y)
+            self.add_vertex_at(pixel_x, pixel_y)
 
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
