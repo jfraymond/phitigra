@@ -522,62 +522,44 @@ class GraphWithEditor(Graph):
     def show(self):
         return self.widget
 
-    @output.capture()
-    def mouse_down_handler(self, pixel_x, pixel_y):
-        '''
-        Callback for mouse clicks.
+    def mouse_action_add_ve(self, on_vertex=None):
+        #        blah
+        if (self.selected_vertex is not None and
+            self.selected_vertex != v):
+            # A node was selected and we clicked on a new node v:
+            # we link v and the previously selected vertex
+            self.graph.add_edge(self.selected_vertex, v)
+            self.output_text("Added edge from " +
+                             str(self.selected_vertex) +
+                             " to " + str(v))
+            self.selected_vertex = None
+            self._draw_graph()
+            return
 
-        If a vertex is selected and a different vertex is clicked, add an
-        edge between these vertices. Otherwise, start dragging the clicked
-        vertex.
-        '''
-        # To be called when one clicks on pixel_x, pixel_y
-
-        # Find the clicked node (if any):
-        for v in self.graph.vertex_iterator():
-            mark_x, mark_y = self.pos[v]
-            mark_radius = self.get_radius(v)
-
-            if (abs(pixel_x - mark_x) < mark_radius and
-                    abs(pixel_y - mark_y) < mark_radius):
-                # The user clicked on vertex v!
-
-                if (self.selected_vertex is not None and
-                        self.selected_vertex != v):
-                    # A node was selected and we clicked on a new node v:
-                    # we link v and the previously selected vertex
-                    self.graph.add_edge(self.selected_vertex, v)
-                    self.output_text("Added edge from " +
-                                     str(self.selected_vertex) +
-                                     " to " + str(v))
-                    self.selected_vertex = None
-                    self._draw_graph()
-                    return
-
-                # At this point, no vertex is currently selected
-                self.dragged_vertex = v
-                self.initial_click_pos = (pixel_x, pixel_y)
-                self.output_text("Clicked on vertex " + str(v))
-                with hold_canvas(self.multi_canvas):
-                    # On the main canvas we draw everything,
-                    # except the dragged vertex and the edges
-                    # incident to it.
-                    self.canvas.clear()
-                    self._draw_edges(((u1, u2, label)
-                                      for (u1, u2, label) in self.graph.edge_iterator()
-                                      if (v != u1 and v != u2)))
-                    self._draw_vertices((u
-                                         for u in self.graph.vertex_iterator()
-                                         if u != v))
-                    # We draw the rest on the interact canvas.
-                    self.interact_canvas.clear()
-                    self._redraw_vertex(v, canvas=self.interact_canvas,
-                                        neighbors=True,
-                                        highlight=False,
-                                        color='gray')
-                return
-
+        # At this point, no vertex is currently selected
+        self.dragged_vertex = v
+        self.initial_click_pos = (pixel_x, pixel_y)
+        self.output_text("Clicked on vertex " + str(v))
+        with hold_canvas(self.multi_canvas):
+            # On the main canvas we draw everything,
+            # except the dragged vertex and the edges
+            # incident to it.
+            self.canvas.clear()
+            self._draw_edges(((u1, u2, label)
+                              for (u1, u2, label) in self.graph.edge_iterator()
+                              if (v != u1 and v != u2)))
+            self._draw_vertices((u
+                                 for u in self.graph.vertex_iterator()
+                                 if u != v))
+            # We draw the rest on the interact canvas.
+            self.interact_canvas.clear()
+            self._redraw_vertex(v, canvas=self.interact_canvas,
+                                neighbors=True,
+                                highlight=False,
+                                color='gray')
+        return
         # If we reach this point, the click was not an an existing vertex mark
+
         self.output_text("Click not on a vertex")
         if self.selected_vertex is not None:
             # If a vertex is selected and we click on the background, we
@@ -589,6 +571,78 @@ class GraphWithEditor(Graph):
         else:
             # Otherwise, we add a new vertex
             self.add_vertex_at(pixel_x, pixel_y)
+
+    @output.capture()
+    def mouse_down_handler(self, click_x, click_y):
+        '''
+        Callback for mouse clicks.
+
+        If a vertex is selected and a different vertex is clicked, add an
+        edge between these vertices. Otherwise, start dragging the clicked
+        vertex.
+        '''
+
+        # Find the clicked node (if any):
+        clicked_node = None
+        for v in self.graph.vertex_iterator():
+            v_x, v_y = self.pos[v]
+            radius = self.get_radius(v)
+
+            if (abs(click_x - v_x) < radius and
+                    abs(click_y - v_y) < radius):
+                # The user clicked on vertex v!
+                clicked_node = v
+                break
+
+        if self.current_tool() == 'add vertex or edge':
+            return self.mouse_action_add_ve(v)
+        elif self.current_tool() == 'delete vertex or edge':
+
+            # Check for edges:
+            thresold = 20
+            for v in self.graph.vertex_iterator():
+                if click_x < self.pos[v][0]:
+                    #print('Not this one:' + str(click_x))
+                    continue
+                for u in self.graph.neighbor_iterator(v):
+                    p_v, p_u = self.pos[v], self.pos[u]
+
+                    if p_u[0] < click_x:
+                        continue
+                    # now vx <= click_c <= ux
+                    #print('Almost found!')
+                    if (click_y > self.pos[v][1] and
+                         click_y > self.pos[u][1]):
+                        continue
+                    #print('low enough!')
+                    if (click_y < self.pos[v][1] and
+                        click_y < self.pos[u][1]):
+                        #print('nope')
+                        continue
+                    #print('Found!')
+                    if self.pos[v][1] < self.pos[u][1]:
+                        # Swap
+                        w = v
+                        v = u
+                        u = w
+                    # Now the click lies in the rectangle with diagonally
+                    # opposed corners u and v and v is on the top-left
+                    slope = ((p_u[1] - p_v[1]) / (p_u[0] - p_v[0]))
+                    uv_edge_at_c_x = (p_v[1] - (p_v[0] - click_x) * slope)
+                    uv_edge_at_c_y = (p_v[0] - (p_v[1] - click_y) / slope)
+                    dh = abs(click_y - uv_edge_at_c_x)
+                    dv = abs(click_x - uv_edge_at_c_y)
+                    if dh<thresold or dv<thresold:
+                        self.output_text('Edge ' + str(u) + ', ' + str(v) + ' clicked')
+                        self.canvas.stroke_style = 'green'
+                        self._draw_edge((u,v,''))
+                        return
+                                        
+            
+                    #            return self.mouse_action_del_ve(v)
+        else:
+            self.output_text('Not implemented!')
+            return
 
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
