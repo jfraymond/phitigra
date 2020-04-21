@@ -105,7 +105,8 @@ class GraphWithEditor(Graph):
             options=['add vertex or edge',
                      'delete vertex or edge',
                      'add walk',
-                     'add clique'],
+                     'add clique',
+                     'add star'],
             value='add vertex or edge',
             description='Choose tool:',
         )
@@ -219,10 +220,11 @@ class GraphWithEditor(Graph):
             x, y = self.pos[v]
             new_x = (x - x_min) * factor + x_shift
             if flip_y:
-                new_y = (y - y_min) * factor + y_shift
-            else:
                 new_y = (self.multi_canvas.height -
                          ((y - y_min) * factor + y_shift))
+            else:
+                new_y = (y - y_min) * factor + y_shift
+
             assert new_x >= 0 and new_x <= self.multi_canvas.width
             assert new_y >= 0 and new_y <= self.multi_canvas.height
             self.pos[v] = (new_x, new_y)
@@ -523,10 +525,13 @@ class GraphWithEditor(Graph):
         return self.widget
 
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
-        #        blah
+        '''
+        React to a click on ``on_vertex`` (if not None) when the tool is
+        'add vertex or edge'.
+        '''
         if on_vertex is not None:
             if (self.selected_vertex is not None and
-                self.selected_vertex != on_vertex):
+                    self.selected_vertex != on_vertex):
                 # A node was selected and we clicked on a new node:
                 # we link it to the previously selected vertex
                 self.graph.add_edge(self.selected_vertex, on_vertex)
@@ -573,6 +578,67 @@ class GraphWithEditor(Graph):
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
 
+    def mouse_action_add_clique(self, clicked_node, click_x, click_y):
+        if clicked_node is None:
+            # Click on the canvas: we add a vertex
+            clicked_node = self.add_vertex_at(click_x, click_y)
+
+        if not hasattr(self, 'current_clique'):
+            self.current_clique = [clicked_node]
+            return
+        if clicked_node in self.current_clique:
+            self.output_text("Done constructing clique")
+            del self.current_clique
+            return
+
+        for u in self.current_clique:
+            self.graph.add_edge(clicked_node, u)
+        self.current_clique.append(clicked_node)
+        self._draw_graph()
+
+    def mouse_action_add_walk(self, clicked_node, click_x, click_y):
+        if clicked_node is None:
+            # Click on the canvas: we add a vertex
+            clicked_node = self.add_vertex_at(click_x, click_y)
+
+        if not hasattr(self, 'current_walk_vertex'):
+            self.current_walk_vertex = clicked_node
+            return
+        if clicked_node == self.current_walk_vertex:
+            self.output_text("Done constructing walk")
+            del self.current_walk_vertex
+            return
+
+    def mouse_action_add_star(self, clicked_node, click_x, click_y):
+        if clicked_node is None:
+            # Click on the canvas: we add a vertex
+            clicked_node = self.add_vertex_at(click_x, click_y)
+
+        if not hasattr(self, 'current_star_vertex'):
+            self.current_star_vertex = clicked_node
+            self.current_star_leaf = clicked_node
+            self.output_text('Click on the leaves of the star')
+            return
+        if (clicked_node == self.current_star_vertex or
+                clicked_node == self.current_star_leaf):
+            self.output_text("Done constructing star")
+            del self.current_star_vertex
+            return
+
+        self.graph.add_edge(self.current_star_vertex, clicked_node)
+        self.current_star_leaf = clicked_node
+        self._redraw_vertex(self.current_star_vertex, neighbors=True)
+
+    def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
+
+        if on_vertex is not None:
+            self.graph.delete_vertex(on_vertex)
+        elif on_edge is not None:
+            self.graph.delete_edge(on_edge)
+
+        self._draw_graph()
+        return
+    
     @output.capture()
     def mouse_down_handler(self, click_x, click_y):
         '''
@@ -597,8 +663,22 @@ class GraphWithEditor(Graph):
 
         if self.current_tool() == 'add vertex or edge':
             return self.mouse_action_add_ve(clicked_node, click_x, click_y)
-        elif self.current_tool() == 'delete vertex or edge':
+        if self.current_tool() == 'add walk':
+            self.output_text("Click to add a vertex to the walk")
+            return self.mouse_action_add_walk(clicked_node, click_x, click_y)
+        if self.current_tool() == 'add clique':
+            self.output_text("Click to add a vertex to the clique")
+            return self.mouse_action_add_clique(clicked_node, click_x, click_y)
+        if self.current_tool() == 'add star':
+            self.output_text("Click on the center of the star")
+            return self.mouse_action_add_star(clicked_node, click_x, click_y)
 
+
+
+        elif self.current_tool() == 'delete vertex or edge':
+            if clicked_node is not None:
+                return self.mouse_action_del_ve(clicked_node, None)
+            
             # Check for edges:
             thresold = 20
             for v in self.graph.vertex_iterator():
@@ -626,16 +706,11 @@ class GraphWithEditor(Graph):
                     dh = abs(click_y - uv_edge_at_c_x)
                     dv = abs(click_x - uv_edge_at_c_y)
                     if dh < thresold or dv < thresold:
-                        self.output_text('Deleted edge ' + str(u) + ', ' + str(v))
-                        self.canvas.stroke_style = f"#{randrange(0x1000000):06x}"
-                        self._draw_edge((u,v,''))
-                        return
-                                        
-            
-                    #            return self.mouse_action_del_ve(v)
-        else:
-            self.output_text('Not implemented!')
-            return
+                        if self.graph.has_edge(u,v):
+                            clicked_edge = (u,v)
+                        else:
+                            clicked_edge = (v,u)
+                        return self.mouse_action_del_ve(None, clicked_edge)
 
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
