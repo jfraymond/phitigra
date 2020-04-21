@@ -94,17 +94,29 @@ class GraphWithEditor(Graph):
         # Selector to change the color of the selected vertex
         self.color_selector = ColorPicker(
             concise=False,
-            description='Vertex color',
+            description='Vertex color:',
             value='#437FC0',
             disabled=False
         )
         self.color_selector.observe(self.color_selector_callback)
+
+        # The drawing tools
+        self.tool_selector = Dropdown(
+            options=['add vertex or edge',
+                     'delete vertex or edge',
+                     'add walk',
+                     'add clique'],
+            value='add vertex or edge',
+            description='Choose tool:',
+        )
+        self.current_tool = lambda: self.tool_selector.value
 
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
                             HBox([self.layout_selector,
                                   self.color_selector,
                                   self.zoom_to_fit_button]),
+                            HBox([self.tool_selector]),
                             self.output])
 
     def get_radius(self, v):
