@@ -614,20 +614,29 @@ class GraphWithEditor(Graph):
             # Click on the canvas: we add a vertex
             clicked_node = self.add_vertex_at(click_x, click_y)
 
-        if not hasattr(self, 'current_star_vertex'):
-            self.current_star_vertex = clicked_node
+        if not hasattr(self, 'current_star_center'):
+            # We start drawing a star
+            self.current_star_center = clicked_node
             self.current_star_leaf = clicked_node
-            self.output_text('Click on the leaves of the star')
-            return
-        if (clicked_node == self.current_star_vertex or
+            self.output_text('Star with center ' +
+                             str(self.current_star_center) +
+                             ': click on the leaves')
+        elif (clicked_node == self.current_star_center or
                 clicked_node == self.current_star_leaf):
-            self.output_text("Done constructing star")
-            del self.current_star_vertex
-            return
-
-        self.graph.add_edge(self.current_star_vertex, clicked_node)
-        self.current_star_leaf = clicked_node
-        self._redraw_vertex(self.current_star_vertex, neighbors=True)
+            # We are done drawing a star
+            self.output_text("Done drawing star")
+            del self.current_star_center
+            del self.current_star_leaf
+            self._draw_graph()
+        else:
+            # We are drawing a star
+            self.current_star_leaf = clicked_node
+            self.graph.add_edge(self.current_star_center,
+                                self.current_star_leaf)
+            self._redraw_vertex(self.current_star_leaf, neighbors=True)
+            self.output_text('Star with center ' +
+                             str(self.current_star_center) +
+                             ': click on the leaves')
 
     def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
 
@@ -635,9 +644,9 @@ class GraphWithEditor(Graph):
             self.graph.delete_vertex(on_vertex)
         elif on_edge is not None:
             self.graph.delete_edge(on_edge)
-
+        else:
+            return
         self._draw_graph()
-        return
     
     @output.capture()
     def mouse_down_handler(self, click_x, click_y):
@@ -664,26 +673,21 @@ class GraphWithEditor(Graph):
         if self.current_tool() == 'add vertex or edge':
             return self.mouse_action_add_ve(clicked_node, click_x, click_y)
         if self.current_tool() == 'add walk':
-            self.output_text("Click to add a vertex to the walk")
             return self.mouse_action_add_walk(clicked_node, click_x, click_y)
         if self.current_tool() == 'add clique':
-            self.output_text("Click to add a vertex to the clique")
             return self.mouse_action_add_clique(clicked_node, click_x, click_y)
         if self.current_tool() == 'add star':
-            self.output_text("Click on the center of the star")
             return self.mouse_action_add_star(clicked_node, click_x, click_y)
-
-
-
         elif self.current_tool() == 'delete vertex or edge':
             if clicked_node is not None:
                 return self.mouse_action_del_ve(clicked_node, None)
-            
+
             # Check for edges:
             thresold = 20
+            closest_edge = None
+            closest_dist = max(self.canvas.width, self.canvas.height) + 1    # aka infinity
             for v in self.graph.vertex_iterator():
                 if click_x < self.pos[v][0]:
-                    #print('Not this one:' + str(click_x))
                     continue
                 for u in self.graph.neighbor_iterator(v):
                     p_v, p_u = self.pos[v], self.pos[u]
@@ -695,7 +699,6 @@ class GraphWithEditor(Graph):
                         continue
                     if (click_y < self.pos[v][1] and
                         click_y < self.pos[u][1]):
-                        #print('nope')
                         continue
                     delta_y = p_u[1] - p_v[1]
                     delta_x = p_u[0] - p_v[0]
@@ -705,12 +708,17 @@ class GraphWithEditor(Graph):
                     uv_edge_at_c_y = (p_v[0] - (p_v[1] - click_y) / slope)
                     dh = abs(click_y - uv_edge_at_c_x)
                     dv = abs(click_x - uv_edge_at_c_y)
-                    if dh < thresold or dv < thresold:
-                        if self.graph.has_edge(u,v):
-                            clicked_edge = (u,v)
-                        else:
-                            clicked_edge = (v,u)
-                        return self.mouse_action_del_ve(None, clicked_edge)
+                    mindist = min(dh, dv)
+                    if mindist < thresold:
+                        # The click is close enough from the edge uv
+                        if mindist < closest_dist:
+                            # And it is the closest we have seen so far
+                            if self.graph.has_edge(u, v):
+                                closest_edge = (u, v)
+                            else:
+                                closest_edge = (v, u)
+
+            return self.mouse_action_del_ve(None, closest_edge)
 
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
