@@ -4,12 +4,10 @@ from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
 
-class GraphWithEditor(Graph):
+class GenericEditableGraph():
     output = Output(layout={'border': '1px solid black'})
 
-    def __init__(self, *args, **kwargs):
-        Graph.__init__(self, *args, **kwargs)
-        self.graph = self
+    def __init__(self, drawing_parameters=None):
 
         # The two canvas where we draw
         self.multi_canvas = MultiCanvas(2,
@@ -17,7 +15,7 @@ class GraphWithEditor(Graph):
                                         sync_image_data=True)
         self.canvas = self.multi_canvas[0]    # The main layer
         # The layer where we draw objects in interaction
-        # (moved vertices, tooltips, etc.):
+        # (moved vertices, etc.):
         self.interact_canvas = self.multi_canvas[1]
 
         self.selected_vertex = None
@@ -25,6 +23,7 @@ class GraphWithEditor(Graph):
 
         self.drawing_parameters = {
             'default_radius': 20,
+            'default_vertex_color': None,
             # An arrow tip is defined by two values: the distance on the edge
             # taken by the arrow (arrow_tip_length) and the distance between
             # the two symmetric angles of the arrow (arrow_tip_height is half
@@ -46,6 +45,9 @@ class GraphWithEditor(Graph):
             canvas.fill()
         self.drawing_parameters['draw_arrow'] = draw_arrow
 
+        if drawing_parameters:
+            self.drawing_parameters.update(drawing_parameters_arg)
+
         # Radii, positions and colors of the vertices on the drawing
         self.vertex_radii = dict()
 
@@ -53,10 +55,14 @@ class GraphWithEditor(Graph):
         if self.pos is None:        # The graph has no predefined positions:
             self.random_layout()    # We pick some
         else:
-            self.normalize_layout(y_flip=True)
+            self.normalize_layout(flip_y=True)
 
-        self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random HTML color
-                       for v in self.graph.vertex_iterator()}
+        if self.drawing_parameters['default_vertex_color'] is None:
+            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random HTML color
+                           for v in self.graph.vertex_iterator()}
+        else:
+            self.colors = {v: self.drawing_parameters['default_vertex_color']
+                           for v in self.graph.vertex_iterator()}
 
         self._draw_graph()
 
@@ -120,12 +126,29 @@ class GraphWithEditor(Graph):
                             HBox([self.tool_selector]),
                             self.output])
 
-    def get_radius(self, v):
+    # Getters and setters #
+    def _get_radius(self, v):
         '''Return the radius of v if it has been predefined, or the default
         radius otherwise.'''
         return self.vertex_radii.get(v,
                                      self.drawing_parameters['default_radius'])
+    def _set_vertex_pos(self, v, x, y):
+        '''Give the position (x,y) to vertex v.'''
+        self.pos[v] = [x, y]
 
+    def set_vertex_color(self, v, color=None):
+        '''
+        Set the color of a vertex.
+
+        If ``color`` is ``None``, use the color of the color selector.
+        Does not redraw the graph.
+        '''
+        if color is None:
+            self.colors[v] = self.color_selector.value
+        else:
+            self.colors[v] = color
+
+    # Layout functions #
     def random_layout(self):
         '''Randomly pick positions for the vertices.'''
         radius = self.drawing_parameters['default_radius']
@@ -178,7 +201,7 @@ class GraphWithEditor(Graph):
 
             if self.selected_vertex is not None:
                 # Change the color of the selected vertex
-                self._set_vertex_color(self.selected_vertex, new_color)
+                self.set_vertex_color(self.selected_vertex, new_color)
                 self._redraw_vertex(self.selected_vertex, neighbors=False)
 
     def normalize_layout(self, flip_y=False):
@@ -191,10 +214,10 @@ class GraphWithEditor(Graph):
         is reversed. This is useful for graphs that come with predefined
         vertex positions with the ``y`` axis pointing upwards.
         '''
-        x_min = min(self.pos[v][0] for v in self.vertex_iterator())
-        x_max = max(self.pos[v][0] for v in self.vertex_iterator())
-        y_min = min(self.pos[v][1] for v in self.vertex_iterator())
-        y_max = max(self.pos[v][1] for v in self.vertex_iterator())
+        x_min = min(self.pos[v][0] for v in self.graph.vertex_iterator())
+        x_max = max(self.pos[v][0] for v in self.graph.vertex_iterator())
+        y_min = min(self.pos[v][1] for v in self.graph.vertex_iterator())
+        y_max = max(self.pos[v][1] for v in self.graph.vertex_iterator())
 
         x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
@@ -232,22 +255,6 @@ class GraphWithEditor(Graph):
     def output_text(self, text):
         self.text_output.value = text
 
-    def _set_vertex_pos(self, v, x, y):
-        '''Give the position (x,y) to vertex v.'''
-        self.pos[v] = [x, y]
-
-    def _set_vertex_color(self, v, color=None):
-        '''
-        Set the color of a vertex.
-
-        If ``color`` is ``None``, use the color of the color selector.
-        Does not redraw the graph.
-        '''
-        if color is None:
-            self.colors[v] = self.color_selector.value
-        else:
-            self.colors[v] = color
-
     def add_vertex_at(self, x, y, name=None, color=None):
         '''
         Add a vertex to a given position, color it and draw it.
@@ -263,7 +270,7 @@ class GraphWithEditor(Graph):
             return_name = False
 
         self._set_vertex_pos(name, x, y)
-        self._set_vertex_color(name)
+        self.set_vertex_color(name)
         self._draw_vertex(name)
 
         # In order to have the same behavior as the graph add_vertex function:
@@ -283,7 +290,7 @@ class GraphWithEditor(Graph):
         if color is None:
             color = self.colors[v]
 
-        radius = self.get_radius(v)
+        radius = self._get_radius(v)
 
         # The inside of the node
         canvas.fill_style = color
@@ -324,7 +331,7 @@ class GraphWithEditor(Graph):
         if color is None:
             color = 'black'
 
-        radius = self.get_radius(v)
+        radius = self._get_radius(v)
 
         # The border
         canvas.line_width = 2
@@ -410,7 +417,7 @@ class GraphWithEditor(Graph):
             if self.graph.is_directed():
                 # If the graph is directed, we also have to draw the arrow tip
                 # In this case (curved edge), we draw the arrow at mid-edge.
-                dist_min = self.get_radius(v) + self.get_radius(u)
+                dist_min = self._get_radius(v) + self._get_radius(u)
                 # We only do it if the vertex shapes do not overlap.
                 if (abs(pos_u[0] - pos_v[0]) > dist_min or
                         abs(pos_u[1] - pos_v[1]) > dist_min):
@@ -435,8 +442,8 @@ class GraphWithEditor(Graph):
             if self.graph.is_directed():
                 # If the graph is directed, we also have to draw the arrow tip
                 # We draw it at the end of the edge (as usual)
-                radius_v = self.get_radius(v)
-                dist_min = radius_v + self.get_radius(u)
+                radius_v = self._get_radius(v)
+                dist_min = radius_v + self._get_radius(u)
 
                 # We only do it if the vertex shapes do not overlap.
                 if (abs(pos_u[0] - pos_v[0]) > dist_min
@@ -449,7 +456,7 @@ class GraphWithEditor(Graph):
                                               pos_u[0] - pos_v[0])))
                     # Move to the point where the edge joins v's shape and
                     # draw the arrow there:
-                    canvas.translate(self.get_radius(v), 0)
+                    canvas.translate(self._get_radius(v), 0)
                     self.drawing_parameters['draw_arrow'](canvas)
                     canvas.restore()
 
@@ -662,7 +669,7 @@ class GraphWithEditor(Graph):
         clicked_node = None
         for v in self.graph.vertex_iterator():
             v_x, v_y = self.pos[v]
-            radius = self.get_radius(v)
+            radius = self._get_radius(v)
 
             if (abs(click_x - v_x) < radius and
                     abs(click_y - v_y) < radius):
