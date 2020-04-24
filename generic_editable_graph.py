@@ -168,22 +168,30 @@ class GenericEditableGraph():
         if change['name'] == 'value':
             new_layout = change['new']
 
+            # Interrupt any drawing action that is taking place:
+            self._clean_tools()
+
             if new_layout == '':
                 return
-            elif new_layout == 'random':
+            self.output_text('Updating layout, please wait...')
+            if new_layout == 'random':
                 self.random_layout()
             else:
                 if new_layout == 'tree' and not self.graph.is_tree():
                     self.output_text('\'tree\' layout impossible: '
-                                     'the graph is not a forest!')
+                                     'the graph is not a tree!')
+                    self.layout_selector.value = ''
+                    return
                 elif new_layout == 'planar' and not self.graph.is_planar():
                     self.output_text('\'planar\' layout impossible: '
                                      'the graph is not planar!')
+                    self.layout_selector.value = ''
+                    return
                 else:
                     self.graph.layout(layout=new_layout, save_pos=True)
                     self.pos = self.graph.get_pos()
                     self.normalize_layout()
-
+            self.output_text('Done updating layout.')
             self._draw_graph()
             self.layout_selector.value = ''
 
@@ -601,6 +609,22 @@ class GenericEditableGraph():
             else:
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
+
+
+    def _clean_tools(self):
+        '''
+        Forget that some drawing is taking place.
+        '''
+        attrs = ['current_clique',
+                 'current_walk_vertex',
+                 'current_star_center',
+                 'current_star_leaf']
+
+        for attr in attrs:
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
 
     def mouse_action_add_clique(self, clicked_node, click_x, click_y):
         if clicked_node is None:
