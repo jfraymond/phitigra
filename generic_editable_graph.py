@@ -1,4 +1,8 @@
-## todo: release_notifications does not work (the graph is not redrawn after clicking on the canvas)
+from ipycanvas import Canvas, MultiCanvas, hold_canvas
+from ipywidgets import Label, VBox, HBox, Output, Button, Dropdown, ColorPicker
+from random import randint, randrange
+from math import pi, sqrt, atan2
+from itertools import chain
 
 class GenericEditableGraph():
     output = Output(layout={'border': '1px solid black'})
@@ -74,7 +78,13 @@ class GenericEditableGraph():
 
         # Selector to change layout
         self.layout_selector = Dropdown(
-            options=['', 'random', 'spring', 'circular', 'planar', 'tree'],
+            options=[('', ''),
+                     ('random', 'random'),
+                     ('spring', 'spring'),
+                     ('circular', 'circular'),
+                     ('planar', 'planar'),
+                     ('tree', 'tree'),
+                     ('directed acyclic', 'acyclic')],
             value='',
             description='Set layout:',
         )
@@ -111,8 +121,8 @@ class GenericEditableGraph():
     def _prepare(self):
         # We prepare the graph data
         self.pos = self.graph.get_pos()
-        if self.pos is None:        # The graph has no predefined positions:
-            self.random_layout()    # We pick some
+        if self.pos is None:    # The graph has no predefined positions: we
+            self.graph.layout(layout='spring', save_pos=True)    # pick some
         else:
             self.normalize_layout(flip_y=True)
 
@@ -174,23 +184,31 @@ class GenericEditableGraph():
             if new_layout == '':
                 return
             self.output_text('Updating layout, please wait...')
-            if new_layout == 'random':
-                self.random_layout()
+
+            if new_layout == 'tree' and not self.graph.is_tree():
+                self.output_text('\'tree\' layout impossible: '
+                                 'the graph is not a tree!')
+                self.layout_selector.value = ''
+                return
+            elif new_layout == 'planar' and not self.graph.is_planar():
+                self.output_text('\'planar\' layout impossible: '
+                                 'the graph is not planar!')
+                self.layout_selector.value = ''
+                return
+            elif new_layout == 'acyclic' and not self.graph.is_directed():
+                self.output_text('\'directed acyclic\' layout impossible:'
+                                 ' the graph is not directed!')
+                self.layout_selector.value = ''
+                return
+            elif new_layout == 'random':
+                # Randomly pick a new layout
+                p = self.graph.layout_extend_randomly(dict())
+                self.graph.set_pos(p)
             else:
-                if new_layout == 'tree' and not self.graph.is_tree():
-                    self.output_text('\'tree\' layout impossible: '
-                                     'the graph is not a tree!')
-                    self.layout_selector.value = ''
-                    return
-                elif new_layout == 'planar' and not self.graph.is_planar():
-                    self.output_text('\'planar\' layout impossible: '
-                                     'the graph is not planar!')
-                    self.layout_selector.value = ''
-                    return
-                else:
-                    self.graph.layout(layout=new_layout, save_pos=True)
-                    self.pos = self.graph.get_pos()
-                    self.normalize_layout()
+                self.graph.layout(layout=new_layout, save_pos=True)
+
+            self.pos = self.graph.get_pos()
+            self.normalize_layout()
             self.output_text('Done updating layout.')
             self._draw_graph()
             self.layout_selector.value = ''
