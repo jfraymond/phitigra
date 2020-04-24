@@ -14,6 +14,9 @@ class TalkyGraph(Graph):
     def __init__(self, *args, **kwargs):
         notify = kwargs.pop('notify_callback')
         super().__init__(*args, **kwargs)
+        # We define notify_change after the call to Graph's constructor so that
+        # no notification (asking to redraw the graph) is done until the graph
+        # is completely built
         self.notify_change = notify
 
     def add_vertex(self, *args, **kwargs):

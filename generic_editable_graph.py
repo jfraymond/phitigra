@@ -632,6 +632,8 @@ class GenericEditableGraph():
             self.output_text("Done constructing walk")
             del self.current_walk_vertex
             return
+        self.graph.add_edge(self.current_walk_vertex, clicked_node)
+        self.current_walk_vertex = clicked_node
 
     def mouse_action_add_star(self, clicked_node, click_x, click_y):
         if clicked_node is None:
