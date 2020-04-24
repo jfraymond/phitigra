@@ -259,14 +259,15 @@ class GenericEditableGraph():
         self.hold_notification = True
 
     def release_notifications(self):
+        self.hold_notification = False
         if self.notification:
             self.notify(self.notification)
-        self.hold_notification = False
 
-    def notify(self, s=None):
+    def notify(self, s='unknown notification'):
         if self.hold_notification:
-            self.notification = True
+            self.notification = s
         else:
+            self.output_text("Internal notification: " + str(s))
             self._draw_graph()
 
     def add_vertex_at(self, x, y, name=None, color=None):
@@ -287,7 +288,7 @@ class GenericEditableGraph():
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
         self.release_notifications()
-        self._draw_vertex(name)
+        #        self._draw_vertex(name)
 
         # In order to have the same behavior as the graph add_vertex function:
         if return_name:
