@@ -83,7 +83,8 @@ class GenericEditableGraph():
                      ('spring', 'spring'),
                      ('circular', 'circular'),
                      ('planar', 'planar'),
-                     ('tree', 'tree'),
+                     ('tree (root up)', 'tree (root up)'),
+                     ('tree (root down)', 'tree (root down)'),
                      ('directed acyclic', 'acyclic')],
             value='',
             description='Set layout:',
@@ -122,12 +123,12 @@ class GenericEditableGraph():
         # We prepare the graph data
         self.pos = self.graph.get_pos()
         if self.pos is None:    # The graph has no predefined positions: we
-            self.graph.layout(layout='spring', save_pos=True)    # pick some
+            self.random_layout()    # pick some
         else:
             self.normalize_layout(flip_y=True)
 
         if self.drawing_parameters['default_vertex_color'] is None:
-            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random HTML color
+            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
                            for v in self.graph.vertex_iterator()}
         else:
             self.colors = {v: self.drawing_parameters['default_vertex_color']
@@ -165,6 +166,7 @@ class GenericEditableGraph():
         self.pos = {v: (randint(radius, self.canvas.width - radius - 1),
                         randint(radius, self.canvas.height - radius - 1))
                     for v in self.graph.vertex_iterator()}
+        self.normalize_layout()
 
     @output.capture()
     def layout_selector_callback(self, change):
@@ -175,43 +177,56 @@ class GenericEditableGraph():
         If applying the layout is not possible, an error message is written
         to the text output widget.
         '''
-        if change['name'] == 'value':
-            new_layout = change['new']
+        if change['name'] != 'value':
+            return
+        elif change['new'] == '':
+            return
 
-            # Interrupt any drawing action that is taking place:
-            self._clean_tools()
+        new_layout = change['new']
+        self.layout_selector.value = ''
 
-            if new_layout == '':
-                return
-            self.output_text('Updating layout, please wait...')
+        # Interrupt any drawing action that is taking place:
+        self._clean_tools()
 
-            if new_layout == 'tree' and not self.graph.is_tree():
+        self.output_text('Updating layout, please wait...')
+
+        if new_layout == 'planar' and not self.graph.is_planar():
+            self.output_text('\'planar\' layout impossible: '
+                             'the graph is not planar!')
+            return
+
+        if new_layout == 'acyclic' and not self.graph.is_directed():
+            self.output_text('\'directed acyclic\' layout impossible:'
+                             ' the graph is not directed!')
+            return
+
+        if new_layout == 'random':
+            self.random_layout()
+            self._draw_graph()
+            self.output_text('Done updating layout.')
+            return
+
+        layout_kw = {'save_pos': True}    # Arguments for the layout function
+        if new_layout == 'tree (root up)' or new_layout == 'tree (root down)':
+            if not self.graph.is_tree():
                 self.output_text('\'tree\' layout impossible: '
                                  'the graph is not a tree!')
-                self.layout_selector.value = ''
                 return
-            elif new_layout == 'planar' and not self.graph.is_planar():
-                self.output_text('\'planar\' layout impossible: '
-                                 'the graph is not planar!')
-                self.layout_selector.value = ''
-                return
-            elif new_layout == 'acyclic' and not self.graph.is_directed():
-                self.output_text('\'directed acyclic\' layout impossible:'
-                                 ' the graph is not directed!')
-                self.layout_selector.value = ''
-                return
-            elif new_layout == 'random':
-                # Randomly pick a new layout
-                p = self.graph.layout_extend_randomly(dict())
-                self.graph.set_pos(p)
             else:
-                self.graph.layout(layout=new_layout, save_pos=True)
+                layout_kw['layout'] = 'tree'
+                layout_kw['tree_root'] = self.selected_vertex
+                if new_layout == 'tree (root up)':
+                    layout_kw['tree_orientation'] = 'up'
+                else:
+                    layout_kw['tree_orientation'] = 'down'
+        else:
+            layout_kw['layout'] = new_layout
 
-            self.pos = self.graph.get_pos()
-            self.normalize_layout()
-            self.output_text('Done updating layout.')
-            self._draw_graph()
-            self.layout_selector.value = ''
+        self.graph.layout(**layout_kw)
+        self.pos = self.graph.get_pos()
+        self.normalize_layout()
+        self.output_text('Done updating layout.')
+        self._draw_graph()
 
     @output.capture()
     def color_selector_callback(self, change):
