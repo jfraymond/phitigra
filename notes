@@ -1,0 +1,15 @@
+The purpose of this code in this folder is to have a graph editor with the following features:
+(1) adding and removing edges and vertices with the mouse
+(2) easy export of the drawn graph
+(3) automatic update of the drawing when the graph changes
+
+The problem with (3) is that the editor needs to be notified when the graph changes. A possible way of doing that is to use traits. It seems to me that this option could not be done without changing Graph or GenericGraph classes too much (adding them as subclasses of HasTraits, which means that the Traits library would be required, even for people not using the editor).
+So I solved this problem by creating a subclass ``TalkyGraph`` of ``Graph`` which "re-implements" the functions modifying the graph (only addition/deletion of vertices) by calling the relevant function from ``Graph`` and then sending a notification. These ``TalkyGraphs`` can be given a function to handle notifications (otherwise the notifications are ignored).
+
+Example:
+    sage: f = lambda x: print("Notification: " + str(x))
+    sage: g = TalkyGraph(4, notification_callback=f)
+    sage: g.add_vertex(6)
+    Notification: add_vertex
+
+

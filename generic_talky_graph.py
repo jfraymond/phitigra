@@ -12,7 +12,7 @@ class TalkyGraph(Graph):
     sage ``Graph``.
     '''
     def __init__(self, *args, **kwargs):
-        notify = kwargs.pop('notify_callback')
+        notify = kwargs.pop('notify_callback', lambda x:None)
         super().__init__(*args, **kwargs)
         # We define notify_change after the call to Graph's constructor so that
         # no notification (asking to redraw the graph) is done until the graph
