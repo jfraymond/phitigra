@@ -83,8 +83,8 @@ class GenericEditableGraph():
                      ('spring', 'spring'),
                      ('circular', 'circular'),
                      ('planar', 'planar'),
-                     ('tree (root up)', 'tree (root up)'),
-                     ('tree (root down)', 'tree (root down)'),
+                     ('forest (root up)', 'forest (root up)'),
+                     ('forest (root down)', 'forest (root down)'),
                      ('directed acyclic', 'acyclic')],
             value='',
             description='Set layout:',
@@ -117,8 +117,8 @@ class GenericEditableGraph():
                             HBox([self.layout_selector,
                                   self.color_selector,
                                   self.zoom_to_fit_button]),
-                            HBox([self.tool_selector]),
-                            self.output])
+                            HBox([self.tool_selector]) ]) #,
+#                            self.output])
     def _prepare(self):
         # We prepare the graph data
         self.pos = self.graph.get_pos()
@@ -207,15 +207,15 @@ class GenericEditableGraph():
             return
 
         layout_kw = {'save_pos': True}    # Arguments for the layout function
-        if new_layout == 'tree (root up)' or new_layout == 'tree (root down)':
-            if not self.graph.is_tree():
-                self.output_text('\'tree\' layout impossible: '
-                                 'the graph is not a tree!')
+        if new_layout == 'forest (root up)' or new_layout == 'forest (root down)':
+            if not self.graph.is_forest():
+                self.output_text('\'forest\' layout impossible: '
+                                 'the graph is not a forest!')
                 return
             else:
-                layout_kw['layout'] = 'tree'
-                layout_kw['tree_root'] = self.selected_vertex
-                if new_layout == 'tree (root up)':
+                layout_kw['layout'] = 'forest'
+                layout_kw['forest_roots'] = [self.selected_vertex]
+                if new_layout == 'forest (root up)':
                     layout_kw['tree_orientation'] = 'up'
                 else:
                     layout_kw['tree_orientation'] = 'down'

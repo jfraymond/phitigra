@@ -1,4 +1,4 @@
-from sage.all import Graph, DiGraph
+from sage.graphs.graph import Graph, DiGraph
 
 '''
 A class to add notifications to the class Graph and DiGraph when vertices and
@@ -55,5 +55,11 @@ class TalkyGraph(Graph):
         return r
 
     def notify_change(self, s):
-        '''This function is changed when the object is initialized.'''
+        '''
+        The function called whenever a vertex or edge deletion or addition is
+        made.
+
+        By default empty, this function can be specified when creating a new
+        instance
+        '''
         return
