@@ -1,17 +1,43 @@
-from ipycanvas import Canvas, MultiCanvas, hold_canvas
-from ipywidgets import Label, VBox, HBox, Output, Button, Dropdown, ColorPicker
+r"""
+Graph editor
+
+A graph editor where one can see the graph, add vertices/edges, etc.
+
+EXAMPLES::
+
+<Lots and lots of examples> TODO
+
+AUTHORS:
+
+- Jean-Florent Raymond (2020-04-05): initial version
+"""
+
+# ****************************************************************************
+#       Copyright (C) 2020 Jean-Florent Raymond <j-florent.raymond@uca.fr>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#                  https://www.gnu.org/licenses/
+# ****************************************************************************
+
+from ipycanvas import MultiCanvas, hold_canvas
+from ipywidgets import (Label, VBox, HBox, Output, Button, Dropdown,
+                        ColorPicker, ToggleButton)
 from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
 
+
 class GenericEditableGraph():
     output = Output(layout={'border': '1px solid black'})
 
-    def __init__(self,G, drawing_parameters=None):
+    def __init__(self, G, drawing_parameters=None):
         # The two canvas where we draw
         self.graph = G
         self.notification = None
-        self.hold_notification=False
+        self.hold_notification = False
         self.multi_canvas = MultiCanvas(2,
                                         width=800, height=600,
                                         sync_image_data=True)
@@ -35,7 +61,7 @@ class GenericEditableGraph():
         }
 
         def draw_arrow(canvas):
-            '''Draw an arrow at with tip at (0,0), pointing to the left.'''
+            """Draw an arrow at with tip at (0,0), pointing to the left."""
             a_x = self.drawing_parameters['arrow_tip_width']
             a_y = self.drawing_parameters['arrow_tip_height']
             canvas.begin_path()
@@ -100,6 +126,16 @@ class GenericEditableGraph():
         )
         self.color_selector.observe(self.color_selector_callback)
 
+        self.vertex_name_toggle = ToggleButton(
+            value=True,
+            description='Show vertex labels',
+            disabled=False,
+            button_style='',
+            tooltip='Should the vertex label be drawn?',
+            icon='check'
+        )
+        self.vertex_name_toggle.observe(lambda _: self._draw_graph())
+
         # The drawing tools
         self.tool_selector = Dropdown(
             options=['add vertex or edge',
@@ -114,16 +150,18 @@ class GenericEditableGraph():
 
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
-                            HBox([self.layout_selector,
-                                  self.color_selector,
+                            HBox([self.tool_selector,
+                                  self.layout_selector,
                                   self.zoom_to_fit_button]),
-                            HBox([self.tool_selector]) ]) #,
-#                            self.output])
+                            HBox([self.color_selector,
+                                  self.vertex_name_toggle]),
+                            self.output])
+
     def _prepare(self):
         # We prepare the graph data
-        self.pos = self.graph.get_pos()
-        if self.pos is None:    # The graph has no predefined positions: we
-            self.random_layout()    # pick some
+        if self.graph.get_pos() is None:
+            # The graph has no predefined positions: we pick some
+            self.random_layout()
         else:
             self.normalize_layout(flip_y=True)
 
@@ -136,24 +174,29 @@ class GenericEditableGraph():
 
         self._draw_graph()
 
-        
     # Getters and setters #
     def _get_radius(self, v):
-        '''Return the radius of v if it has been predefined, or the default
-        radius otherwise.'''
+        """
+        Return the radius of a vertex.
+
+        If the radius of v has not been set, return the default radius.
+        """
         return self.vertex_radii.get(v,
                                      self.drawing_parameters['default_radius'])
+
     def _set_vertex_pos(self, v, x, y):
-        '''Give the position (x,y) to vertex v.'''
-        self.pos[v] = [x, y]
+        """Give the position (x,y) to vertex v."""x
+        pos = self.graph.get_pos()
+        pos[v] = [x, y]
 
     def set_vertex_color(self, v, color=None):
-        '''
+        """
         Set the color of a vertex.
 
         If ``color`` is ``None``, use the color of the color selector.
-        Does not redraw the graph.
-        '''
+
+        WARNING: this function does not redraw the graph.
+        """
         if color is None:
             self.colors[v] = self.color_selector.value
         else:
@@ -161,22 +204,23 @@ class GenericEditableGraph():
 
     # Layout functions #
     def random_layout(self):
-        '''Randomly pick positions for the vertices.'''
+        """Randomly pick positions for the vertices."""
         radius = self.drawing_parameters['default_radius']
-        self.pos = {v: (randint(radius, self.canvas.width - radius - 1),
-                        randint(radius, self.canvas.height - radius - 1))
-                    for v in self.graph.vertex_iterator()}
+        rnd_pos = {v: (randint(radius, self.canvas.width - radius - 1),
+                       randint(radius, self.canvas.height - radius - 1))
+                   for v in self.graph.vertex_iterator()}
+        self.graph.set_pos(rnd_pos)
         self.normalize_layout()
 
     @output.capture()
     def layout_selector_callback(self, change):
-        '''
-        Apply a the layout in ``change['name']`` (if any).
+        """
+        Apply the graph layout given by ``change['name']`` (if any).
 
-        The function to call when the layout selector is used.
+        This function is called when the layout selector is used.
         If applying the layout is not possible, an error message is written
         to the text output widget.
-        '''
+        """
         if change['name'] != 'value':
             return
         elif change['new'] == '':
@@ -207,7 +251,8 @@ class GenericEditableGraph():
             return
 
         layout_kw = {'save_pos': True}    # Arguments for the layout function
-        if new_layout == 'forest (root up)' or new_layout == 'forest (root down)':
+        if (new_layout == 'forest (root up)' or
+                new_layout == 'forest (root down)'):
             if not self.graph.is_forest():
                 self.output_text('\'forest\' layout impossible: '
                                  'the graph is not a forest!')
@@ -222,21 +267,21 @@ class GenericEditableGraph():
         else:
             layout_kw['layout'] = new_layout
 
-        self.graph.layout(**layout_kw)
-        self.pos = self.graph.get_pos()
+        self.graph.layout(**layout_kw, save_pos=True)
+
         self.normalize_layout()
         self.output_text('Done updating layout.')
         self._draw_graph()
 
     @output.capture()
     def color_selector_callback(self, change):
-        '''
-        Change the color of the selected vertex (if any) for that given by
-        ``change``.
+        """
+        Change the color of the selected vertex (if any).
 
-        The function to call when the color selector is used.
+        The new color is ``change[new]``.
+        This function is called when the color selector is used.
         If no vertex is selected or the color did not change, nothing is done.
-        '''
+        """
         if change['name'] == 'value':
             new_color = change['new']
 
@@ -246,7 +291,7 @@ class GenericEditableGraph():
                 self._redraw_vertex(self.selected_vertex, neighbors=False)
 
     def normalize_layout(self, flip_y=False):
-        '''
+        """
         Shift and rescale the vertices coordinates so that they fit in the
         canvas.
 
@@ -254,20 +299,25 @@ class GenericEditableGraph():
         graph is centered. If ``flip_y`` is ``False``, the ``y`` coordinates
         is reversed. This is useful for graphs that come with predefined
         vertex positions with the ``y`` axis pointing upwards.
-        '''
-        x_min = min(self.pos[v][0] for v in self.graph.vertex_iterator())
-        x_max = max(self.pos[v][0] for v in self.graph.vertex_iterator())
-        y_min = min(self.pos[v][1] for v in self.graph.vertex_iterator())
-        y_max = max(self.pos[v][1] for v in self.graph.vertex_iterator())
+        """
+
+        pos = self.graph.get_pos()
+        assert pos is not None
+        try:
+            x_min = min(pos[v][0] for v in self.graph.vertex_iterator())
+        except ValueError:
+            print("Erreur :(\n pos= " + str(pos))
+        x_max = max(pos[v][0] for v in self.graph.vertex_iterator())
+        y_min = min(pos[v][1] for v in self.graph.vertex_iterator())
+        y_max = max(pos[v][1] for v in self.graph.vertex_iterator())
 
         x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
 
         radius = self.drawing_parameters['default_radius'] + 5
-        # We scale xs and ys with the same factor to keep proportions
-        factor = min((self.multi_canvas.width - 2*radius) / x_range,
-                     (self.multi_canvas.height - 2*radius) / y_range)
-
+        
+        # Some computations to scale x's and y's with the same factor,
+        # so that proportions are kept
         factor_x = (self.multi_canvas.width - 2*radius) / x_range
         factor_y = (self.multi_canvas.height - 2*radius) / y_range
 
@@ -279,9 +329,10 @@ class GenericEditableGraph():
             factor = factor_y
             x_shift = (self.multi_canvas.width - x_range * factor_y) / 2
             y_shift = radius
-        
+
+        new_pos = dict()
         for v in self.graph.vertex_iterator():
-            x, y = self.pos[v]
+            x, y = pos[v]
             new_x = (x - x_min) * factor + x_shift
             if flip_y:
                 new_y = (self.multi_canvas.height -
@@ -291,7 +342,9 @@ class GenericEditableGraph():
 
             assert new_x >= 0 and new_x <= self.multi_canvas.width
             assert new_y >= 0 and new_y <= self.multi_canvas.height
-            self.pos[v] = (new_x, new_y)
+            new_pos[v] = [new_x, new_y]
+
+        self.graph.set_pos(new_pos)
 
     def output_text(self, text):
         self.text_output.value = text
@@ -312,11 +365,11 @@ class GenericEditableGraph():
             self._draw_graph()
 
     def add_vertex_at(self, x, y, name=None, color=None):
-        '''
+        """
         Add a vertex to a given position, color it and draw it.
 
         If the color is ``None``, use the color of the color selector.
-        '''
+        """
 
         self.hold_notifications()
         if name is None:
@@ -336,13 +389,13 @@ class GenericEditableGraph():
             return name
 
     def _draw_vertex(self, v, canvas=None, color=None):
-        '''
+        """
         Draw a given vertex.
 
         If ``canvas`` is ``None``, the default drawing canvas (``self.canvas``)
         is used.
-        '''
-        x, y = self.pos[v]
+        """
+        x, y = self.graph.get_pos()[v]
         if canvas is None:
             canvas = self.canvas
         if color is None:
@@ -359,19 +412,20 @@ class GenericEditableGraph():
         canvas.stroke_style = 'black'
         canvas.stroke_arc(x, y, radius, 0, 2*pi)
 
-        # The text
-        canvas.font = '20px sans'
-        canvas.text_align = 'center'
-        canvas.text_baseline = 'middle'
-        canvas.fill_style = 'black'
-        canvas.fill_text(str(v), x, y, max_width = 2*radius)
+        if self.vertex_name_toggle.value:
+            # The text
+            canvas.font = '20px sans'
+            canvas.text_align = 'center'
+            canvas.text_baseline = 'middle'
+            canvas.fill_style = 'black'
+            canvas.fill_text(str(v), x, y, max_width=2*radius)
 
     def _draw_vertices(self, vertices=None, canvas=None):
-        '''
+        """
         Draw the ``vertices`` on ``canvas``.
-        
+
         To use within a ``with hold_canvas`` block, preferably.
-        '''
+        """
         if vertices is None:
             vertices = self.graph.vertex_iterator()
         if canvas is None:
@@ -381,9 +435,9 @@ class GenericEditableGraph():
             self._draw_vertex(v, canvas)
 
     def _highlight_vertex(self, v, canvas=None, color=None):
-        '''Set focus on vertex ``v``.'''
+        """Set focus on vertex ``v``."""
 
-        x, y = self.pos[v]
+        x, y = self.graph.get_pos()[v]
         if canvas is None:
             canvas = self.canvas
         if color is None:
@@ -403,7 +457,7 @@ class GenericEditableGraph():
 
     def _redraw_vertex(self, v, canvas=None, highlight=True,
                        neighbors=True, color=None):
-        '''
+        """
         Redraw a vertex.
 
         If ``highlight == True`` and ``v == self.selected_vertes``, the colored
@@ -411,7 +465,7 @@ class GenericEditableGraph():
         If ``neighbors == True``, the incident edges are also redrawn, as well
         as its neighbors, so that the edges incident to the neighbors do not
         overlap their shapes.
-        '''
+        """
         if canvas is None:
             canvas = self.canvas
 
@@ -450,7 +504,7 @@ class GenericEditableGraph():
 
     def _draw_edge(self, e, canvas=None, curve=None, middle_arrow=False):
         u, v, lab = e
-        pos_u, pos_v = self.pos[u], self.pos[v]
+        pos_u, pos_v = self.graph.get_pos()[u], self.graph.get_pos()[v]
         if canvas is None:
             canvas = self.canvas
 
@@ -487,7 +541,9 @@ class GenericEditableGraph():
                                               pos_u[0] - pos_v[0])))
                     # Move to the point where the edge joins v's shape and
                     # draw the arrow there:
-                    canvas.translate(-self.drawing_parameters['arrow_tip_width'] / 2, curve/2)
+                    canvas.translate(
+                        -self.drawing_parameters['arrow_tip_width'] / 2,
+                        curve/2)
                     self.drawing_parameters['draw_arrow'](canvas)
                     canvas.restore()
 
@@ -519,7 +575,7 @@ class GenericEditableGraph():
                     canvas.restore()
 
     def _draw_edges(self, edges, canvas=None, color='black'):
-        '''
+        """
         Draw the edges contained in `edges` on canvas `canvas` and
         in color `color`.
 
@@ -531,7 +587,7 @@ class GenericEditableGraph():
         be applied: for every vertices u and v, all the edges between u and v
         (in either direction) should be drawn within the same call to
         _draw_edges (otherwise some edges might be drawn on top of each other).
-        '''
+        """
 
         if canvas is None:
             canvas = self.canvas
@@ -550,7 +606,7 @@ class GenericEditableGraph():
             seen_last = dict()
 
             def get_curve(e):
-                '''Return the curve of the edge e.'''
+                """Return the curve of the edge e."""
                 u, v, _ = e
                 # How many times we saw an edge between these vertices so far:
                 cur_mul = seen_edges.get((u, v), 0) + seen_edges.get((v, u), 0)
@@ -576,9 +632,9 @@ class GenericEditableGraph():
             self._draw_edge(e, canvas=canvas, curve=get_curve(e))
 
     def _draw_graph(self):
-        '''
+        """
         Clear the drawing canvas and draw the whole graph.
-        '''
+        """
         with hold_canvas(self.canvas):
             self.canvas.clear()
             self._draw_edges(self.graph.edge_iterator())
@@ -590,10 +646,10 @@ class GenericEditableGraph():
         return self.widget
 
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
-        '''
-        React to a click on ``on_vertex`` (if not None) when the tool is
-        'add vertex or edge'.
-        '''
+        """
+        Function that is called after a click on ``on_vertex`` (if not None)
+        when the tool is 'add vertex or edge'.
+        """
         if on_vertex is not None:
             if (self.selected_vertex is not None and
                     self.selected_vertex != on_vertex):
@@ -617,7 +673,8 @@ class GenericEditableGraph():
                 # incident to it.
                 self.canvas.clear()
                 self._draw_edges(((u1, u2, label)
-                                  for (u1, u2, label) in self.graph.edge_iterator()
+                                  for (u1, u2, label)
+                                  in self.graph.edge_iterator()
                                   if (on_vertex != u1 and on_vertex != u2)))
                 self._draw_vertices((u
                                      for u in self.graph.vertex_iterator()
@@ -643,11 +700,10 @@ class GenericEditableGraph():
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
 
-
     def _clean_tools(self):
-        '''
+        """
         Forget that some drawing is taking place.
-        '''
+        """
         attrs = ['current_clique',
                  'current_walk_vertex',
                  'current_star_center',
@@ -730,21 +786,22 @@ class GenericEditableGraph():
         else:
             return
         self._draw_graph()
-    
+
     @output.capture()
     def mouse_down_handler(self, click_x, click_y):
-        '''
+        """
         Callback for mouse clicks.
 
         If a vertex is selected and a different vertex is clicked, add an
         edge between these vertices. Otherwise, start dragging the clicked
         vertex.
-        '''
+        """
 
         # Find the clicked node (if any):
         clicked_node = None
+        pos = self.graph.get_pos()
         for v in self.graph.vertex_iterator():
-            v_x, v_y = self.pos[v]
+            v_x, v_y = pos[v]
             radius = self._get_radius(v)
 
             if (abs(click_x - v_x) < radius and
@@ -768,20 +825,21 @@ class GenericEditableGraph():
             # Check for edges:
             thresold = 20
             closest_edge = None
-            closest_dist = max(self.canvas.width, self.canvas.height) + 1    # aka infinity
+            # closest_dist = infinity:
+            closest_dist = max(self.canvas.width, self.canvas.height) + 1
             for v in self.graph.vertex_iterator():
-                if click_x < self.pos[v][0]:
+                if click_x < pos[v][0]:
                     continue
                 for u in self.graph.neighbor_iterator(v):
-                    p_v, p_u = self.pos[v], self.pos[u]
+                    p_v, p_u = pos[v], pos[u]
 
                     if p_u[0] < click_x:
                         continue
-                    if (click_y > self.pos[v][1] and
-                         click_y > self.pos[u][1]):
+                    if (click_y > pos[v][1] and
+                         click_y > pos[u][1]):
                         continue
-                    if (click_y < self.pos[v][1] and
-                        click_y < self.pos[u][1]):
+                    if (click_y < pos[v][1] and
+                        click_y < pos[u][1]):
                         continue
                     delta_y = p_u[1] - p_v[1]
                     delta_x = p_u[0] - p_v[0]
@@ -810,7 +868,8 @@ class GenericEditableGraph():
             # We are dragging a vertex...
             self.output_text("Draging vertex " + str(self.dragged_vertex))
             v = self.dragged_vertex
-            self.pos[v] = (pixel_x, pixel_y)
+            pos = self.graph.get_pos()
+            pos[v] = (pixel_x, pixel_y)
 
             with hold_canvas(self.interact_canvas):
                 # We only redraw what changes: the position of the dragged
@@ -834,7 +893,8 @@ class GenericEditableGraph():
                     self.selected_vertex = self.dragged_vertex
                     self.output_text("Selected vertex " +
                                      str(self.selected_vertex))
-                    self.color_selector.value = self.colors[self.selected_vertex]
+                    self.color_selector.value = (
+                        self.colors[self.selected_vertex])
                 else:
                     self.selected_vertex = None
 
