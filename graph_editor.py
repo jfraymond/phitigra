@@ -267,7 +267,7 @@ class GenericEditableGraph():
         else:
             layout_kw['layout'] = new_layout
 
-        self.graph.layout(**layout_kw, save_pos=True)
+        self.graph.layout(**layout_kw)
 
         self.normalize_layout()
         self.output_text('Done updating layout.')
