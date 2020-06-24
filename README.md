@@ -3,9 +3,10 @@
 The purpose of the code in this repository is to provide a graph
 editor for [sagemath](www.sagemath.org) when using the
 [jupyter](www.jupyter.org) notebook, with the following features:
-(1) adding and removing edges and vertices with the mouse
-(2) easy export of the drawn graph
-(3) automatic update of the drawing when the graph changes
+
+  1. adding and removing edges and vertices with the mouse
+  2. easy export of the drawn graph
+  3. automatic update of the drawing when the graph changes
 
 ## Dependencies
 
