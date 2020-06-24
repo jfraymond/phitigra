@@ -1,7 +1,3 @@
-<h1 align="center">phitigra</h1>
-<h2 align="center"> a graph editor for SageMath</h2>
-
-
 # phitigra
 
 Phitigra is a graph editor widget for [SageMath](www.sagemath.org)
