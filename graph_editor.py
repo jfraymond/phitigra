@@ -48,6 +48,7 @@ class GenericEditableGraph():
 
         self.selected_vertex = None
         self.dragged_vertex = None
+        self.dragging_canvas_from = None
 
         self.drawing_parameters = {
             'default_radius': 20,
@@ -393,6 +394,21 @@ class GenericEditableGraph():
             new_pos[v] = [new_x, new_y]
         self.graph.set_pos(new_pos)
 
+    def translate_layout(self, translate):
+        """
+        Translate the vertices coordinates.
+        """
+        pos = self.graph.get_pos()
+        assert pos is not None
+
+        t_x, t_y = translate
+        new_pos = dict()
+        for v in self.graph.vertex_iterator():
+            x, y = pos[v]
+            new_pos[v] = [x + t_x, y + t_y]
+        self.graph.set_pos(new_pos)
+
+        
     def output_text(self, text):
         """Write the input string in the textbox of the editor."""
         self.text_output.value = text
@@ -965,9 +981,14 @@ class GenericEditableGraph():
                                 closest_edge = (u, v)
                             else:
                                 closest_edge = (v, u)
-
             return self.mouse_action_del_ve(None, closest_edge)
 
+        # At this point, we know that the click was neither on a vertex
+        # nor on an edge
+        if not self.current_tool() == 'select / move':
+            return
+        self.dragging_canvas_from = [click_x, click_y]
+        
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
         """Callback for mouse movement."""
@@ -988,6 +1009,13 @@ class GenericEditableGraph():
                                     neighbors=True,
                                     highlight=False,
                                     color='gray')
+
+        elif self.dragging_canvas_from is not None:
+            translation = [pixel_x - self.dragging_canvas_from[0],
+                           pixel_y - self.dragging_canvas_from[1]]
+            self.translate_layout(translation)
+            self.dragging_canvas_from = [pixel_x, pixel_y]
+            self._draw_graph()
 
     @output.capture()
     def mouse_up_handler(self, pixel_x, pixel_y):
@@ -1015,3 +1043,7 @@ class GenericEditableGraph():
             self.dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
             self.interact_canvas.clear()
+
+        elif self.dragging_canvas_from is not None:
+            # We stop dragging the canvas
+            self.dragging_canvas_from = None
