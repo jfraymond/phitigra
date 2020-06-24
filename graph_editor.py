@@ -24,7 +24,7 @@ AUTHORS:
 
 from ipycanvas import MultiCanvas, hold_canvas
 from ipywidgets import (Label, VBox, HBox, Output, Button, Dropdown,
-                        ColorPicker, ToggleButton)
+                        ColorPicker, ToggleButton, RadioButtons)
 from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
@@ -101,6 +101,20 @@ class GenericEditableGraph():
                                          icon='')
         self.zoom_to_fit_button.on_click(lambda x: (self.normalize_layout(),
                                                     self._draw_graph()))
+        self.zoom_in_button = Button(description="Zoom +",
+                              disabled=False,
+                              button_style='',
+                              tooltip='Zoom in',
+                              icon='')
+        self.zoom_in_button.on_click(lambda x: (self.scale_layout(1.5),
+                                                    self._draw_graph()))
+        self.zoom_out_button = Button(description="Zoom -",
+                              disabled=False,
+                              button_style='',
+                              tooltip='Zoom out',
+                              icon='')
+        self.zoom_out_button.on_click(lambda x: (self.scale_layout(0.5),
+                                                    self._draw_graph()))
 
         # Selector to change layout
         self.layout_selector = Dropdown(
@@ -137,22 +151,38 @@ class GenericEditableGraph():
         self.vertex_name_toggle.observe(lambda _: self._draw_graph())
 
         # The drawing tools
-        self.tool_selector = Dropdown(
-            options=['add vertex or edge',
+        self.tool_selector = RadioButtons(
+            options=['select / move',
+                     'add vertex or edge',
                      'delete vertex or edge',
                      'add walk',
                      'add clique',
                      'add star'],
             value='add vertex or edge',
+            #    layout={'width': 'max-content'}, # If the items' names are long
             description='Choose tool:',
+            disabled=False
         )
+        # self.tool_selector = Dropdown(
+        #     options=['add vertex or edge',
+        #              'delete vertex or edge',
+        #              'add walk',
+        #              'add clique',
+        #              'add star'],
+        #     value='add vertex or edge',
+        #     description='Choose tool:',
+        # )
         self.current_tool = lambda: self.tool_selector.value
 
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
                             HBox([self.tool_selector,
-                                  self.layout_selector,
-                                  self.zoom_to_fit_button]),
+                                  VBox([
+                                      self.layout_selector,
+                                      self.zoom_to_fit_button,
+                                      self.zoom_in_button,
+                                      self.zoom_out_button]
+                                  )]),
                             HBox([self.color_selector,
                                   self.vertex_name_toggle]),
                             self.output])
@@ -340,6 +370,27 @@ class GenericEditableGraph():
 
             new_pos[v] = [new_x, new_y]
 
+        self.graph.set_pos(new_pos)
+
+    def scale_layout(self, ratio):
+        """
+        Rescale the vertices coordinates around the center of the image and
+        with respect to the given ratio.
+        """
+        pos = self.graph.get_pos()
+        assert pos is not None
+
+        center_x = self.multi_canvas.width / 2
+        center_y = self.multi_canvas.height / 2
+        shift_x = center_x * (1 - ratio)
+        shift_y = center_y * (1 - ratio)
+
+        new_pos = dict()
+        for v in self.graph.vertex_iterator():
+            x, y = pos[v]
+            new_x = x * ratio + shift_x
+            new_y = y * ratio + shift_y
+            new_pos[v] = [new_x, new_y]
         self.graph.set_pos(new_pos)
 
     def output_text(self, text):
