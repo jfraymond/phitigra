@@ -5,11 +5,11 @@ when using the [Jupyter](www.jupyter.org) notebook.
 
 ## Features
 
-  1. adding and removing edges and vertices with the mouse
-  2. easy export of the drawn graph
-  3. automatic update of the drawing when the graph changes
-  4. zoom in and zoom out
-  5. different layout options
+  * adding and removing edges and vertices with the mouse
+  * easy export of the drawn graph
+  * automatic update of the drawing when the graph changes
+  * zoom in and zoom out
+  * different layout options
 
 ## Dependencies
 
@@ -23,6 +23,6 @@ when using the [Jupyter](www.jupyter.org) notebook.
 load("graph_editor.py")
 load("talky_graph.py")
 load("editable_graph.py")
-eg = EditableGraph(G)
+eg = EditableGraph(graphs.RandomGNP(10, 0.25))
 eg.show()
 ```
