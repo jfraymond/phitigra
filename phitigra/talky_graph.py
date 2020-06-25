@@ -12,7 +12,7 @@ class to trigger a notification when changes are made to the instances.
 #
 # ****************************************************************************
 
-from sage.graphs.graph import Graph
+from sage.graphs.all import Graph
 
 
 class TalkyGraph(Graph):

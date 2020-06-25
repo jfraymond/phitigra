@@ -1,5 +1,5 @@
-#from .talky_graph import TalkyGraph
-#from .graph_editor import GenericEditableGraph
+from .talky_graph import TalkyGraph
+from .graph_editor import GenericEditableGraph
 
 class EditableGraph(TalkyGraph):
     '''
