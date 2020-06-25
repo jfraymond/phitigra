@@ -1,2 +1,2 @@
 # This file is not empty
-from sage.graphs.editable_graph.editable_graph import EditableGraph
+from .editable_graph import EditableGraph
