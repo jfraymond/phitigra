@@ -22,6 +22,10 @@ class TalkyGraph(Graph):
     and deletion of vertices).
 
     EXAMPLES:
+
+    Here we define a graph with a callback that prints a notification when
+    a change is made::
+
         sage: def f(s): print("Notification: " + str(s))
         sage: g = TalkyGraph(notify_callback=f)
         sage: g.add_vertex(0)
@@ -66,12 +70,12 @@ class TalkyGraph(Graph):
         EXAMPLES::
 
             sage: g = TalkyGraph(5); g
-            TalkyGraph with base Graph on 5 vertices
+            TalkyGraph over a Graph on 5 vertices
             sage: g = TalkyGraph(graphs.PetersenGraph()); g
-            TalkyGraph with base Petersen graph: Graph on 10 vertices
+            TalkyGraph over a Petersen graph: Graph on 10 vertices
         """
-        return "TalkyGraph with base " + Graph._repr_(self)
-        
+        return "TalkyGraph over a " + Graph._repr_(self)
+
     def add_vertex(self, *args, **kwargs):
         r"""
         Create an isolated vertex.
