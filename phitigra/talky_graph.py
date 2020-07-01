@@ -14,7 +14,6 @@ class to trigger a notification when changes are made to the instances.
 
 from sage.graphs.all import Graph
 
-
 class TalkyGraph(Graph):
     """
     Subclass of Sage's :class:`Graph` class that behaves exactly the same,
@@ -26,6 +25,7 @@ class TalkyGraph(Graph):
     Here we define a graph with a callback that prints a notification when
     a change is made::
 
+        sage: from phitigra import TalkyGraph
         sage: def f(*s, **t): print("Notification: " + str(s))
         sage: g = TalkyGraph(notify_callback=f)
         sage: g.add_vertex(0)
@@ -39,7 +39,7 @@ class TalkyGraph(Graph):
         Notification: ('delete_vertex', 1)
 
     The default callback is the function that does nothing::
- 
+
         sage: h = TalkyGraph()
         sage: h.add_vertex()
         0
@@ -49,8 +49,8 @@ class TalkyGraph(Graph):
     The construction of the graph does not trigger any notification::
 
         sage: def f(*s, **t): print("Hello!")
-        g = TalkyGraph(2, notify_callback=f); g
-        Graph on 2 vertices
+        sage: g = TalkyGraph(2, notify_callback=f); g
+        TalkyGraph over a Graph on 2 vertices
     """
 
     def __init__(self, *args, **kwargs):
@@ -70,10 +70,11 @@ class TalkyGraph(Graph):
 
         EXAMPLES::
 
+            sage: from phitigra import TalkyGraph
             sage: g = TalkyGraph(5); g._repr_()
-            TalkyGraph over a Graph on 5 vertices
+            'TalkyGraph over a Graph on 5 vertices'
             sage: g = TalkyGraph(graphs.PetersenGraph()); g._repr_()
-            TalkyGraph over a Petersen graph: Graph on 10 vertices
+            'TalkyGraph over a Petersen graph: Graph on 10 vertices'
         """
         return "TalkyGraph over a " + Graph._repr_(self)
 
@@ -86,6 +87,7 @@ class TalkyGraph(Graph):
 
         TESTS::
 
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("The graph changed: " + str(s))
             sage: g = TalkyGraph(notify_callback=f)
             sage: g.add_vertex(0)
@@ -107,6 +109,7 @@ class TalkyGraph(Graph):
 
         TESTS::
 
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("The graph changed: " + str(s))
             sage: g = TalkyGraph(2, notify_callback=f)
             sage: g.delete_vertex(1)
@@ -128,14 +131,15 @@ class TalkyGraph(Graph):
         :meth:`notify_change`.
 
         TESTS::
-        
+
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("The graph changed: " + str(s))
             sage: g = TalkyGraph(2, notify_callback=f)
-            sage: g.add_vertices([1,2])
-            The graph changed: ('add_vertices', [1,2])
+            sage: g.add_vertices([1, 2])
+            The graph changed: ('add_vertices', [1, 2])
             sage: g.add_vertices([None, 3, None])
             The graph changed: ('add_vertices', [None, 3, None])
-            [0, 4]
+            [4, 5]
         """
         r = Graph.add_vertices(self, *args, **kwargs)
         self.notify_change('add_vertices', *args, **kwargs)
@@ -150,11 +154,12 @@ class TalkyGraph(Graph):
         :meth:`notify_change`.
 
         TESTS::
-        
+
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("The graph changed: " + str(s))
             sage: g = TalkyGraph(5, notify_callback=f)
-            sage: g.delete_vertices([1,2])
-            The graph changed: ('delete_vertices', [1,2])
+            sage: g.delete_vertices([1, 2])
+            The graph changed: ('delete_vertices', [1, 2])
             sage: g.delete_vertices([1, 3])
             Traceback (most recent call last):
             ...
@@ -172,13 +177,14 @@ class TalkyGraph(Graph):
         :meth:`notify_change`.
 
         TESTS::
-        
+
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("Change: " + str(s) + " " + str(t))
             sage: g = TalkyGraph(5, notify_callback=f)
             sage: g.add_edge(1, 2)
-            Change: ('add_edge', 1, 2) 
+            Change: ('add_edge', 1, 2) {}
             sage: g.add_edge(1, 42, label='hello')
-            Change: ('add_edge', 0, 42) {'label': 'hello'}
+            Change: ('add_edge', 1, 42) {'label': 'hello'}
         """
         r = Graph.add_edge(self, *args, **kwargs)
         self.notify_change('add_edge', *args, **kwargs)
@@ -192,15 +198,16 @@ class TalkyGraph(Graph):
         :meth:`notify_change`.
 
         TESTS::
-        
+
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("Change: " + str(s) + " " + str(t))
             sage: g = TalkyGraph(graphs.PetersenGraph(), notify_callback=f)
             sage: g.delete_edge(0, 1)
-            Change: ('delete_edge', 0, 1)
+            Change: ('delete_edge', 0, 1) {}
             sage: g.num_edges()
             14
             sage: g.delete_edge(0, 9)
-            Change: ('delete_edge', 0, 9)
+            Change: ('delete_edge', 0, 9) {}
             sage: g.num_edges()
             14
         """
@@ -216,14 +223,15 @@ class TalkyGraph(Graph):
         :meth:`notify_change`.
 
         TESTS::
-        
+
+            sage: from phitigra import TalkyGraph
             sage: def f(*s, **t): print("Change: " + str(s))
             sage: g = TalkyGraph(10, notify_callback=f)
             sage: g.add_edges([(3, 0), (4, 1), (5, 2)])
             Change: ('add_edges', [(3, 0), (4, 1), (5, 2)])
         """
         r = Graph.add_edges(self, *args, **kwargs)
-        self.notify_change('add_vertices', *args, **kwargs)
+        self.notify_change('add_edges', *args, **kwargs)
         return r
 
     def notify_change(self, *args, **kwargs):
@@ -235,8 +243,10 @@ class TalkyGraph(Graph):
         instance.
 
         TESTS::
+
+            sage: from phitigra import TalkyGraph
             sage: g = TalkyGraph(1)
             sage: g.add_vertex()
-            0
+            1
         """
         return
