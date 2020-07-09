@@ -12,7 +12,7 @@ class EditableGraph(TalkyGraph):
         super().__init__(*args, notify_callback=self.notify, **kwargs)
         self.editor._prepare()
         self.editor.output_text("Welcome!")
-    def notify(self, s):
-        self.editor.notify(s)
+    def notify(self, *args, **kwargs):
+        self.editor.notify(*args, **kwargs)
     def show(self):
         return self.editor.show()

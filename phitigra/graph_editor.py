@@ -413,17 +413,22 @@ class GenericEditableGraph():
         """Write the input string in the textbox of the editor."""
         self.text_output.value = text
 
-    def notify(self, s='unknown notification'):
+    def notify(self, caller, *args, **kwargs):
         """
         Callback for notifiactions comming from self.graph.
 
         Redraw the graph unless notifications have been suspended via
         :meth:`~:hold_notifications`.
+        If notifications have been suspended, the current notification is
+        kept in self.notification.
+
+        WARNING: Only the last notification is kept in memory when notification
+        are suspended.
         """
         if self.hold_notification:
-            self.notification = s
+            self.notification = (caller, args, kwargs)
         else:
-            self.output_text("Internal notification: " + str(s))
+            self.output_text("Internal notification from: " + str(caller))
             self._draw_graph()
 
     def hold_notifications(self):
@@ -439,8 +444,9 @@ class GenericEditableGraph():
         """
         self.hold_notification = False
         if self.notification:
-            self.notify(self.notification)
+            self.notify(*self.notification)
             self.notification = None
+
     def add_vertex_at(self, x, y, name=None, color=None):
         """
         Add a vertex to a given position, color it and draw it.
