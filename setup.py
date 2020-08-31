@@ -22,7 +22,7 @@ setuptools.setup(
     author="Jean-Florent Raymond",
     author_email="j-florent.raymond@uca.fr",
     description="A graph editor for jupyter/sagemath",
-    url="https://gitlab.limos.fr/jfraymon/graph-edit",
+    url="https://gitlab.limos.fr/jfraymon/phitigra",
     packages=setuptools.find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
