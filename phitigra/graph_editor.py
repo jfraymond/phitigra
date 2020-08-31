@@ -791,29 +791,6 @@ class GenericEditableGraph():
                 self.selected_vertex = None
                 self._draw_graph()
                 return
-
-            # At this point, no vertex is currently selected
-            self.dragged_vertex = on_vertex
-            self.initial_click_pos = (pixel_x, pixel_y)
-            self.output_text("Clicked on vertex " + str(on_vertex))
-            with hold_canvas(self.multi_canvas):
-                # On the main canvas we draw everything,
-                # except the dragged vertex and the edges
-                # incident to it.
-                self.canvas.clear()
-                self._draw_edges(((u1, u2, label)
-                                  for (u1, u2, label)
-                                  in self.graph.edge_iterator()
-                                  if (on_vertex != u1 and on_vertex != u2)))
-                self._draw_vertices((u
-                                     for u in self.graph.vertex_iterator()
-                                     if u != on_vertex))
-                # We draw the rest on the interact canvas.
-                self.interact_canvas.clear()
-                self._redraw_vertex(on_vertex, canvas=self.interact_canvas,
-                                    neighbors=True,
-                                    highlight=False,
-                                    color='gray')
         else:
             # In this branch, the click was not an an existing node
 
@@ -916,6 +893,35 @@ class GenericEditableGraph():
             return
         self._draw_graph()
 
+    def mouse_action_select_move(self, on_vertex, pixel_x, pixel_y):
+        if on_vertex is None:
+            self.dragging_canvas_from = [pixel_x, pixel_y]
+            self.selected_vertex = None
+            return
+        else:
+            self.dragged_vertex = on_vertex
+            self.initial_click_pos = (pixel_x, pixel_y)
+            self.output_text("Clicked on vertex " + str(on_vertex))
+            with hold_canvas(self.multi_canvas):
+                # On the main canvas we draw everything,
+                # except the dragged vertex and the edges
+                # incident to it.
+                self.canvas.clear()
+                self._draw_edges(((u1, u2, label)
+                                  for (u1, u2, label)
+                                  in self.graph.edge_iterator()
+                                  if (on_vertex != u1 and on_vertex != u2)))
+                self._draw_vertices((u
+                                     for u in self.graph.vertex_iterator()
+                                     if u != on_vertex))
+                # We draw the rest on the interact canvas.
+                self.interact_canvas.clear()
+                self._redraw_vertex(on_vertex, canvas=self.interact_canvas,
+                                    neighbors=True,
+                                    highlight=False,
+                                    color='gray')
+
+        
     @output.capture()
     def mouse_down_handler(self, click_x, click_y):
         """
@@ -989,18 +995,16 @@ class GenericEditableGraph():
                                 closest_edge = (v, u)
             return self.mouse_action_del_ve(None, closest_edge)
 
-        # At this point, we know that the click was neither on a vertex
-        # nor on an edge
-        if not self.current_tool() == 'select / move':
+        elif self.current_tool() == 'select / move':
+            self.mouse_action_select_move(clicked_node, click_x, click_y)
             return
-        self.dragging_canvas_from = [click_x, click_y]
-        
+
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
         """Callback for mouse movement."""
         if self.dragged_vertex is not None:
             # We are dragging a vertex...
-            self.output_text("Draging vertex " + str(self.dragged_vertex))
+            self.output_text("Dragging vertex " + str(self.dragged_vertex))
             v = self.dragged_vertex
             pos = self.graph.get_pos()
             pos[v] = (pixel_x, pixel_y)
@@ -1044,7 +1048,7 @@ class GenericEditableGraph():
                 self.dragged_vertex = None
             else:
                 self.selected_vertex = None
-                self.output_text("Done draging vertex.")
+                self.output_text("Done dragging vertex.")
                 self._draw_graph()
             self.dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
