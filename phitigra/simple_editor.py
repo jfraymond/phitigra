@@ -29,14 +29,15 @@ from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
 
+from sage.graphs.all import Graph
 
 class SimpleGraphEditor():
     output = Output(layout={'border': '1px solid black'})
 
     def __init__(self, G=None, drawing_parameters=None):
         # The two canvas where we draw
-        if not G:
-            G = Graph()
+        if G is None:
+            G = Graph(0)
         self.graph = G
         self.multi_canvas = MultiCanvas(2,
                                         width=800, height=600,
@@ -188,7 +189,7 @@ class SimpleGraphEditor():
                                   self.vertex_name_toggle]),
                             self.output])
 
-    def _prepare(self):
+#    def _prepare(self):
         # We prepare the graph data
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
@@ -217,6 +218,7 @@ class SimpleGraphEditor():
 
     def _set_vertex_pos(self, v, x, y):
         """Give the position (x,y) to vertex v."""
+
         pos = self.graph.get_pos()
         pos[v] = [x, y]
 
@@ -332,6 +334,10 @@ class SimpleGraphEditor():
         vertex positions with the ``y`` axis pointing upwards.
         """
 
+        if not self.graph:
+            # There is nothing to do with the one vertex graph
+            return
+        
         pos = self.graph.get_pos()
         assert pos is not None
 
@@ -430,6 +436,7 @@ class SimpleGraphEditor():
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
 
+        self._draw_vertex(name)
         # Return the vertex name if it was not specified,
         # as the graph add_vertex function:
         if return_name:
@@ -818,13 +825,22 @@ class SimpleGraphEditor():
             clicked_node = self.add_vertex_at(click_x, click_y)
 
         if not hasattr(self, 'current_walk_vertex'):
+            # The clicked vertex is the first vertex of the walk
+            self.output_text("Constructing a walk - "
+                             "click on the last vertex when you are done.")
             self.current_walk_vertex = clicked_node
+            self.selected_vertex = clicked_node
+            self._redraw_vertex(clicked_node)
             return
         if clicked_node == self.current_walk_vertex:
             self.output_text("Done constructing walk")
             del self.current_walk_vertex
+            self.selected_vertex = None
+            self._draw_graph()
             return
         self.graph.add_edge(self.current_walk_vertex, clicked_node)
+        self.selected_vertex = clicked_node
+        self._redraw_vertex(clicked_node, neighbors=True)
         self.current_walk_vertex = clicked_node
 
     def mouse_action_add_star(self, clicked_node, click_x, click_y):
@@ -873,7 +889,6 @@ class SimpleGraphEditor():
             return
         else:
             self.dragged_vertex = on_vertex
-            self.initial_click_pos = (pixel_x, pixel_y)
             self.output_text("Clicked on vertex " + str(on_vertex))
             with hold_canvas(self.multi_canvas):
                 # On the main canvas we draw everything,
@@ -905,6 +920,7 @@ class SimpleGraphEditor():
         vertex.
         """
 
+        self.initial_click_pos = (click_x, click_y)
         # Find the clicked node (if any):
         clicked_node = None
         pos = self.graph.get_pos()
