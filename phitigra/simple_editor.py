@@ -38,8 +38,6 @@ class SimpleGraphEditor():
         if not G:
             G = Graph()
         self.graph = G
-        self.notification = None
-        self.hold_notification = False
         self.multi_canvas = MultiCanvas(2,
                                         width=800, height=600,
                                         sync_image_data=True)
@@ -415,40 +413,6 @@ class SimpleGraphEditor():
         """Write the input string in the textbox of the editor."""
         self.text_output.value = text
 
-    def notify(self, caller, *args, **kwargs):
-        """
-        Callback for notifiactions comming from self.graph.
-
-        Redraw the graph unless notifications have been suspended via
-        :meth:`~:hold_notifications`.
-        If notifications have been suspended, the current notification is
-        kept in self.notification.
-
-        WARNING: Only the last notification is kept in memory when notification
-        are suspended.
-        """
-        if self.hold_notification:
-            self.notification = (caller, args, kwargs)
-        else:
-            self.output_text("Internal notification from: " + str(caller))
-            self._draw_graph()
-
-    def hold_notifications(self):
-        """Suspend notifications."""
-        self.hold_notification = True
-
-    def release_notifications(self):
-        """
-        Activate notifications.
-
-        To use after notifications have been suspended by
-        :meth:`~:hold_notification`.
-        """
-        self.hold_notification = False
-        if self.notification:
-            self.notify(*self.notification)
-            self.notification = None
-
     def add_vertex_at(self, x, y, name=None, color=None):
         """
         Add a vertex to a given position, color it and draw it.
@@ -456,7 +420,6 @@ class SimpleGraphEditor():
         If ``color`` is ``None``, use the current color of the color picker.
         """
 
-        self.hold_notifications()
         if name is None:
             name = self.graph.add_vertex()
             return_name = True
@@ -466,8 +429,6 @@ class SimpleGraphEditor():
 
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
-        self.release_notifications()
-        #        self._draw_vertex(name)
 
         # Return the vertex name if it was not specified,
         # as the graph add_vertex function:
