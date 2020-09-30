@@ -118,6 +118,14 @@ class SimpleGraphEditor():
         self.zoom_out_button.on_click(lambda x: (self.scale_layout(0.5),
                                                     self._draw_graph()))
 
+        # To clear the drawing
+        self.clear_drawing_button = Button(description="Clear",
+                                          disabled=False,
+                                          button_style='',
+                                          tooltip='Clear the drawing',
+                                          icon='')
+        self.clear_drawing_button.on_click(self.clear_drawing_button_callback)
+        
         # Selector to change layout
         self.layout_selector = Dropdown(
             options=[('', ''),
@@ -184,7 +192,7 @@ class SimpleGraphEditor():
                                       self.zoom_to_fit_button,
                                       self.zoom_in_button,
                                       self.zoom_out_button]
-                                  )]),
+                                       ), self.clear_drawing_button]),
                             HBox([self.color_selector,
                                   self.vertex_name_toggle]),
                             self.output])
@@ -1046,3 +1054,9 @@ class SimpleGraphEditor():
         elif self.dragging_canvas_from is not None:
             # We stop dragging the canvas
             self.dragging_canvas_from = None
+
+    def clear_drawing_button_callback(self, b):
+        """Callback for the clear_drawing_button."""
+        self.graph = Graph(0)
+        self._draw_graph()
+        self.output_text("Cleared drawing.")
