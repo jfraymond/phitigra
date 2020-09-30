@@ -1,4 +1,5 @@
-#Phitigra
+# Phitigra
+
 A graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
 <p><img width="300" src="docs/source/images/phtgr.gif"></p>
