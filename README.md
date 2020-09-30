@@ -1,15 +1,19 @@
-# Phitigra
-
-Phitigra is a graph editor widget for [SageMath](www.sagemath.org)
+#Phitigra
+A graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
+<p><img width="300" src="docs/source/images/phtgr.gif"></p>
 
 ## Features
 
   * adding and removing edges and vertices with the mouse
   * easy export of the drawn graph
-  * automatic update of the drawing when the graph changes
   * zoom in and zoom out
   * different layout options
+
+## Planned features
+
+  * automatic update of the drawing when the graph changes
+  * changes of the drawing attributes from external functions
 
 ## Dependencies
 
@@ -23,6 +27,8 @@ jupyter nbextension enable --py widgetsnbextension
 after you install ipywidgets (see the [documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html)).
 
 *Note:* until [that issue](https://github.com/martinRenou/ipycanvas/issues/117) with ipycanvas is resolved, please stick to version 0.4.7 of ipycanvas otherwise you will not be able to interact with the widget.
+
+Phitigra is not known to work with JupyterLab at the moment.
 
 ## Installation
 
@@ -40,8 +46,14 @@ That's it!
 ## Usage
 
 ```
-from phitigra import EditableGraph
-eg = EditableGraph(graphs.RandomGNP(10, 0.5))
-eg.show()
+from phitigra import SimpleGraphEditor
+e = SimpleGraphEditor(graphs.RandomGNP(10, 0.5))
+e.show()
 # Now you can play with the graph!
+```
+
+A copy of the currently drawn graph can be obtained with the `get_graph` function:
+```
+G = e.get_graph()
+# Now G is a copy of the graph drawn in editor e
 ```
