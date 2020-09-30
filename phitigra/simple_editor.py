@@ -28,6 +28,7 @@ from ipywidgets import (Label, VBox, HBox, Output, Button, Dropdown,
 from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
+from copy import copy
 
 from sage.graphs.all import Graph
 
@@ -215,6 +216,13 @@ class SimpleGraphEditor():
         self._draw_graph()
 
     # Getters and setters #
+
+    def get_graph(self):
+        """
+        Return a copy of the drawn graph.
+        """
+        return copy(self.graph)
+    
     def _get_radius(self, v):
         """
         Return the radius of a vertex.
