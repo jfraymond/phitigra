@@ -53,7 +53,7 @@ class SimpleGraphEditor():
         self.dragging_canvas_from = None
 
         self.drawing_parameters = {
-            'default_radius': 20,
+            'default_radius': 15,
             'default_vertex_color': None,
             # An arrow tip is defined by two values: the distance on the edge
             # taken by the arrow (arrow_tip_length) and the distance between
@@ -236,7 +236,10 @@ class SimpleGraphEditor():
         """Give the position (x,y) to vertex v."""
 
         pos = self.graph.get_pos()
+        if pos is None:
+            pos = dict()
         pos[v] = [x, y]
+        self.graph.set_pos(pos)
 
     def set_vertex_color(self, v, color=None):
         """
@@ -420,6 +423,10 @@ class SimpleGraphEditor():
         """
         Translate the vertices coordinates.
         """
+
+        if not self.graph():
+            return
+
         pos = self.graph.get_pos()
         assert pos is not None
 
