@@ -36,23 +36,13 @@ class SimpleGraphEditor():
     output = Output(layout={'border': '1px solid black'})
 
     def __init__(self, G=None, drawing_parameters=None):
-        # The two canvas where we draw
         if G is None:
             G = Graph(0)
         self.graph = G
-        self.multi_canvas = MultiCanvas(2,
-                                        width=800, height=600,
-                                        sync_image_data=True)
-        self.canvas = self.multi_canvas[0]    # The main layer
-        # The layer where we draw objects in interaction
-        # (moved vertices, etc.):
-        self.interact_canvas = self.multi_canvas[1]
-
-        self.selected_vertex = None
-        self.dragged_vertex = None
-        self.dragging_canvas_from = None
 
         self.drawing_parameters = {
+            'width': 600,
+            'height': 400,
             'default_radius': 15,
             'default_vertex_color': None,
             # An arrow tip is defined by two values: the distance on the edge
@@ -78,6 +68,20 @@ class SimpleGraphEditor():
 
         if drawing_parameters:
             self.drawing_parameters.update(drawing_parameters)
+
+        # The two canvas where we draw
+        self.multi_canvas = MultiCanvas(2,
+                                        width=self.drawing_parameters['width'],
+                                        height=self.drawing_parameters['height'],
+                                        sync_image_data=True)
+        self.canvas = self.multi_canvas[0]    # The main layer
+        # The layer where we draw objects in interaction
+        # (moved vertices, etc.):
+        self.interact_canvas = self.multi_canvas[1]
+
+        self.selected_vertex = None
+        self.dragged_vertex = None
+        self.dragging_canvas_from = None
 
         # Radii, positions and colors of the vertices on the drawing
         self.vertex_radii = dict()
@@ -578,7 +582,7 @@ class SimpleGraphEditor():
             if self.selected_vertex is not None and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
-    def _draw_edge(self, e, canvas=None, curve=None):
+    def _draw_edge(self, e, canvas=None, curve=None, color='black'):
         """
         Draw an edge.
 
@@ -599,6 +603,10 @@ class SimpleGraphEditor():
         WARNING:
         The function does not check that ``e`` is an edge of self.
         """
+
+        canvas.stroke_style = color
+        canvas.line_width = 3
+
         u, v, lab = e
         pos_u, pos_v = self.graph.get_pos()[u], self.graph.get_pos()[v]
         if canvas is None:
@@ -698,12 +706,9 @@ class SimpleGraphEditor():
         if edges is None:
             edges = self.graph.edge_iterator()
 
-        canvas.stroke_style = color
-        canvas.line_width = 3
-
         if not self.graph.allows_multiple_edges():
             for e in edges:
-                self._draw_edge(e, canvas=canvas)
+                self._draw_edge(e, canvas=canvas, color=color)
         else:
             # To count how many times an edge (u,v) has been drawn
             # so far:
@@ -747,7 +752,7 @@ class SimpleGraphEditor():
                         return factor * cur_mul * 15
 
         for e in edges:
-            self._draw_edge(e, canvas=canvas, curve=get_curve(e))
+            self._draw_edge(e, canvas=canvas, curve=get_curve(e), color=color)
 
     def _draw_graph(self):
         """
