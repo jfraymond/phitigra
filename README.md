@@ -58,3 +58,8 @@ A copy of the currently drawn graph can be obtained with the `get_graph` functio
 G = e.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
+
+## Known bugs
+
+  * with digraphs, multiple edges are not always all drawn (depending on parity)
+  * the graph is not redrawn when a vertex is slightly moved

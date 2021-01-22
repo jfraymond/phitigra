@@ -605,6 +605,7 @@ class SimpleGraphEditor():
         """
 
         canvas.stroke_style = color
+        canvas.fill_style = color
         canvas.line_width = 3
 
         u, v, lab = e
@@ -751,8 +752,8 @@ class SimpleGraphEditor():
                     else:
                         return factor * cur_mul * 15
 
-        for e in edges:
-            self._draw_edge(e, canvas=canvas, curve=get_curve(e), color=color)
+            for e in edges:
+                self._draw_edge(e, canvas=canvas, curve=get_curve(e), color=color)
 
     def _draw_graph(self):
         """
