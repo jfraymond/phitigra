@@ -27,8 +27,6 @@ jupyter nbextension enable --py widgetsnbextension
 ```
 after you install ipywidgets (see the [documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html)).
 
-*Note:* until [that issue](https://github.com/martinRenou/ipycanvas/issues/117) with ipycanvas is resolved, please stick to version 0.4.7 of ipycanvas otherwise you will not be able to interact with the widget.
-
 Phitigra is not known to work with JupyterLab at the moment.
 
 ## Installation
@@ -62,4 +60,3 @@ G = e.get_graph()
 ## Known bugs
 
   * with digraphs, multiple edges are not always all drawn (depending on parity)
-  * the graph is not redrawn when a vertex is slightly moved

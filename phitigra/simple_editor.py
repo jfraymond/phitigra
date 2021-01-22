@@ -1062,12 +1062,12 @@ class SimpleGraphEditor():
                 else:
                     self.selected_vertex = None
 
-                self._redraw_vertex(self.dragged_vertex)
-                self.dragged_vertex = None
+                # self._redraw_vertex(self.dragged_vertex)
             else:
                 self.selected_vertex = None
                 self.output_text("Done dragging vertex.")
-                self._draw_graph()
+
+            self._draw_graph()
             self.dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
             self.interact_canvas.clear()
