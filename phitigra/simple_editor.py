@@ -557,6 +557,7 @@ class SimpleGraphEditor():
                 else:
                     self._draw_edges((e for e in self.graph.edge_iterator(v)),
                                      canvas=canvas)
+                # Draw the neighbors:
                 self._draw_vertices((u
                                      for u in self.graph.neighbor_iterator(v)),
                                     canvas=canvas)
@@ -754,22 +755,25 @@ class SimpleGraphEditor():
         """Return the editor widget."""
         return self.widget
 
-    def _select_vertex(self, vertex=None):
+    def _select_vertex(self, vertex=None, redraw=True):
         """
         Select a vertex, or unselect the currently selected vertex.
 
         If `vertex` is `None`, unselect the currently selected vertex if any.
         No check is done that `vertex` indeed is a vertex of the graph.
+        If `redraw` is `False`, does not redraw the (un)selected vertex
+        (useful when the graph is going to be fully redrawn afterwards anyway).
         """
         
         previously_selected = self.selected_vertex
         self.selected_vertex = vertex
 
-        # Redraw what needs to be redrawn
-        if previously_selected is not None:
-            self._redraw_vertex(previously_selected, neighbors=False)
-        if self.selected_vertex is not None:
-            self._redraw_vertex(self.selected_vertex, neighbors=False)
+        if redraw:
+            # Redraw what needs to be redrawn
+            if previously_selected is not None:
+                self._redraw_vertex(previously_selected, neighbors=False)
+            if self.selected_vertex is not None:
+                self._redraw_vertex(self.selected_vertex, neighbors=False)
                                    
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
         """
@@ -785,7 +789,7 @@ class SimpleGraphEditor():
                 self.output_text("Added edge from " +
                                  str(self.selected_vertex) +
                                  " to " + str(on_vertex))
-                self.selected_vertex = None
+                self._select_vertex(redraw=False) # unselect
                 self._draw_graph()
                 return
             else:
@@ -805,10 +809,7 @@ class SimpleGraphEditor():
             if self.selected_vertex is not None:
                 # If a vertex is selected and we click on the background, we
                 # un-select it
-                self._redraw_vertex(self.selected_vertex,
-                                    highlight=False,
-                                    neighbors=False)    # Redraw without focus
-                self.selected_vertex = None
+                self._select_vertex() # Unselect (and redraw)
             else:
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
@@ -856,17 +857,16 @@ class SimpleGraphEditor():
             self.output_text("Constructing a walk - "
                              "click on the last vertex when you are done.")
             self.current_walk_vertex = clicked_node
-            self.selected_vertex = clicked_node
-            self._redraw_vertex(clicked_node)
+            self._select_vertex(clicked_node) # Select and redraw
             return
         if clicked_node == self.current_walk_vertex:
             self.output_text("Done constructing walk")
             del self.current_walk_vertex
-            self.selected_vertex = None
+            self._select_vertex(clicked_node, redraw=False) # Select
             self._draw_graph()
             return
         self.graph.add_edge(self.current_walk_vertex, clicked_node)
-        self.selected_vertex = clicked_node
+        self._select_vertex(clicked_node, redraw=False) # Select
         self._redraw_vertex(clicked_node, neighbors=True)
         self.current_walk_vertex = clicked_node
 
@@ -876,9 +876,10 @@ class SimpleGraphEditor():
             clicked_node = self.add_vertex_at(click_x, click_y)
 
         if not hasattr(self, 'current_star_center'):
-            # We start drawing a star
+            # We start drawing a star from the center
             self.current_star_center = clicked_node
             self.current_star_leaf = clicked_node
+            self._select_vertex(clicked_node)
             self.output_text('Star with center ' +
                              str(self.current_star_center) +
                              ': click on the leaves')
@@ -888,6 +889,7 @@ class SimpleGraphEditor():
             self.output_text("Done drawing star")
             del self.current_star_center
             del self.current_star_leaf
+            self._select_vertex(redraw=False)
             self._draw_graph()
         else:
             # We are drawing a star
@@ -912,7 +914,7 @@ class SimpleGraphEditor():
     def mouse_action_select_move(self, on_vertex, pixel_x, pixel_y):
         if on_vertex is None:
             self.dragging_canvas_from = [pixel_x, pixel_y]
-            self.selected_vertex = None
+            self._select_vertex(redraw=None) # Select and redraw
             return
         else:
             self.dragged_vertex = on_vertex
@@ -1052,18 +1054,18 @@ class SimpleGraphEditor():
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 if self.selected_vertex is None:
-                    self.selected_vertex = self.dragged_vertex
+                    self._select_vertex(self.dragged_vertex) # Select
                     self.output_text("Selected vertex " +
                                      str(self.selected_vertex))
                     self.color_selector.value = (
                         self.colors[self.selected_vertex])
                 else:
-                    self.selected_vertex = None
+                    self._select_vertex(redraw=None) # Unselect
 
                 self._redraw_vertex(self.dragged_vertex)
                 self.dragged_vertex = None
             else:
-                self.selected_vertex = None
+                self._select_vertex(redraw=None)
                 self.output_text("Done dragging vertex.")
                 self._draw_graph()
             self.dragged_vertex = None
@@ -1077,6 +1079,6 @@ class SimpleGraphEditor():
     def clear_drawing_button_callback(self, b):
         """Callback for the clear_drawing_button."""
         self.graph = Graph(0)
-        self.selected_vertex = None
+        self._select_vertex(redraw=None)
         self._draw_graph()
         self.output_text("Cleared drawing.")
