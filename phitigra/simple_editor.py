@@ -170,20 +170,14 @@ class SimpleGraphEditor():
                      'add clique',
                      'add star'],
             value='add vertex or edge',
-            #    layout={'width': 'max-content'}, # If the items' names are long
             description='Choose tool:',
             disabled=False
         )
-        # self.tool_selector = Dropdown(
-        #     options=['add vertex or edge',
-        #              'delete vertex or edge',
-        #              'add walk',
-        #              'add clique',
-        #              'add star'],
-        #     value='add vertex or edge',
-        #     description='Choose tool:',
-        # )
+        # We unselect any possibly selected vertex
+        # to avoid problems with the deletion tool
+        self.tool_selector.observe(lambda _:self._select_vertex())
         self.current_tool = lambda: self.tool_selector.value
+        
 
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
@@ -568,7 +562,7 @@ class SimpleGraphEditor():
                                     canvas=canvas)
 
             self._draw_vertex(v, canvas=canvas, color=color)
-            if self.selected_vertex is not None and highlight:
+            if self.selected_vertex==v and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
     def _draw_edge(self, e, canvas=None, curve=None):
@@ -760,6 +754,23 @@ class SimpleGraphEditor():
         """Return the editor widget."""
         return self.widget
 
+    def _select_vertex(self, vertex=None):
+        """
+        Select a vertex, or unselect the currently selected vertex.
+
+        If `vertex` is `None`, unselect the currently selected vertex if any.
+        No check is done that `vertex` indeed is a vertex of the graph.
+        """
+        
+        previously_selected = self.selected_vertex
+        self.selected_vertex = vertex
+
+        # Redraw what needs to be redrawn
+        if previously_selected is not None:
+            self._redraw_vertex(previously_selected, neighbors=False)
+        if self.selected_vertex is not None:
+            self._redraw_vertex(self.selected_vertex, neighbors=False)
+                                   
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
         """
         Function that is called after a click on ``on_vertex`` (if not None)
@@ -1066,5 +1077,6 @@ class SimpleGraphEditor():
     def clear_drawing_button_callback(self, b):
         """Callback for the clear_drawing_button."""
         self.graph = Graph(0)
+        self.selected_vertex = None
         self._draw_graph()
         self.output_text("Cleared drawing.")
