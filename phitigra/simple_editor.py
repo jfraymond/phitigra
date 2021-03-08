@@ -246,6 +246,9 @@ class SimpleGraphEditor():
         """Give the position (x,y) to vertex v."""
 
         pos = self.graph.get_pos()
+        if pos is None:
+            pos = dict()
+            self.graph.set_pos(pos)
         pos[v] = [x, y]
 
     def set_vertex_color(self, v, color=None):
