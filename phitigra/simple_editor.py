@@ -33,6 +33,7 @@ from copy import copy
 from sage.graphs.all import Graph
 
 class SimpleGraphEditor():
+    # Output widget used to see error messages (for debug)
     output = Output(layout={'border': '1px solid black'})
 
     def __init__(self, G=None, drawing_parameters=None):
@@ -40,19 +41,16 @@ class SimpleGraphEditor():
         if G is None:
             G = Graph(0)
         self.graph = G
-        self.multi_canvas = MultiCanvas(2,
-                                        width=800, height=600,
-                                        sync_image_data=True)
-        self.canvas = self.multi_canvas[0]    # The main layer
-        # The layer where we draw objects in interaction
-        # (moved vertices, etc.):
-        self.interact_canvas = self.multi_canvas[1]
 
-        self.selected_vertex = None
-        self.dragged_vertex = None
-        self.dragging_canvas_from = None
+        ## Define the default drawing parameters and update them
+        ## with the provided parameters (if any)
 
+        # Default parameters
         self.drawing_parameters = {
+            # Sizes of the widget
+            'width': 800,
+            'height':200,
+            # Defaults for drawing vertices
             'default_radius': 20,
             'default_vertex_color': None,
             # An arrow tip is defined by two values: the distance on the edge
@@ -60,9 +58,11 @@ class SimpleGraphEditor():
             # the two symmetric angles of the arrow (arrow_tip_height is half
             # this value).
             'arrow_tip_width': 15,
-            'arrow_tip_height': 8
+            'arrow_tip_height': 8,
+            'draw_arrow': None # To be defined just below
         }
 
+        # The default arrow for directed edges
         def draw_arrow(canvas):
             """Draw an arrow at with tip at (0,0), pointing to the left."""
             a_x = self.drawing_parameters['arrow_tip_width']
@@ -74,10 +74,27 @@ class SimpleGraphEditor():
             canvas.line_to(a_x, -a_y)
             canvas.move_to(0, 0)
             canvas.fill()
+
         self.drawing_parameters['draw_arrow'] = draw_arrow
 
+        # If drawing parameters have been provided, we take them into account
         if drawing_parameters:
             self.drawing_parameters.update(drawing_parameters)
+
+        # The canvas where to draw
+        self.multi_canvas = MultiCanvas(2,
+                                        width=self.drawing_parameters['width'],
+                                        height=self.drawing_parameters['height'],
+                                        sync_image_data=True)
+        # It consists in two layers
+        self.canvas = self.multi_canvas[0]    # The main layer
+        # The layer where we draw objects in interaction
+        # (moved vertices, etc.):
+        self.interact_canvas = self.multi_canvas[1]
+
+        self.selected_vertex = None
+        self.dragged_vertex = None
+        self.dragging_canvas_from = None
 
         # Radii, positions and colors of the vertices on the drawing
         self.vertex_radii = dict()
@@ -89,9 +106,9 @@ class SimpleGraphEditor():
         # When the mouse leaves the canvas, we free the node that
         # was being dragged, if any:
         self.interact_canvas.on_mouse_out(self.mouse_up_handler)
-        self.dragged_vertex = None
 
-        # The widgets of the graph editor (besides the canvas):
+        ## The widgets of the graph editor (besides the canvas):
+
         # Where to display messages:
         self.text_output = Label("Graph Editor")
 
@@ -173,12 +190,12 @@ class SimpleGraphEditor():
             description='Choose tool:',
             disabled=False
         )
-        # We unselect any possibly selected vertex
-        # to avoid problems with the deletion tool
+        # We unselect any possibly selected vertex when the currrent
+        # tool is changes, in order to avoid problems with the deletion tool
         self.tool_selector.observe(lambda _:self._select_vertex())
         self.current_tool = lambda: self.tool_selector.value
         
-
+        # The final widget, which contains all the parts defined above
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
                             HBox([self.tool_selector,
@@ -192,7 +209,6 @@ class SimpleGraphEditor():
                                   self.vertex_name_toggle]),
                             self.output])
 
-#    def _prepare(self):
         # We prepare the graph data
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
@@ -209,7 +225,7 @@ class SimpleGraphEditor():
 
         self._draw_graph()
 
-    # Getters and setters #
+    # Getters and setters
 
     def get_graph(self):
         """
