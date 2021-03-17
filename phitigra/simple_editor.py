@@ -937,7 +937,7 @@ class SimpleGraphEditor():
     def mouse_action_select_move(self, on_vertex, pixel_x, pixel_y):
         if on_vertex is None:
             self.dragging_canvas_from = [pixel_x, pixel_y]
-            self._select_vertex(redraw=None) # Select and redraw
+            self._select_vertex() # Unselect
             return
         else:
             self.dragged_vertex = on_vertex
@@ -1088,7 +1088,7 @@ class SimpleGraphEditor():
                 self._redraw_vertex(self.dragged_vertex)
                 self.dragged_vertex = None
             else:
-                self._select_vertex(redraw=None)
+                self._select_vertex(self.dragged_vertex, redraw=None)
                 self.output_text("Done dragging vertex.")
                 self._draw_graph()
             self.dragged_vertex = None
