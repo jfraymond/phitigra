@@ -786,6 +786,12 @@ class SimpleGraphEditor():
         
         previously_selected = self.selected_vertex
         self.selected_vertex = vertex
+        self.output_text("Selected vertex: " +
+                         str(self.selected_vertex))
+        if vertex is not None:
+            # The color of the selected vertex becomes the default color
+            self.color_selector.value = (
+                self.colors[self.selected_vertex])
 
         if redraw:
             # Redraw what needs to be redrawn
