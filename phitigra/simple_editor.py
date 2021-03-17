@@ -813,14 +813,15 @@ class SimpleGraphEditor():
                 return
             else:
                 #### TODO: merge selection and vertice addition tools
-                self.dragged_vertex = on_vertex
+                self.selected_vertex = on_vertex
+                # self.dragged_vertex = on_vertex
                 # self.output_text("Selected vertex " +
                 #                  str(self.selected_vertex))
                 # self.color_selector.value = (
                 #     self.colors[self.selected_vertex])
-                # self._redraw_vertex(self.selected_vertex,
-                #                     highlight=True,
-                #                     neighbors=False)    # Redraw with focus
+                self._redraw_vertex(self.selected_vertex,
+                                     highlight=True,
+                                     neighbors=False)    # Redraw with focus
         else:
             # In this branch, the click was not an an existing node
 
