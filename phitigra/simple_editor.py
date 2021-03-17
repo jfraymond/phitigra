@@ -806,30 +806,27 @@ class SimpleGraphEditor():
         when the tool is 'add vertex or edge'.
         """
         if on_vertex is not None:
-            if (self.selected_vertex is not None and
-                    self.selected_vertex != on_vertex):
-                # A node was selected and we clicked on a new node:
-                # we link it to the previously selected vertex
-                self.graph.add_edge(self.selected_vertex, on_vertex)
-                self.output_text("Added edge from " +
-                                 str(self.selected_vertex) +
-                                 " to " + str(on_vertex))
-                self._select_vertex(redraw=False) # unselect
-                self._draw_graph()
-                return
+            # The click is done on an existing vertex
+            
+            if self.selected_vertex is not None:
+                if self.selected_vertex == on_vertex:
+                    # The click is done on the selected vertex
+                    self._select_vertex() # Unselect
+                else:
+                    # A vertex was selected and we clicked on a new one:
+                    # we link it to the previously selected vertex
+                    self.graph.add_edge(self.selected_vertex, on_vertex)
+                    self.output_text("Added edge from " +
+                                     str(self.selected_vertex) +
+                                     " to " + str(on_vertex))
+                    self._select_vertex(redraw=False) # Unselect
+                    self._draw_graph()
+                    return
             else:
-                #### TODO: merge selection and vertice addition tools
-                self.selected_vertex = on_vertex
-                # self.dragged_vertex = on_vertex
-                # self.output_text("Selected vertex " +
-                #                  str(self.selected_vertex))
-                # self.color_selector.value = (
-                #     self.colors[self.selected_vertex])
-                self._redraw_vertex(self.selected_vertex,
-                                     highlight=True,
-                                     neighbors=False)    # Redraw with focus
+                # No vertex was selected: select the clicked vertex
+                self._select_vertex(on_vertex)
         else:
-            # In this branch, the click was not an an existing node
+            # The click is not done on an existing vertex
 
             self.output_text("Click was not on a vertex")
             if self.selected_vertex is not None:
