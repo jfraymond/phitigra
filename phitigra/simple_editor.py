@@ -250,6 +250,19 @@ class SimpleGraphEditor():
         return self.vertex_radii.get(v,
                                      self.drawing_parameters['default_radius'])
 
+    def _get_vertex_pos(self, v):
+        '''
+        Return the vertex coordinates on the canvas.
+
+        These coordinates are obtained from the coordinates from
+        ``Graph.get_pos`` by applying the transformations stored in
+        ``self._transform_matrix``.
+        '''
+        x, y = self.graph.get_pos()[v]
+        
+        m = self._transform_matrix * Matrix([[x],[y],[1]])
+        return m[0][0], m[0][1] # New x and y
+        
     def _set_vertex_pos(self, v, x, y):
         """Give the position (x,y) to vertex v."""
 
