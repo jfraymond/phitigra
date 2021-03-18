@@ -559,7 +559,7 @@ class SimpleGraphEditor():
         If ``canvas`` is ``None``, the default drawing canvas (``self.canvas``)
         is used.
         """
-        x, y = self.graph.get_pos()[v]
+        x, y = self._get_vertex_pos(v)
         if canvas is None:
             canvas = self.canvas
         if color is None:
@@ -599,7 +599,7 @@ class SimpleGraphEditor():
     def _highlight_vertex(self, v, canvas=None, color=None):
         """Set the focus on a vertex."""
 
-        x, y = self.graph.get_pos()[v]
+        x, y = self._get_vertex_pos(v)
         if canvas is None:
             canvas = self.canvas
         if color is None:
@@ -687,7 +687,9 @@ class SimpleGraphEditor():
         The function does not check that ``e`` is an edge of self.
         """
         u, v, lab = e
-        pos_u, pos_v = self.graph.get_pos()[u], self.graph.get_pos()[v]
+        pos_u = self._get_vertex_pos(u)
+        pos_v = self._get_vertex_pos(v)
+
         if canvas is None:
             canvas = self.canvas
 
