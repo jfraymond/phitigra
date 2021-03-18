@@ -96,9 +96,6 @@ class SimpleGraphEditor():
         self.dragged_vertex = None
         self.dragging_canvas_from = None
 
-        # Radii, positions and colors of the vertices on the drawing
-        self.vertex_radii = dict()
-
         # Registering callbacks for mouse interaction on the canvas
         self.interact_canvas.on_mouse_down(self.mouse_down_handler)
         self.interact_canvas.on_mouse_move(self.mouse_move_handler)
@@ -210,6 +207,17 @@ class SimpleGraphEditor():
                             self.output])
 
         # We prepare the graph data
+        # Radii, positions and colors of the vertices on the drawing
+        self.vertex_radii = dict()
+
+        # The transformation matrix recording all transformations
+        # done to the graph drawing
+        # There is a "-1" because when drawing, the y-axis goes downwards
+        # see https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
+        self._transform_matrix = Matrix([[1, 0, 0],
+                                         [0, -1, 0],
+                                         [0, 0, 1]])
+
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
             self.random_layout()
@@ -351,6 +359,65 @@ class SimpleGraphEditor():
                 # Change the color of the selected vertex
                 self.set_vertex_color(self.selected_vertex, new_color)
                 self._redraw_vertex(self.selected_vertex, neighbors=False)
+
+    def _normalize_layout(self):
+        """
+        Update the transformation matrix so that the graph drawing fits well
+        the canvas.
+
+        ``x`` and ``y`` coordinates are scaled by the same factor and the
+        graph is centered.
+        """
+
+        if not self.graph:
+            # There is nothing to do with the one vertex graph
+            return
+
+        pos = self.graph.get_pos()
+        assert pos is not None
+
+        radius = self.drawing_parameters['default_radius'] + 5
+
+        # Compute min/max, keeping some slack around them so that we can
+        # see the vertices shapes
+        x_min = min(pos[v][0] for v in self.graph.vertex_iterator()) - radius
+        x_max = max(pos[v][0] for v in self.graph.vertex_iterator()) + radius
+        y_min = min(pos[v][1] for v in self.graph.vertex_iterator()) - radius
+        y_max = max(pos[v][1] for v in self.graph.vertex_iterator()) + radius
+
+        x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
+        y_range = max(y_max - y_min, 0.1)
+
+        # Some computations to decide of the scaling factor in order to
+        # simultaneously fill the canvas on at least one axis range and
+        # keep proportions, and to center the image
+        factor_x = self.multi_canvas.width / x_range
+        factor_y = self.multi_canvas.height / y_range
+
+        if factor_x < factor_y:
+            factor = factor_x
+            x_shift = 0
+            y_shift = (self.multi_canvas.height - y_range * factor) / 2
+        else:
+            factor = factor_y
+            x_shift = (self.multi_canvas.width - x_range * factor) / 2
+            y_shift = 0
+
+        # See https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
+        translate_back_to_origin = Matrix([[1, 0, -xmin],
+                                           [0, 1, -ymin],
+                                           [0, 0, 1]])
+        scale_to_canvas_size = Matrix([[factor, 0, 0],
+                                       [0, factor, 0, 0],
+                                       [0, 0, 1]])
+        translate_to_center = Matrix([[1, 0, x_shift],
+                                      [0, 1, y_shift],
+                                      [0, 0, 1]])
+        
+        self._transformation_matrix = (translate_to_center
+                                       * scale_to_canvas_size
+                                       * translate_back_to_origin
+                                       * self._transformation_matrix)
 
     def normalize_layout(self, flip_y=False):
         """
