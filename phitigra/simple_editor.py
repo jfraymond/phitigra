@@ -123,14 +123,14 @@ class SimpleGraphEditor():
                               button_style='',
                               tooltip='Zoom in',
                               icon='')
-        self.zoom_in_button.on_click(lambda x: (self.scale_layout(1.5),
+        self.zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
                                                     self._draw_graph()))
         self.zoom_out_button = Button(description="Zoom -",
                               disabled=False,
                               button_style='',
                               tooltip='Zoom out',
                               icon='')
-        self.zoom_out_button.on_click(lambda x: (self.scale_layout(0.5),
+        self.zoom_out_button.on_click(lambda x: (self._scale_layout(0.5),
                                                     self._draw_graph()))
 
         # To clear the drawing
@@ -428,7 +428,7 @@ class SimpleGraphEditor():
                                            [0, 1, -ymin],
                                            [0, 0, 1]])
         scale_to_canvas_size = Matrix([[factor, 0, 0],
-                                       [0, factor, 0, 0],
+                                       [0, factor, 0],
                                        [0, 0, 1]])
         translate_to_center = Matrix([[1, 0, x_shift],
                                       [0, 1, y_shift],
@@ -438,41 +438,33 @@ class SimpleGraphEditor():
                                        * scale_to_canvas_size
                                        * translate_back_to_origin)
 
-    def scale_layout(self, ratio):
+    def _scale_layout(self, ratio):
         """
         Rescale the vertices coordinates around the center of the image and
         with respect to the given ratio.
+
+        This is done by updating the transform matrix.
         """
-        pos = self.graph.get_pos()
-        assert pos is not None
 
-        center_x = self.multi_canvas.width / 2
-        center_y = self.multi_canvas.height / 2
-        shift_x = center_x * (1 - ratio)
-        shift_y = center_y * (1 - ratio)
+        x_shift = self.multi_canvas.width * (1 - ratio) / 2
+        y_shift = self.multi_canvas.height * (1 - ratio) / 2
 
-        new_pos = dict()
-        for v in self.graph.vertex_iterator():
-            x, y = pos[v]
-            new_x = x * ratio + shift_x
-            new_y = y * ratio + shift_y
-            new_pos[v] = [new_x, new_y]
-        self.graph.set_pos(new_pos)
+        scale_and_center = Matrix([[ratio, 0, x_shift],
+                                   [0, ratio, y_shift],
+                                   [0, 0, 1]])
+        self._transform_matrix = scale_and_center * self._transform_matrix
 
-    def translate_layout(self, translate):
+    def _translate_layout(self, translate):
         """
         Translate the vertices coordinates.
+
+        This is done by updating the transform matrix.
         """
-        pos = self.graph.get_pos()
-        assert pos is not None
 
-        t_x, t_y = translate
-        new_pos = dict()
-        for v in self.graph.vertex_iterator():
-            x, y = pos[v]
-            new_pos[v] = [x + t_x, y + t_y]
-        self.graph.set_pos(new_pos)
-
+        x_shift, y_shift = translate
+        scale_and_center = Matrix([[1, 0, x_shift],
+                                   [0, 1, y_shift],
+                                   [0, 0, 1]])
         
     def output_text(self, text):
         """Write the input string in the textbox of the editor."""
@@ -1095,7 +1087,7 @@ class SimpleGraphEditor():
         elif self.dragging_canvas_from is not None:
             translation = [pixel_x - self.dragging_canvas_from[0],
                            pixel_y - self.dragging_canvas_from[1]]
-            self.translate_layout(translation)
+            self._translate_layout(translation)
             self.dragging_canvas_from = [pixel_x, pixel_y]
             self._draw_graph()
 
