@@ -116,7 +116,7 @@ class SimpleGraphEditor():
                                          tooltip=('Rescale so that the graph '
                                                   'fills the canvas'),
                                          icon='')
-        self.zoom_to_fit_button.on_click(lambda x: (self.normalize_layout(),
+        self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
                                                     self._draw_graph()))
         self.zoom_in_button = Button(description="Zoom +",
                               disabled=False,
@@ -220,9 +220,11 @@ class SimpleGraphEditor():
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
-            self.random_layout()
-        else:
-            self.normalize_layout(flip_y=True)
+            self._random_layout()
+
+        # Update the transform matrix so that the vertex position
+        # fit the canvas
+        self._normalize_layout()
 
         if self.drawing_parameters['default_vertex_color'] is None:
             self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
@@ -286,14 +288,18 @@ class SimpleGraphEditor():
             self.colors[v] = color
 
     # Layout functions #
-    def random_layout(self):
-        """Randomly pick positions for the vertices."""
-        radius = self.drawing_parameters['default_radius']
-        rnd_pos = {v: (randint(radius, self.canvas.width - radius - 1),
-                       randint(radius, self.canvas.height - radius - 1))
+    def _random_layout(self):
+        """
+        Randomly pick and set positions for the vertices.
+
+        Coordinates are integers chosen between 0 and the order of the
+        graph.
+        """
+        n = self.graph.order()
+        rnd_pos = {v: (randint(0, n),
+                       randint(0, n))
                    for v in self.graph.vertex_iterator()}
         self.graph.set_pos(rnd_pos)
-        self.normalize_layout()
 
     @output.capture()
     def layout_selector_callback(self, change):
@@ -328,7 +334,8 @@ class SimpleGraphEditor():
             return
 
         if new_layout == 'random':
-            self.random_layout()
+            self._random_layout()
+            self._normalize_layout()
             self._draw_graph()
             self.output_text('Done updating layout.')
             return
@@ -352,7 +359,7 @@ class SimpleGraphEditor():
 
         self.graph.layout(**layout_kw)
 
-        self.normalize_layout()
+        self._normalize_layout()
         self.output_text('Done updating layout.')
         self._draw_graph()
 
@@ -429,64 +436,7 @@ class SimpleGraphEditor():
         
         self._transformation_matrix = (translate_to_center
                                        * scale_to_canvas_size
-                                       * translate_back_to_origin
-                                       * self._transformation_matrix)
-
-    def normalize_layout(self, flip_y=False):
-        """
-        Shift and rescale the vertices coordinates so that they fit in the
-        canvas.
-
-        ``x`` and ``y`` coordinates are scaled by the same factor and the
-        graph is centered. If ``flip_y`` is ``False``, the ``y`` coordinates
-        is reversed. This is useful for graphs that come with predefined
-        vertex positions with the ``y`` axis pointing upwards.
-        """
-
-        if not self.graph:
-            # There is nothing to do with the one vertex graph
-            return
-        
-        pos = self.graph.get_pos()
-        assert pos is not None
-
-        x_min = min(pos[v][0] for v in self.graph.vertex_iterator())
-        x_max = max(pos[v][0] for v in self.graph.vertex_iterator())
-        y_min = min(pos[v][1] for v in self.graph.vertex_iterator())
-        y_max = max(pos[v][1] for v in self.graph.vertex_iterator())
-
-        x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
-        y_range = max(y_max - y_min, 0.1)
-
-        radius = self.drawing_parameters['default_radius'] + 5
-
-        # Some computations to scale x's and y's with the same factor,
-        # so that proportions are kept
-        factor_x = (self.multi_canvas.width - 2*radius) / x_range
-        factor_y = (self.multi_canvas.height - 2*radius) / y_range
-
-        if factor_x < factor_y:
-            factor = factor_x
-            x_shift = radius
-            y_shift = (self.multi_canvas.height - y_range * factor_x) / 2
-        else:
-            factor = factor_y
-            x_shift = (self.multi_canvas.width - x_range * factor_y) / 2
-            y_shift = radius
-
-        new_pos = dict()
-        for v in self.graph.vertex_iterator():
-            x, y = pos[v]
-            new_x = (x - x_min) * factor + x_shift
-            if flip_y:
-                new_y = (self.multi_canvas.height -
-                         ((y - y_min) * factor + y_shift))
-            else:
-                new_y = (y - y_min) * factor + y_shift
-
-            new_pos[v] = [new_x, new_y]
-
-        self.graph.set_pos(new_pos)
+                                       * translate_back_to_origin)
 
     def scale_layout(self, ratio):
         """
@@ -676,8 +626,7 @@ class SimpleGraphEditor():
         INPUT:
 
         - ``e`` -- edge; of the form (first_end, second_end, label); the
-          label is ignored; the positions of the endpoints of ``e`` are
-          found in ``self.graph.get_pos()``
+          label is ignored;
         - ``canvas`` -- canvas where to draw the edge (default: ``None``);
           with the default value, ``self.canvas`` is used
         - ``curve`` -- the curvature of the edge (default: ``None``); with
