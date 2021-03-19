@@ -31,6 +31,7 @@ from itertools import chain
 from copy import copy
 
 from sage.graphs.all import Graph
+from sage.matrix.constructor import matrix
 
 class SimpleGraphEditor():
     # Output widget used to see error messages (for debug)
@@ -214,7 +215,7 @@ class SimpleGraphEditor():
         # done to the graph drawing
         # There is a "-1" because when drawing, the y-axis goes downwards
         # see https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
-        self._transform_matrix = Matrix([[1, 0, 0],
+        self._transform_matrix = matrix([[1, 0, 0],
                                          [0, -1, 0],
                                          [0, 0, 1]])
 
@@ -233,6 +234,9 @@ class SimpleGraphEditor():
             self.colors = {v: self.drawing_parameters['default_vertex_color']
                            for v in self.graph.vertex_iterator()}
 
+        print("coucou !")
+        print(str(self.graph.get_pos()))
+        print(str(self._transform_matrix))
         self._draw_graph()
 
     # Getters and setters
@@ -258,12 +262,19 @@ class SimpleGraphEditor():
 
         These coordinates are obtained from the coordinates from
         ``Graph.get_pos`` by applying the transformations stored in
-        ``self._transform_matrix``.
+        ``self._transform_matrix`` and casting to integer.
+
+        .. WARNING::
+
+            The output coordinates do not necessarily belong to the canvas
+            range. They are just the coordinates of ``get_pos`` translated
+            and scaled using ``self.transform_matrix``, so they can be
+            negative or over the canvas width/height.
         '''
         x, y = self.graph.get_pos()[v]
         
-        m = self._transform_matrix * Matrix([[x],[y],[1]])
-        return m[0][0], m[0][1] # New x and y
+        m = self._transform_matrix * matrix([[x],[y],[1]])
+        return int(m[0][0]), int(m[1][0]) # New x and y
         
     def _set_vertex_pos(self, v, x, y):
         """Give the position (x,y) to vertex v."""
@@ -424,19 +435,19 @@ class SimpleGraphEditor():
             y_shift = 0
 
         # See https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
-        translate_back_to_origin = Matrix([[1, 0, -xmin],
-                                           [0, 1, -ymin],
+        translate_back_to_origin = matrix([[1, 0, -x_min],
+                                           [0, 1, -y_min],
                                            [0, 0, 1]])
-        scale_to_canvas_size = Matrix([[factor, 0, 0],
+        scale_to_canvas_size = matrix([[factor, 0, 0],
                                        [0, factor, 0],
                                        [0, 0, 1]])
-        translate_to_center = Matrix([[1, 0, x_shift],
+        translate_to_center = matrix([[1, 0, x_shift],
                                       [0, 1, y_shift],
                                       [0, 0, 1]])
         
-        self._transformation_matrix = (translate_to_center
-                                       * scale_to_canvas_size
-                                       * translate_back_to_origin)
+        self._transform_matrix = (translate_to_center
+                                  * scale_to_canvas_size
+                                  * translate_back_to_origin)
 
     def _scale_layout(self, ratio):
         """
@@ -449,7 +460,7 @@ class SimpleGraphEditor():
         x_shift = self.multi_canvas.width * (1 - ratio) / 2
         y_shift = self.multi_canvas.height * (1 - ratio) / 2
 
-        scale_and_center = Matrix([[ratio, 0, x_shift],
+        scale_and_center = matrix([[ratio, 0, x_shift],
                                    [0, ratio, y_shift],
                                    [0, 0, 1]])
         self._transform_matrix = scale_and_center * self._transform_matrix
@@ -462,7 +473,7 @@ class SimpleGraphEditor():
         """
 
         x_shift, y_shift = translate
-        scale_and_center = Matrix([[1, 0, x_shift],
+        scale_and_center = matrix([[1, 0, x_shift],
                                    [0, 1, y_shift],
                                    [0, 0, 1]])
         
