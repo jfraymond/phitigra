@@ -268,7 +268,7 @@ class SimpleGraphEditor():
 
             The output coordinates do not necessarily belong to the canvas
             range. They are just the coordinates of ``get_pos`` translated
-            and scaled using ``self.transform_matrix``, so they can be
+            and scaled using ``self._transform_matrix``, so they can be
             negative or over the canvas width/height.
         '''
         x, y = self.graph.get_pos()[v]
@@ -445,10 +445,13 @@ class SimpleGraphEditor():
                                       [0, 1, y_shift],
                                       [0, 0, 1]])
         
-        self._transform_matrix = (translate_to_center
-                                  * scale_to_canvas_size
-                                  * translate_back_to_origin)
-
+        # self._transform_matrix = (translate_to_center
+        #                          * scale_to_canvas_size
+        #                          * translate_back_to_origin)
+        self._transform_matrix = matrix([[factor, 0     , -x_min + x_shift],
+                                         [0     , factor, -y_min + y_shift],
+                                         [0     , 0     , 1]])
+        
     def _scale_layout(self, ratio):
         """
         Rescale the vertices coordinates around the center of the image and
@@ -460,22 +463,23 @@ class SimpleGraphEditor():
         x_shift = self.multi_canvas.width * (1 - ratio) / 2
         y_shift = self.multi_canvas.height * (1 - ratio) / 2
 
-        scale_and_center = matrix([[ratio, 0, x_shift],
-                                   [0, ratio, y_shift],
-                                   [0, 0, 1]])
+        scale_and_center = matrix([[ratio, 0    , x_shift],
+                                   [0    , ratio, y_shift],
+                                   [0    , 0    , 1]])
         self._transform_matrix = scale_and_center * self._transform_matrix
 
-    def _translate_layout(self, translate):
+    def _translate_layout(self, vec):
         """
         Translate the vertices coordinates.
 
         This is done by updating the transform matrix.
         """
 
-        x_shift, y_shift = translate
-        scale_and_center = matrix([[1, 0, x_shift],
-                                   [0, 1, y_shift],
-                                   [0, 0, 1]])
+        x_shift, y_shift = vec
+        translate = matrix([[1, 0, x_shift],
+                            [0, 1, y_shift],
+                            [0, 0, 1]])
+        self._transform_matrix = translate * self._transform_matrix
         
     def output_text(self, text):
         """Write the input string in the textbox of the editor."""
@@ -1011,7 +1015,7 @@ class SimpleGraphEditor():
         clicked_node = None
         pos = self.graph.get_pos()
         for v in self.graph.vertex_iterator():
-            v_x, v_y = pos[v]
+            v_x, v_y = self._get_vertex_pos(v)
             radius = self._get_radius(v)
 
             if (abs(click_x - v_x) < radius and
