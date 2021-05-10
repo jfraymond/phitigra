@@ -109,6 +109,8 @@ class SimpleGraphEditor():
 
         # Where to display messages:
         self.text_output = Label("Graph Editor")
+        # Data about the graph:
+        self.text_graph = Label("")
 
         # Button to rescale:
         self.zoom_to_fit_button = Button(description="Zoom to fit",
@@ -196,6 +198,7 @@ class SimpleGraphEditor():
         # The final widget, which contains all the parts defined above
         self.widget = VBox([self.multi_canvas,
                             self.text_output,
+                            self.text_graph,
                             HBox([self.tool_selector,
                                   VBox([
                                       self.layout_selector,
@@ -238,6 +241,7 @@ class SimpleGraphEditor():
         print(str(self.graph.get_pos()))
         print(str(self._transform_matrix))
         self._draw_graph()
+        self.text_graph_update()
 
     # Getters and setters
 
@@ -485,6 +489,12 @@ class SimpleGraphEditor():
         """Write the input string in the textbox of the editor."""
         self.text_output.value = text
 
+    def text_graph_update(self):
+        """Update the caption with data about the graph."""
+        self.text_graph.value = ("Graph on " + str(self.graph.order())
+                                 + " vertices and " + str(self.graph.num_edges())
+                                 + " edges.")
+        
     def add_vertex_at(self, x, y, name=None, color=None):
         """
         Add a vertex to a given position, color it and draw it.
@@ -503,6 +513,8 @@ class SimpleGraphEditor():
         self.set_vertex_color(name)
 
         self._draw_vertex(name)
+        self.text_graph_update()
+        
         # Return the vertex name if it was not specified,
         # as the graph add_vertex function:
         if return_name:
@@ -837,7 +849,7 @@ class SimpleGraphEditor():
                 self._redraw_vertex(previously_selected, neighbors=False)
             if self.selected_vertex is not None:
                 self._redraw_vertex(self.selected_vertex, neighbors=False)
-                                   
+   
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
         """
         Function that is called after a click on ``on_vertex`` (if not None)
@@ -859,6 +871,7 @@ class SimpleGraphEditor():
                                      " to " + str(on_vertex))
                     self._select_vertex(redraw=False) # Unselect
                     self._draw_graph()
+                    self.text_graph_update()
                     return
             else:
                 # No vertex was selected: select the clicked vertex
@@ -874,7 +887,8 @@ class SimpleGraphEditor():
             else:
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
-
+        self.text_graph_update()
+                
     def _clean_tools(self):
         """
         Forget that some drawing is taking place.
@@ -907,6 +921,7 @@ class SimpleGraphEditor():
             self.graph.add_edge(clicked_node, u)
         self.current_clique.append(clicked_node)
         self._draw_graph()
+        self.text_graph_update()
 
     def mouse_action_add_walk(self, clicked_node, click_x, click_y):
         if clicked_node is None:
@@ -919,18 +934,23 @@ class SimpleGraphEditor():
                              "click on the last vertex when you are done.")
             self.current_walk_vertex = clicked_node
             self._select_vertex(clicked_node) # Select and redraw
+            self.text_graph_update()
             return
+        
         if clicked_node == self.current_walk_vertex:
             self.output_text("Done constructing walk")
             del self.current_walk_vertex
             self._select_vertex(clicked_node, redraw=False) # Select
             self._draw_graph()
+            self.text_graph_update()
             return
+        
         self.graph.add_edge(self.current_walk_vertex, clicked_node)
         self._select_vertex(clicked_node, redraw=False) # Select
         self._redraw_vertex(clicked_node, neighbors=True)
         self.current_walk_vertex = clicked_node
-
+        self.text_graph_update()
+        
     def mouse_action_add_star(self, clicked_node, click_x, click_y):
         if clicked_node is None:
             # Click on the canvas: we add a vertex
@@ -961,6 +981,7 @@ class SimpleGraphEditor():
             self.output_text('Star with center ' +
                              str(self.current_star_center) +
                              ': click on the leaves')
+        self.text_graph_update()
 
     def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
 
@@ -971,6 +992,7 @@ class SimpleGraphEditor():
         else:
             return
         self._draw_graph()
+        self.text_graph_update()
 
     def mouse_action_select_move(self, on_vertex, pixel_x, pixel_y):
         if on_vertex is None:
