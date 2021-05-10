@@ -281,13 +281,22 @@ class SimpleGraphEditor():
         return int(m[0][0]), int(m[1][0]) # New x and y
         
     def _set_vertex_pos(self, v, x, y):
-        """Give the position (x,y) to vertex v."""
+        """
+        Set the position of a vertex.
+
+        The arguments ``x`` and ``y`` denote the position on the canvas
+        (in pixel) where the vertex ``v`` should be placed.
+        These values are translated and scaled using the inverse of 
+        ``self._transform_matrix`` before being stored.
+        """ 
 
         pos = self.graph.get_pos()
         if pos is None:
             pos = dict()
             self.graph.set_pos(pos)
-        pos[v] = [x, y]
+
+        m = self._transform_matrix.inverse() * matrix([[x],[y],[1]])
+        pos[v] = [m[0][0], m[1][0]]
 
     def set_vertex_color(self, v, color=None):
         """
@@ -509,6 +518,7 @@ class SimpleGraphEditor():
             self.graph.add_vertex(name)
             return_name = False
 
+        
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
 
