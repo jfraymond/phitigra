@@ -1045,7 +1045,7 @@ class SimpleGraphEditor():
         self.initial_click_pos = (click_x, click_y)
         # Find the clicked node (if any):
         clicked_node = None
-        pos = self.graph.get_pos()
+
         for v in self.graph.vertex_iterator():
             v_x, v_y = self._get_vertex_pos(v)
             radius = self._get_radius(v)
@@ -1074,25 +1074,27 @@ class SimpleGraphEditor():
             # closest_dist = infinity:
             closest_dist = max(self.canvas.width, self.canvas.height) + 1
             for v in self.graph.vertex_iterator():
-                if click_x < pos[v][0]:
+                # Check if the click is on edge `vu` with v = leftmost vertex
+                v_x, v_y = self._get_vertex_pos(v)
+                if click_x < v_x:
                     continue
                 for u in self.graph.neighbor_iterator(v):
-                    p_v, p_u = pos[v], pos[u]
+                    u_x, u_y = self._get_vertex_pos(u)
 
-                    if p_u[0] < click_x:
+                    if u_x < click_x:
                         continue
-                    if (click_y > pos[v][1] and
-                            click_y > pos[u][1]):
+                    if (click_y > v_y and
+                            click_y > u_y):
                         continue
-                    if (click_y < pos[v][1] and
-                            click_y < pos[u][1]):
+                    if (click_y < v_y and
+                            click_y < u_y):
                         continue
-                    delta_y = p_u[1] - p_v[1]
-                    delta_x = p_u[0] - p_v[0]
+                    delta_y = u_y - v_y
+                    delta_x = u_x - v_x
                     slope = ((delta_y if abs(delta_y) > 0.1 else 0.1) /
                              (delta_x if abs(delta_x) > 0.1 else 0.1))
-                    uv_edge_at_c_x = (p_v[1] - (p_v[0] - click_x) * slope)
-                    uv_edge_at_c_y = (p_v[0] - (p_v[1] - click_y) / slope)
+                    uv_edge_at_c_x = (v_y - (v_x - click_x) * slope)
+                    uv_edge_at_c_y = (v_x - (v_y - click_y) / slope)
                     dh = abs(click_y - uv_edge_at_c_x)
                     dv = abs(click_x - uv_edge_at_c_y)
                     mindist = min(dh, dv)
