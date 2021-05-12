@@ -260,9 +260,10 @@ class SimpleGraphEditor():
         return self.vertex_radii.get(v,
                                      self.drawing_parameters['default_radius'])
 
-    def _get_vertex_pos(self, v):
+    def _get_coord_on_canvas(self, x, y):
         '''
-        Return the vertex coordinates on the canvas.
+        Return the coordinates on the canvas corresponding to the coordinates
+        `x` and `y` in the basis where the graph positions are stored.
 
         These coordinates are obtained from the coordinates from
         ``Graph.get_pos`` by applying the transformations stored in
@@ -275,11 +276,32 @@ class SimpleGraphEditor():
             and scaled using ``self._transform_matrix``, so they can be
             negative or over the canvas width/height.
         '''
-        x, y = self.graph.get_pos()[v]
-        
+
         m = self._transform_matrix * matrix([[x],[y],[1]])
         return int(m[0][0]), int(m[1][0]) # New x and y
-        
+
+    def _get_vertex_pos(self, v):
+        '''
+        Return the vertex coordinates on the canvas.
+
+        See :meth:`_get_coord_on_canvas` for details.
+        '''
+        x, y = self.graph.get_pos()[v]
+
+        return self._get_coord_on_canvas(x, y)
+
+    def get_vertices_pos(self):
+        '''
+        Return a dictionary of the coordinates of the vertices on the canvas.
+
+        See :meth:`_get_coord_on_canvas` for details.
+        '''
+
+        graph_pos = self.graph.get_pos()
+        canvas_pos = {v : self._get_coord_on_canvas(*graph_pos[v])
+                      for v in self.graph}
+        return canvas_pos
+
     def _set_vertex_pos(self, v, x, y):
         """
         Set the position of a vertex.
@@ -1046,8 +1068,10 @@ class SimpleGraphEditor():
         # Find the clicked node (if any):
         clicked_node = None
 
+        canvas_pos = self._get_vertices_pos()
+
         for v in self.graph.vertex_iterator():
-            v_x, v_y = self._get_vertex_pos(v)
+            v_x, v_y = canvas_pos[v]
             radius = self._get_radius(v)
 
             if (abs(click_x - v_x) < radius and
@@ -1075,11 +1099,11 @@ class SimpleGraphEditor():
             closest_dist = max(self.canvas.width, self.canvas.height) + 1
             for v in self.graph.vertex_iterator():
                 # Check if the click is on edge `vu` with v = leftmost vertex
-                v_x, v_y = self._get_vertex_pos(v)
+                v_x, v_y = canvas_pos[v]
                 if click_x < v_x:
                     continue
                 for u in self.graph.neighbor_iterator(v):
-                    u_x, u_y = self._get_vertex_pos(u)
+                    u_x, u_y = canvas_pos[u]
 
                     if u_x < click_x:
                         continue
