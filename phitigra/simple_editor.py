@@ -1119,8 +1119,7 @@ class SimpleGraphEditor():
             # We are dragging a vertex...
             self.output_text("Dragging vertex " + str(self.dragged_vertex))
             v = self.dragged_vertex
-            pos = self.graph.get_pos()
-            pos[v] = (pixel_x, pixel_y)
+            self._set_vertex_pos(v, pixel_x, pixel_y)
 
             with hold_canvas(self.interact_canvas):
                 # We only redraw what changes: the position of the dragged
