@@ -237,9 +237,6 @@ class SimpleGraphEditor():
             self.colors = {v: self.drawing_parameters['default_vertex_color']
                            for v in self.graph.vertex_iterator()}
 
-        print("coucou !")
-        print(str(self.graph.get_pos()))
-        print(str(self._transform_matrix))
         self._draw_graph()
         self.text_graph_update()
 
@@ -290,7 +287,7 @@ class SimpleGraphEditor():
 
         return self._get_coord_on_canvas(x, y)
 
-    def get_vertices_pos(self):
+    def _get_vertices_pos(self):
         '''
         Return a dictionary of the coordinates of the vertices on the canvas.
 
@@ -439,35 +436,39 @@ class SimpleGraphEditor():
             # There is nothing to do with the one vertex graph
             return
 
-        pos = self.graph.get_pos()
-        assert pos is not None
+        canvas_pos = self._get_vertices_pos()
 
-        radius = self.drawing_parameters['default_radius'] + 5
-
-        # Compute min/max, keeping some slack around them so that we can
-        # see the vertices shapes
-        x_min = min(pos[v][0] for v in self.graph.vertex_iterator()) - radius
-        x_max = max(pos[v][0] for v in self.graph.vertex_iterator()) + radius
-        y_min = min(pos[v][1] for v in self.graph.vertex_iterator()) - radius
-        y_max = max(pos[v][1] for v in self.graph.vertex_iterator()) + radius
+        # Compute min/max
+        x_min = min(canvas_pos[v][0] for v in self.graph)
+        x_max = max(canvas_pos[v][0] for v in self.graph)
+        y_min = min(canvas_pos[v][1] for v in self.graph)
+        y_max = max(canvas_pos[v][1] for v in self.graph)
 
         x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
 
+        # We keep some margin so that vertex shapes are fully drawn
+        margin = self.drawing_parameters['default_radius'] + 5
+        target_width = self.multi_canvas.width - 2*margin
+        target_height = self.multi_canvas.height - 2*margin
         # Some computations to decide of the scaling factor in order to
         # simultaneously fill the canvas on at least one axis range and
         # keep proportions, and to center the image
-        factor_x = self.multi_canvas.width / x_range
-        factor_y = self.multi_canvas.height / y_range
+        factor_x = target_width / x_range
+        factor_y = target_height / y_range
 
-        if factor_x < factor_y:
-            factor = factor_x
-            x_shift = 0
-            y_shift = (self.multi_canvas.height - y_range * factor) / 2
-        else:
-            factor = factor_y
-            x_shift = (self.multi_canvas.width - x_range * factor) / 2
-            y_shift = 0
+        # if factor_x < factor_y:
+        #     factor = factor_x
+        #     x_shift = margin
+        #     y_shift = margin + (target_height - y_range * factor) / 2
+        # else:
+        #     factor = factor_y
+        #     x_shift = margin + (target_width - x_range * factor) / 2
+        #     y_shift = margin
+
+        factor = min(factor_x, factor_y)
+        x_shift = margin + (target_width - x_range * factor) / 2
+        y_shift = margin + (target_height - y_range * factor) / 2
 
         # See https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
         translate_back_to_origin = matrix([[1, 0, -x_min],
@@ -480,13 +481,11 @@ class SimpleGraphEditor():
                                       [0, 1, y_shift],
                                       [0, 0, 1]])
         
-        # self._transform_matrix = (translate_to_center
-        #                          * scale_to_canvas_size
-        #                          * translate_back_to_origin)
-        self._transform_matrix = matrix([[factor, 0     , -x_min + x_shift],
-                                         [0     , factor, -y_min + y_shift],
-                                         [0     , 0     , 1]])
-        
+        self._transform_matrix = (translate_to_center
+                                  * scale_to_canvas_size
+                                  * translate_back_to_origin
+                                  * self._transform_matrix)
+
     def _scale_layout(self, ratio):
         """
         Rescale the vertices coordinates around the center of the image and
@@ -556,7 +555,7 @@ class SimpleGraphEditor():
         """
         Draw a given vertex.
 
-        The position is given by ``self.graph.get_pos()``.
+        The position is given by ``self.graph.get_vertex_pos()``.
         If ``canvas`` is ``None``, the default drawing canvas (``self.canvas``)
         is used.
         """
