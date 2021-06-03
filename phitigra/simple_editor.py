@@ -90,8 +90,8 @@ class SimpleGraphEditor():
                                         height=self.drawing_parameters['height'],
                                         sync_image_data=True,
                                         layout={'border': '3px solid lightgrey',
-                                                'width': '100%',
-                                                'height': 'auto'})
+                                                'width': str(self.drawing_parameters['width']) + 'px',
+                                                'height': str(self.drawing_parameters['height']) + 'px'})
 
         # It consists in two layers
         self.canvas = self.multi_canvas[0]    # The main layer
@@ -220,18 +220,19 @@ class SimpleGraphEditor():
             self.widget = HBox([
                 VBox([self.multi_canvas,
                       self.text_output,
-                      self.text_graph], layout=Layout(width='100%', height='auto')),
+                      self.text_graph], layout=Layout(
+                          width=str(self.drawing_parameters['width']) + 'px',
+                          height=str(self.drawing_parameters['height']) + 'px',
+                          overflow='visible')),
                 VBox([
                     self.tool_selector,
                     self.layout_selector,
-                    self.zoom_to_fit_button,
-                    self.zoom_in_button,
-                    self.zoom_out_button,
-                    self.clear_drawing_button,
+                    HBox([self.zoom_in_button, self.zoom_out_button]),
+                    HBox([self.zoom_to_fit_button, self.clear_drawing_button]),
                     self.color_selector,
                     self.vertex_name_toggle,
                     self.output],layout=Layout(min_width='315px'))
-            ], layout=Layout(width='100%', height='auto'))
+            ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
 
         # We prepare the graph data
         # Radii, positions and colors of the vertices on the drawing
