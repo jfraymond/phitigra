@@ -25,7 +25,7 @@ AUTHORS:
 from ipycanvas import MultiCanvas, hold_canvas
 from ipywidgets import (Label, BoundedIntText, VBox, HBox, Output, Button,
                         Dropdown, ColorPicker, ToggleButton, RadioButtons,
-                        Layout)
+                        Layout, ToggleButtons)
 from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
@@ -206,6 +206,15 @@ class SimpleGraphEditor():
             description='Choose tool:',
             disabled=False
         )
+
+        self.tool_selector2 = ToggleButtons(
+            options=['Select', 'Add', 'Remove'],
+            description='Tool',
+            disabled=False,
+            button_style='', # 'success', 'info', 'warning', 'danger' or ''
+            tooltips=['Description of slow', 'Description of regular', 'Description of fast'],
+            icons=['arrows', 'plus', 'minus']
+        )
         # We unselect any possibly selected vertex when the currrent
         # tool is changes, in order to avoid problems with the deletion tool
         self.tool_selector.observe(lambda _:self._select_vertex())
@@ -215,6 +224,7 @@ class SimpleGraphEditor():
         self.widget = HBox([self.multi_canvas,
                             VBox([
                                 self.tool_selector,
+                                self.tool_selector2,
                                 self.layout_selector,
                                 HBox([self.zoom_in_button, self.zoom_out_button]),
                                 HBox([self.zoom_to_fit_button, self.clear_drawing_button]),
@@ -937,9 +947,11 @@ class SimpleGraphEditor():
         self.output_text("Selected vertex: " +
                          str(self.selected_vertex))
         if vertex is not None:
-            # The color of the selected vertex becomes the default color
+            # The color and radius of the selected vertex becomes
+            # the default ones
             self.color_selector.value = (
                 self.colors[self.selected_vertex])
+            self.vertex_radius_box.value = (self._get_radius(self.selected_vertex))
 
         if redraw:
             # Redraw what needs to be redrawn
@@ -1241,8 +1253,6 @@ class SimpleGraphEditor():
                     self._select_vertex(self.dragged_vertex) # Select
                     self.output_text("Selected vertex " +
                                      str(self.selected_vertex))
-                    self.color_selector.value = (
-                        self.colors[self.selected_vertex])
                 else:
                     self._select_vertex(redraw=None) # Unselect
 
