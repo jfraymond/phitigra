@@ -23,8 +23,9 @@ AUTHORS:
 # ****************************************************************************
 
 from ipycanvas import MultiCanvas, hold_canvas
-from ipywidgets import (Label, Box, VBox, HBox, Output, Button, Dropdown,
-                        ColorPicker, ToggleButton, RadioButtons, Layout)
+from ipywidgets import (Label, BoundedIntText, VBox, HBox, Output, Button,
+                        Dropdown, ColorPicker, ToggleButton, RadioButtons,
+                        Layout)
 from random import randint, randrange
 from math import pi, sqrt, atan2
 from itertools import chain
@@ -48,8 +49,8 @@ class SimpleGraphEditor():
         # Default parameters
         self.drawing_parameters = {
             # Sizes of the widget
-            'width': 800,
-            'height':200,
+            'width': 600,
+            'height':400,
             # Defaults for drawing vertices
             'default_radius': 20,
             'default_vertex_color': None,
@@ -173,6 +174,16 @@ class SimpleGraphEditor():
         )
         self.color_selector.observe(self.color_selector_callback)
 
+        self.vertex_radius_box = BoundedIntText(
+            value=self.drawing_parameters['default_radius'],
+            min=1,
+            max=100,
+            step=1,
+            description='Vertex radius:',
+            disabled=False
+        )
+        self.vertex_radius_box.observe(self.vertex_radius_box_callback, names='value')
+
         self.vertex_name_toggle = ToggleButton(
             value=True,
             description='Show vertex labels',
@@ -208,6 +219,7 @@ class SimpleGraphEditor():
                                 HBox([self.zoom_in_button, self.zoom_out_button]),
                                 HBox([self.zoom_to_fit_button, self.clear_drawing_button]),
                                 self.color_selector,
+                                self.vertex_radius_box,
                                 self.vertex_name_toggle,
                                 self.text_output,
                                 self.text_graph,
@@ -226,6 +238,15 @@ class SimpleGraphEditor():
                                          [0, -1, 0],
                                          [0, 0, 1]])
 
+        if self.drawing_parameters['default_vertex_color'] is None:
+            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
+                           for v in self.graph.vertex_iterator()}
+        else:
+            self.colors = {v: self.drawing_parameters['default_vertex_color']
+                           for v in self.graph.vertex_iterator()}
+        self.vertex_radii = {v: self.drawing_parameters['default_radius']
+                             for v in self.graph.vertex_iterator()}
+
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
             self._random_layout()
@@ -233,13 +254,6 @@ class SimpleGraphEditor():
         # Update the transform matrix so that the vertex position
         # fit the canvas
         self._normalize_layout()
-
-        if self.drawing_parameters['default_vertex_color'] is None:
-            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
-                           for v in self.graph.vertex_iterator()}
-        else:
-            self.colors = {v: self.drawing_parameters['default_vertex_color']
-                           for v in self.graph.vertex_iterator()}
 
         self._draw_graph()
         self.text_graph_update()
@@ -334,6 +348,19 @@ class SimpleGraphEditor():
         else:
             self.colors[v] = color
 
+    def set_vertex_radius(self, v, radius=None):
+        """
+        Set the radius of a vertex shape.
+
+        If ``radius`` is ``None``, use the radius in the radius box.
+
+        WARNING: this function does not redraw the graph.
+        """
+        if radius is None:
+            self.vertex_radii[v] = self.vertex_radius_box.value
+        else:
+            self.vertex_radii[v] = radius
+
     # Layout functions #
     def _random_layout(self):
         """
@@ -419,7 +446,7 @@ class SimpleGraphEditor():
         """
         Change the color of the selected vertex (if any).
 
-        The new color is ``change[new]``.
+        The new color is ``change['new']``.
         This function is called when the color selector is used.
         If no vertex is selected or the color did not change, nothing is done.
         """
@@ -431,6 +458,27 @@ class SimpleGraphEditor():
                 self.set_vertex_color(self.selected_vertex, new_color)
                 self._redraw_vertex(self.selected_vertex, neighbors=False)
 
+    @output.capture()
+    def vertex_radius_box_callback(self, change):
+        """
+        Change the radius of the selected vertex (if any).
+
+        The new radius is ``change['new']``.
+        This function is called when the value in the ``vertex_radius_box`` box
+        is changed.
+        If no vertex is selected, nothing is done the set value becomes the new
+        defaulf value to be used for new vertices.
+        """
+        
+        if self.selected_vertex is not None:
+            # Change the radius of the selected_vertex
+            self.set_vertex_radius(self.selected_vertex, change['new'])
+            if change['new'] < change['old']:
+                self.refresh()
+            else:
+                # When the vertex size grows, we do not need to redraw everything
+                self.refresh(self.selected_vertex)
+        
     def _normalize_layout(self):
         """
         Update the transformation matrix so that the graph drawing fits well
@@ -446,46 +494,49 @@ class SimpleGraphEditor():
 
         canvas_pos = self._get_vertices_pos()
 
-        # Compute min/max
+        # Etrema for vertex centers
         x_min = min(canvas_pos[v][0] for v in self.graph)
         x_max = max(canvas_pos[v][0] for v in self.graph)
         y_min = min(canvas_pos[v][1] for v in self.graph)
         y_max = max(canvas_pos[v][1] for v in self.graph)
+        # Extrema for vertex shapes
+        s_x_min = min(canvas_pos[v][0] - self._get_radius(v) for v in self.graph)
+        s_x_max = max(canvas_pos[v][0] + self._get_radius(v) for v in self.graph)
+        s_y_min = min(canvas_pos[v][1] - self._get_radius(v) for v in self.graph)
+        s_y_max = max(canvas_pos[v][1] + self._get_radius(v) for v in self.graph)
 
         x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
 
-        # We keep some margin so that vertex shapes are fully drawn
-        margin = self.drawing_parameters['default_radius'] + 5
+        # We keep some margin on the sides
 
-        target_width = self.multi_canvas.width - 2*margin
-        target_height = self.multi_canvas.height - 2*margin
+        # The space between the vertex centers and the border of the frame
+        # should be wide enough so show the vertex shapes (x_min - s_x_min)
+        # and we add some extra pixels so that it looks better (5)
+        x_margin_left = x_min - s_x_min + 5
+        x_margin_right = s_x_max - x_max + 5
+        y_margin_bottom = y_min - s_y_min + 5
+        y_margin_top = s_y_max - y_max + 5
+        
+        target_width = self.multi_canvas.width - (x_margin_left + x_margin_right)
+        target_height = self.multi_canvas.height - (y_margin_top + y_margin_bottom)
         # Some computations to decide of the scaling factor in order to
         # simultaneously fill the canvas on at least one axis range and
         # keep proportions, and to center the image
         factor_x = target_width / x_range
         factor_y = target_height / y_range
 
-        # if factor_x < factor_y:
-        #     factor = factor_x
-        #     x_shift = margin
-        #     y_shift = margin + (target_height - y_range * factor) / 2
-        # else:
-        #     factor = factor_y
-        #     x_shift = margin + (target_width - x_range * factor) / 2
-        #     y_shift = margin
-
         factor = min(factor_x, factor_y)
-        x_shift = margin + (target_width - x_range * factor) / 2
-        y_shift = margin + (target_height - y_range * factor) / 2
+        x_shift = x_margin_left + (target_width - x_range * factor) / 2
+        y_shift = y_margin_bottom + (target_height - y_range * factor) / 2
 
         # See https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
         translate_back_to_origin = matrix([[1, 0, -x_min],
                                            [0, 1, -y_min],
                                            [0, 0, 1]])
-        scale_to_canvas_size = matrix([[factor, 0, 0],
-                                       [0, factor, 0],
-                                       [0, 0, 1]])
+        scale_to_canvas_size = matrix([[factor, 0     , 0],
+                                       [0     , factor, 0],
+                                       [0     , 0     , 1]])
         translate_to_center = matrix([[1, 0, x_shift],
                                       [0, 1, y_shift],
                                       [0, 0, 1]])
@@ -551,7 +602,8 @@ class SimpleGraphEditor():
         
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
-
+        self.set_vertex_radius(name)
+        
         self._draw_vertex(name)
         self.text_graph_update()
         
