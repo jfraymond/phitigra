@@ -390,6 +390,10 @@ class SimpleGraphEditor():
         layout_kw = {'save_pos': True}    # Arguments for the layout function
         if (new_layout == 'forest (root up)' or
                 new_layout == 'forest (root down)'):
+            if self.graph.is_directed():
+                self.output_text('\'forest\' layout impossible: '
+                                 'it is defined only for undirected graphs')
+                return
             if not self.graph.is_forest():
                 self.output_text('\'forest\' layout impossible: '
                                  'the graph is not a forest!')
