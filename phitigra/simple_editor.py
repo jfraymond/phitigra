@@ -467,9 +467,9 @@ class SimpleGraphEditor():
         This function is called when the value in the ``vertex_radius_box`` box
         is changed.
         If no vertex is selected, nothing is done the set value becomes the new
-        defaulf value to be used for new vertices.
+        default value to be used for new vertices.
         """
-        
+
         if self.selected_vertex is not None:
             # Change the radius of the selected_vertex
             self.set_vertex_radius(self.selected_vertex, change['new'])
@@ -478,7 +478,7 @@ class SimpleGraphEditor():
             else:
                 # When the vertex size grows, we do not need to redraw everything
                 self.refresh(self.selected_vertex)
-        
+
     def _normalize_layout(self):
         """
         Update the transformation matrix so that the graph drawing fits well
@@ -603,7 +603,7 @@ class SimpleGraphEditor():
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
         self.set_vertex_radius(name)
-        
+
         self._draw_vertex(name)
         self.text_graph_update()
         
@@ -1266,3 +1266,4 @@ class SimpleGraphEditor():
         self._select_vertex(redraw=None)
         self._draw_graph()
         self.output_text("Cleared drawing.")
+        self.text_graph_update()
