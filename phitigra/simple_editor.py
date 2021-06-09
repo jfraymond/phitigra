@@ -23,7 +23,7 @@ AUTHORS:
 # ****************************************************************************
 
 from ipycanvas import MultiCanvas, hold_canvas
-from ipywidgets import (Label, VBox, HBox, Output, Button, Dropdown,
+from ipywidgets import (Label, Box, VBox, HBox, Output, Button, Dropdown,
                         ColorPicker, ToggleButton, RadioButtons, Layout)
 from random import randint, randrange
 from math import pi, sqrt, atan2
@@ -50,9 +50,6 @@ class SimpleGraphEditor():
             # Sizes of the widget
             'width': 800,
             'height':200,
-            # Whether to place buttons on the right ('horizontal')
-            # or below ('vertical'):
-            'widget_layout': 'horizontal',
             # Defaults for drawing vertices
             'default_radius': 20,
             'default_vertex_color': None,
@@ -90,9 +87,11 @@ class SimpleGraphEditor():
                                         height=self.drawing_parameters['height'],
                                         sync_image_data=True,
                                         layout={'border': '3px solid lightgrey',
-                                                'width': str(self.drawing_parameters['width']) + 'px',
-                                                'height': str(self.drawing_parameters['height']) + 'px'})
-
+                                                'width': str(self.drawing_parameters['width'] + 6) + 'px',
+                                                'height': str(self.drawing_parameters['height'] + 6) + 'px',
+                                                'overflow': 'visible'})
+        # above: +6 to account for the 3px border on both sides
+        
         # It consists in two layers
         self.canvas = self.multi_canvas[0]    # The main layer
         # The layer where we draw objects in interaction
@@ -202,37 +201,18 @@ class SimpleGraphEditor():
         self.current_tool = lambda: self.tool_selector.value
         
         # The final widget, which contains all the parts defined above
-        if self.drawing_parameters['widget_layout'] == 'vertical':
-            self.widget = VBox([self.multi_canvas,
+        self.widget = HBox([self.multi_canvas,
+                            VBox([
+                                self.tool_selector,
+                                self.layout_selector,
+                                HBox([self.zoom_in_button, self.zoom_out_button]),
+                                HBox([self.zoom_to_fit_button, self.clear_drawing_button]),
+                                self.color_selector,
+                                self.vertex_name_toggle,
                                 self.text_output,
                                 self.text_graph,
-                                HBox([self.tool_selector,
-                                      VBox([
-                                          self.layout_selector,
-                                          self.zoom_to_fit_button,
-                                          self.zoom_in_button,
-                                          self.zoom_out_button]
-                                           ), self.clear_drawing_button]),
-                                HBox([self.color_selector,
-                                      self.vertex_name_toggle]),
-                                self.output])
-        else:
-            self.widget = HBox([
-                VBox([self.multi_canvas,
-                      self.text_output,
-                      self.text_graph], layout=Layout(
-                          width=str(self.drawing_parameters['width']) + 'px',
-                          height=str(self.drawing_parameters['height']) + 'px',
-                          overflow='visible')),
-                VBox([
-                    self.tool_selector,
-                    self.layout_selector,
-                    HBox([self.zoom_in_button, self.zoom_out_button]),
-                    HBox([self.zoom_to_fit_button, self.clear_drawing_button]),
-                    self.color_selector,
-                    self.vertex_name_toggle,
-                    self.output],layout=Layout(min_width='315px'))
-            ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
+                                self.output],layout=Layout(min_width='315px'))
+                            ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
 
         # We prepare the graph data
         # Radii, positions and colors of the vertices on the drawing
@@ -473,6 +453,7 @@ class SimpleGraphEditor():
 
         # We keep some margin so that vertex shapes are fully drawn
         margin = self.drawing_parameters['default_radius'] + 5
+
         target_width = self.multi_canvas.width - 2*margin
         target_height = self.multi_canvas.height - 2*margin
         # Some computations to decide of the scaling factor in order to
