@@ -860,6 +860,12 @@ class SimpleGraphEditor():
             if self.selected_vertex is not None:
                 self._highlight_vertex(self.selected_vertex)
 
+    def refresh(self, vertex=None):
+        if vertex:
+            self._redraw_vertex(vertex)
+        else:
+            self._draw_graph()
+
     def show(self):
         """Return the editor widget."""
         return self.widget
