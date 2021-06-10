@@ -119,35 +119,39 @@ class SimpleGraphEditor():
         self.text_graph = Label("")
 
         # Button to rescale:
-        self.zoom_to_fit_button = Button(description="Zoom to fit",
+        self.zoom_to_fit_button = Button(description='',
                                          disabled=False,
                                          button_style='',
                                          tooltip=('Rescale so that the graph '
                                                   'fills the canvas'),
-                                         icon='')
+                                         icon='compress',
+                                         layout={'height' : '50px', 'width' : '50px'})
         self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
                                                     self._draw_graph()))
-        self.zoom_in_button = Button(description="Zoom +",
-                              disabled=False,
-                              button_style='',
-                              tooltip='Zoom in',
-                              icon='')
+        self.zoom_in_button = Button(description='',
+                                     disabled=False,
+                                     button_style='',
+                                     tooltip='Zoom in',
+                                     icon='search-plus',
+                                     layout={'height' : '50px', 'width' : '50px'})
         self.zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
                                                     self._draw_graph()))
-        self.zoom_out_button = Button(description="Zoom -",
-                              disabled=False,
-                              button_style='',
-                              tooltip='Zoom out',
-                              icon='')
+        self.zoom_out_button = Button(description='',
+                                      disabled=False,
+                                      button_style='',
+                                      tooltip='Zoom out',
+                                      icon='search-minus',
+                                      layout={'height' : '50px', 'width' : '50px'})
         self.zoom_out_button.on_click(lambda x: (self._scale_layout(0.5),
                                                     self._draw_graph()))
 
         # To clear the drawing
-        self.clear_drawing_button = Button(description="Clear graph",
-                                          disabled=False,
-                                          button_style='',
-                                          tooltip='Clear the drawing',
-                                          icon='')
+        self.clear_drawing_button = Button(description="",
+                                           disabled=False,
+                                           button_style='',
+                                           tooltip='Clear the drawing and delete the graph',
+                                           icon='trash',
+                                           layout={'height' : '50px', 'width' : '50px'})
         self.clear_drawing_button.on_click(self.clear_drawing_button_callback)
         
         # Selector to change layout
@@ -208,12 +212,17 @@ class SimpleGraphEditor():
         )
 
         self.tool_selector2 = ToggleButtons(
-            options=['Select', 'Add', 'Remove'],
+            options=['', '', '', '', '', ''],
             description='Tool',
             disabled=False,
-            button_style='', # 'success', 'info', 'warning', 'danger' or ''
-            tooltips=['Description of slow', 'Description of regular', 'Description of fast'],
-            icons=['arrows', 'plus', 'minus']
+            button_style='',
+            tooltips=['select / move',
+                      'add vertex or edge',
+                      'delete vertex or edge',
+                      'add walk',
+                      'add clique',
+                      'add star'],
+            icons=['arrows', 'edit', 'eraser','route','certificate','asterisk']
         )
         # We unselect any possibly selected vertex when the currrent
         # tool is changes, in order to avoid problems with the deletion tool
@@ -226,8 +235,7 @@ class SimpleGraphEditor():
                                 self.tool_selector,
                                 self.tool_selector2,
                                 self.layout_selector,
-                                HBox([self.zoom_in_button, self.zoom_out_button]),
-                                HBox([self.zoom_to_fit_button, self.clear_drawing_button]),
+                                HBox([self.zoom_in_button, self.zoom_to_fit_button, self.zoom_out_button, self.clear_drawing_button]),
                                 self.color_selector,
                                 self.vertex_radius_box,
                                 self.vertex_name_toggle,
