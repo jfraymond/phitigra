@@ -194,26 +194,19 @@ class SimpleGraphEditor():
             disabled=False,
             button_style='',
             tooltip='Should the vertex label be drawn?',
-            icon='check'
+            icon=''
         )
         self.vertex_name_toggle.observe(lambda _: self._draw_graph())
 
         # The drawing tools
-        self.tool_selector = RadioButtons(
+        self.tool_selector = ToggleButtons(
             options=['select / move',
                      'add vertex or edge',
                      'delete vertex or edge',
                      'add walk',
                      'add clique',
                      'add star'],
-            value='add vertex or edge',
-            description='Choose tool:',
-            disabled=False
-        )
-
-        self.tool_selector2 = ToggleButtons(
-            options=['', '', '', '', '', ''],
-            description='Tool',
+            description='',
             disabled=False,
             button_style='',
             tooltips=['select / move',
@@ -222,7 +215,8 @@ class SimpleGraphEditor():
                       'add walk',
                       'add clique',
                       'add star'],
-            icons=['arrows', 'edit', 'eraser','route','certificate','asterisk']
+            icons=['']*5, #['arrows', 'edit', 'eraser','','',''],
+            layout = {'width' : '50px'}
         )
         # We unselect any possibly selected vertex when the currrent
         # tool is changes, in order to avoid problems with the deletion tool
@@ -233,9 +227,11 @@ class SimpleGraphEditor():
         self.widget = HBox([self.multi_canvas,
                             VBox([
                                 self.tool_selector,
-                                self.tool_selector2,
                                 self.layout_selector,
-                                HBox([self.zoom_in_button, self.zoom_to_fit_button, self.zoom_out_button, self.clear_drawing_button]),
+                                HBox([self.zoom_in_button,
+                                      self.zoom_to_fit_button,
+                                      self.zoom_out_button,
+                                      self.clear_drawing_button]),
                                 self.color_selector,
                                 self.vertex_radius_box,
                                 self.vertex_name_toggle,
