@@ -142,7 +142,7 @@ class SimpleGraphEditor():
                                       tooltip='Zoom out',
                                       icon='search-minus',
                                       layout={'height' : '34px', 'width' : '34px'})
-        self.zoom_out_button.on_click(lambda x: (self._scale_layout(0.5),
+        self.zoom_out_button.on_click(lambda x: (self._scale_layout(2/3),
                                                     self._draw_graph()))
 
         # To clear the drawing
