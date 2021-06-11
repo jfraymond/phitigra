@@ -36,7 +36,7 @@ from sage.matrix.constructor import matrix
 
 class SimpleGraphEditor():
     # Output widget used to see error messages (for debug)
-    output = Output(layout={'border': '1px solid black'})
+    output = Output()
 
     def __init__(self, G=None, drawing_parameters=None):
         if G is None:
@@ -114,9 +114,9 @@ class SimpleGraphEditor():
         ## The widgets of the graph editor (besides the canvas):
 
         # Where to display messages:
-        self.text_output = Label("Graph Editor")
+        self.text_output = Label("Graph Editor", layout={'width': '100%'})
         # Data about the graph:
-        self.text_graph = Label("")
+        self.text_graph = Label("", layout={'width': '100%'})
 
         # Button to rescale:
         self.zoom_to_fit_button = Button(description='',
@@ -125,7 +125,7 @@ class SimpleGraphEditor():
                                          tooltip=('Rescale so that the graph '
                                                   'fills the canvas'),
                                          icon='compress',
-                                         layout={'height' : '50px', 'width' : '50px'})
+                                         layout={'height' : '34px', 'width' : '34px'})
         self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
                                                     self._draw_graph()))
         self.zoom_in_button = Button(description='',
@@ -133,7 +133,7 @@ class SimpleGraphEditor():
                                      button_style='',
                                      tooltip='Zoom in',
                                      icon='search-plus',
-                                     layout={'height' : '50px', 'width' : '50px'})
+                                     layout={'height' : '34px', 'width' : '34px'})
         self.zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
                                                     self._draw_graph()))
         self.zoom_out_button = Button(description='',
@@ -141,7 +141,7 @@ class SimpleGraphEditor():
                                       button_style='',
                                       tooltip='Zoom out',
                                       icon='search-minus',
-                                      layout={'height' : '50px', 'width' : '50px'})
+                                      layout={'height' : '34px', 'width' : '34px'})
         self.zoom_out_button.on_click(lambda x: (self._scale_layout(0.5),
                                                     self._draw_graph()))
 
@@ -151,12 +151,12 @@ class SimpleGraphEditor():
                                            button_style='',
                                            tooltip='Clear the drawing and delete the graph',
                                            icon='trash',
-                                           layout={'height' : '50px', 'width' : '50px'})
+                                           layout={'height' : '34px', 'width' : '34px'})
         self.clear_drawing_button.on_click(self.clear_drawing_button_callback)
         
         # Selector to change layout
         self.layout_selector = Dropdown(
-            options=[('', ''),
+            options=[('- change layout -', '- change layout -'),
                      ('random', 'random'),
                      ('spring', 'spring'),
                      ('circular', 'circular'),
@@ -164,17 +164,19 @@ class SimpleGraphEditor():
                      ('forest (root up)', 'forest (root up)'),
                      ('forest (root down)', 'forest (root down)'),
                      ('directed acyclic', 'acyclic')],
-            value='',
-            description='Set layout:',
+            value='- change layout -',
+            description='',
+            layout={'width':'150px'}
         )
         self.layout_selector.observe(self.layout_selector_callback)
 
         # Selector to change the color of the selected vertex
         self.color_selector = ColorPicker(
             concise=False,
-            description='Vertex color:',
+            description='V. color:',
             value='#437FC0',
-            disabled=False
+            disabled=False,
+            layout={'width':'67px'}
         )
         self.color_selector.observe(self.color_selector_callback)
 
@@ -183,8 +185,9 @@ class SimpleGraphEditor():
             min=1,
             max=100,
             step=1,
-            description='Vertex radius:',
-            disabled=False
+            description='V. radius:',
+            disabled=False,
+            layout={'width':'146px'}
         )
         self.vertex_radius_box.observe(self.vertex_radius_box_callback, names='value')
 
@@ -224,7 +227,9 @@ class SimpleGraphEditor():
         self.current_tool = lambda: self.tool_selector.value
         
         # The final widget, which contains all the parts defined above
-        self.widget = HBox([self.multi_canvas,
+        self.widget = HBox([VBox([self.multi_canvas,
+                                  HBox([self.text_graph, self.text_output]),
+                                  self.output]),
                             VBox([
                                 self.tool_selector,
                                 self.layout_selector,
@@ -234,10 +239,7 @@ class SimpleGraphEditor():
                                       self.clear_drawing_button]),
                                 self.color_selector,
                                 self.vertex_radius_box,
-                                self.vertex_name_toggle,
-                                self.text_output,
-                                self.text_graph,
-                                self.output],layout=Layout(min_width='315px'))
+                                self.vertex_name_toggle],layout=Layout(min_width='160px'))
                             ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
 
         # We prepare the graph data
@@ -400,11 +402,11 @@ class SimpleGraphEditor():
         """
         if change['name'] != 'value':
             return
-        elif change['new'] == '':
+        elif change['new'] == '- change layout -':
             return
 
         new_layout = change['new']
-        self.layout_selector.value = ''
+        self.layout_selector.value = '- change layout -'
 
         # Interrupt any drawing action that is taking place:
         self._clean_tools()
