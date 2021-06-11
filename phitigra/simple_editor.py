@@ -225,6 +225,13 @@ class SimpleGraphEditor():
         # tool is changes, in order to avoid problems with the deletion tool
         self.tool_selector.observe(lambda _:self._select_vertex())
         self.current_tool = lambda: self.tool_selector.value
+
+        # A 'next' button to call a custom function
+        self.next_button = Button(description='Next',
+                                  disabled=False,
+                                  button_style='',
+                                  tooltip='Call a custom function. Define it via the \'set_next_callback\' method.',
+                                  icon='forward')
         
         # The final widget, which contains all the parts defined above
         self.widget = HBox([VBox([self.multi_canvas,
@@ -239,7 +246,8 @@ class SimpleGraphEditor():
                                       self.clear_drawing_button]),
                                 self.color_selector,
                                 self.vertex_radius_box,
-                                self.vertex_name_toggle],layout=Layout(min_width='160px'))
+                                self.vertex_name_toggle,
+                                self.next_button],layout=Layout(min_width='160px'))
                             ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
 
         # We prepare the graph data
@@ -382,12 +390,13 @@ class SimpleGraphEditor():
         """
         Randomly pick and set positions for the vertices.
 
-        Coordinates are integers chosen between 0 and the order of the
-        graph.
+        Coordinates are integers chosen between 0 and the square of the
+        order of the graph.
         """
         n = self.graph.order()
-        rnd_pos = {v: (randint(0, n),
-                       randint(0, n))
+        n2 = n*n
+        rnd_pos = {v: (randint(0, n2),
+                       randint(0, n2))
                    for v in self.graph.vertex_iterator()}
         self.graph.set_pos(rnd_pos)
 
@@ -1283,3 +1292,9 @@ class SimpleGraphEditor():
         self._draw_graph()
         self.output_text("Cleared drawing.")
         self.text_graph_update()
+
+    def set_next_callback(self, f):
+        '''
+        Define a callback for the `Next` button.
+        '''
+        self.next_button.on_click(lambda x: f())
