@@ -59,6 +59,7 @@ class SimpleGraphEditor():
             # Defaults for drawing vertices
             'default_radius': 20,
             'default_vertex_color': None,
+            'default_edge_color': 'black',
             # An arrow tip is defined by two values: the distance on the edge
             # taken by the arrow (arrow_tip_length) and the distance between
             # the two symmetric angles of the arrow (arrow_tip_height is half
@@ -254,9 +255,26 @@ class SimpleGraphEditor():
                                 self.next_button],layout=Layout(min_width='160px'))
                             ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
 
-        # We prepare the graph data
-        # Radii, positions and colors of the vertices on the drawing
+        ### Prepare the graph data
+
+        # Radii, positions and colors of the vertices or edges on the drawing
         self.vertex_radii = dict()
+        self.vertex_radii = {v: self.drawing_parameters['default_radius']
+                             for v in self.graph.vertex_iterator()}
+
+        if self.drawing_parameters['default_vertex_color'] is None:
+            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
+                           for v in self.graph.vertex_iterator()}
+        else:
+            self.colors = {v: self.drawing_parameters['default_vertex_color']
+                           for v in self.graph.vertex_iterator()}
+
+        self.edge_colors = {e: "black"
+                            for e in self.graph.edge_iterator(e, labels=False)}
+
+        if self.graph.get_pos() is None:
+            # The graph has no predefined positions: we pick some
+            self._random_layout()
 
         # The transformation matrix recording all transformations
         # done to the graph drawing
@@ -265,19 +283,6 @@ class SimpleGraphEditor():
         self._transform_matrix = matrix([[1, 0, 0],
                                          [0, -1, 0],
                                          [0, 0, 1]])
-
-        if self.drawing_parameters['default_vertex_color'] is None:
-            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
-                           for v in self.graph.vertex_iterator()}
-        else:
-            self.colors = {v: self.drawing_parameters['default_vertex_color']
-                           for v in self.graph.vertex_iterator()}
-        self.vertex_radii = {v: self.drawing_parameters['default_radius']
-                             for v in self.graph.vertex_iterator()}
-
-        if self.graph.get_pos() is None:
-            # The graph has no predefined positions: we pick some
-            self._random_layout()
 
         # Update the transform matrix so that the vertex position
         # fit the canvas
@@ -375,6 +380,14 @@ class SimpleGraphEditor():
             self.colors[v] = self.color_selector.value
         else:
             self.colors[v] = color
+
+    def set_edge_color(self, e, color):
+        """
+        Set the color of an edge.
+
+        WARNING: this function does not redraw the graph.
+        """
+        self.edge_colors[e] = color
 
     def set_vertex_radius(self, v, radius=None):
         """
@@ -768,6 +781,9 @@ class SimpleGraphEditor():
         if canvas is None:
             canvas = self.canvas
 
+        canvas.stroke_style = self.edge_colors[e]
+        canvas.line_width = 3
+
         canvas.begin_path()
         canvas.move_to(*pos_u)
         canvas.line_to(*pos_v)
@@ -791,6 +807,7 @@ class SimpleGraphEditor():
                 # Move to the point where the edge joins v's shape and
                 # draw the arrow there:
                 canvas.translate(radius_v, 0)
+                canvas.fill_style = self.edge_colors[e]
                 self.drawing_parameters['draw_arrow'](canvas)
                 canvas.restore()
 
@@ -889,6 +906,7 @@ class SimpleGraphEditor():
                     # A vertex was selected and we clicked on a new one:
                     # we link it to the previously selected vertex
                     self.graph.add_edge(self.selected_vertex, on_vertex)
+                    self.edge_colors[(self.selected_vertex, on_vertex)] = self.drawing_parameters['default_edge_color']
                     self.output_text("Added edge from " +
                                      str(self.selected_vertex) +
                                      " to " + str(on_vertex))
