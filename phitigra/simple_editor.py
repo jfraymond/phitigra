@@ -122,8 +122,7 @@ class SimpleGraphEditor():
         self.zoom_to_fit_button = Button(description='',
                                          disabled=False,
                                          button_style='',
-                                         tooltip=('Rescale so that the graph '
-                                                  'fills the canvas'),
+                                         tooltip=('Zoom to fit'),
                                          icon='compress',
                                          layout={'height' : '34px', 'width' : '34px'})
         self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
@@ -212,12 +211,12 @@ class SimpleGraphEditor():
             description='',
             disabled=False,
             button_style='',
-            tooltips=['select / move',
-                      'add vertex or edge',
-                      'delete vertex or edge',
-                      'add walk',
-                      'add clique',
-                      'add star'],
+            tooltips=['Move vertices or the canvas',
+                      'Add vertices or edges',
+                      'Delete vertices or edges',
+                      'Add a walk through new or existing vertices',
+                      'Add a clique through new or existing vertices',
+                      'Add a star through new or existing vertices',],
             icons=['']*5, #['arrows', 'edit', 'eraser','','',''],
             layout = {'width' : '50px'}
         )
