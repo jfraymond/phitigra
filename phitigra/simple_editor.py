@@ -269,8 +269,7 @@ class SimpleGraphEditor():
             self.colors = {v: self.drawing_parameters['default_vertex_color']
                            for v in self.graph.vertex_iterator()}
 
-        self.edge_colors = {e: "black"
-                            for e in self.graph.edge_iterator(e, labels=False)}
+        self.edge_colors = {e: 'black' for e in self.graph.edge_iterator(labels=False)}
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
@@ -381,13 +380,31 @@ class SimpleGraphEditor():
         else:
             self.colors[v] = color
 
-    def set_edge_color(self, e, color):
+    def set_edge_color(self, e, color=None):
         """
         Set the color of an edge.
 
+        If ``color`` is ``None``, use the default color.
+
         WARNING: this function does not redraw the graph.
         """
-        self.edge_colors[e] = color
+        u, v, *_ = e
+        if color is None:
+            color = self.drawing_parameters['default_edge_color']
+        self.edge_colors[(u, v)] = color
+
+    def get_edge_color(self, e):
+        '''
+        Return the color of an edge.
+        '''
+
+        u, v, *_ = e
+        try:
+            c = self.edge_colors[(u,v)]
+        except KeyError:
+            c = self.edge_colors[(v,u)]
+
+        return c
 
     def set_vertex_radius(self, v, radius=None):
         """
@@ -640,7 +657,6 @@ class SimpleGraphEditor():
         else:
             self.graph.add_vertex(name)
             return_name = False
-
         
         self._set_vertex_pos(name, x, y)
         self.set_vertex_color(name)
@@ -648,12 +664,28 @@ class SimpleGraphEditor():
 
         self._draw_vertex(name)
         self.text_graph_update()
-        
+
         # Return the vertex name if it was not specified,
         # as the graph add_vertex function:
         if return_name:
             return name
 
+    def add_edge(self, u, v, label=None, color=None):
+        '''
+        Add an edge between two vertices and draw it
+
+        If ``color`` is ``None``, use the default color.
+        '''
+        self.graph.add_edge((u, v, label))
+        self.set_edge_color((u,v))
+
+        with hold_canvas(self.canvas):
+            self._draw_edge((u, v, label))
+            self._draw_vertex(u)
+            self._draw_vertex(v)
+
+        self.text_graph_update()
+        
     def _draw_vertex(self, v, canvas=None, color=None):
         """
         Draw a given vertex.
@@ -781,7 +813,7 @@ class SimpleGraphEditor():
         if canvas is None:
             canvas = self.canvas
 
-        canvas.stroke_style = self.edge_colors[e]
+        canvas.stroke_style = self.get_edge_color((u,v))
         canvas.line_width = 3
 
         canvas.begin_path()
@@ -807,7 +839,7 @@ class SimpleGraphEditor():
                 # Move to the point where the edge joins v's shape and
                 # draw the arrow there:
                 canvas.translate(radius_v, 0)
-                canvas.fill_style = self.edge_colors[e]
+                canvas.fill_style = self.get_edge_color((u,v))
                 self.drawing_parameters['draw_arrow'](canvas)
                 canvas.restore()
 
@@ -905,8 +937,8 @@ class SimpleGraphEditor():
                 else:
                     # A vertex was selected and we clicked on a new one:
                     # we link it to the previously selected vertex
-                    self.graph.add_edge(self.selected_vertex, on_vertex)
-                    self.edge_colors[(self.selected_vertex, on_vertex)] = self.drawing_parameters['default_edge_color']
+                    self.add_edge(self.selected_vertex, on_vertex)
+
                     self.output_text("Added edge from " +
                                      str(self.selected_vertex) +
                                      " to " + str(on_vertex))
@@ -1036,10 +1068,8 @@ class SimpleGraphEditor():
             return
 
         for u in self.current_clique:
-            self.graph.add_edge(clicked_node, u)
+            self.add_edge(clicked_node, u)
         self.current_clique.append(clicked_node)
-        self._draw_graph()
-        self.text_graph_update()
 
     def mouse_action_add_walk(self, clicked_node, click_x, click_y):
         if clicked_node is None:
@@ -1063,11 +1093,10 @@ class SimpleGraphEditor():
             self.text_graph_update()
             return
         
-        self.graph.add_edge(self.current_walk_vertex, clicked_node)
+        self.add_edge(self.current_walk_vertex, clicked_node)
         self._select_vertex(clicked_node, redraw=False) # Select
         self._redraw_vertex(clicked_node, neighbors=True)
         self.current_walk_vertex = clicked_node
-        self.text_graph_update()
         
     def mouse_action_add_star(self, clicked_node, click_x, click_y):
         if clicked_node is None:
@@ -1093,13 +1122,11 @@ class SimpleGraphEditor():
         else:
             # We are drawing a star
             self.current_star_leaf = clicked_node
-            self.graph.add_edge(self.current_star_center,
-                                self.current_star_leaf)
-            self._redraw_vertex(self.current_star_leaf, neighbors=True)
+            self.add_edge(self.current_star_center,
+                          self.current_star_leaf)
             self.output_text('Star with center ' +
                              str(self.current_star_center) +
                              ': click on the leaves')
-        self.text_graph_update()
 
     def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
 
