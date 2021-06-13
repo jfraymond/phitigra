@@ -1028,6 +1028,83 @@ class SimpleGraphEditor():
             except AttributeError:
                 pass
 
+    def _get_vertex_at(self, x, y):
+        '''
+        Return which vertex shape contains the point with coordinates (x,y).
+
+        Return `None` if no vertex shape contains (x,y).
+        '''
+
+        canvas_pos = self._get_vertices_pos()
+
+        for v in self.graph.vertex_iterator():
+            v_x, v_y = canvas_pos[v]
+            radius = self._get_radius(v)
+
+            if (abs(x - v_x) < radius and
+                    abs(y - v_y) < radius):
+                # The user clicked on vertex v (approximatively)!
+                return v
+
+        # No vertex was found near (x,y)
+        return None
+
+    def _get_edge_at(self, x, y):
+        '''
+        Return which edge runs near the point with coordinates (x,y).
+
+        Return `None` if no edge is close enough to (x,y).
+
+        .. WARNING::
+            This function assumes that edges are straigh lines between
+            their endpoints.
+        '''
+
+        thresold = 20
+        canvas_pos = self._get_vertices_pos()
+
+        closest_edge = None
+        # closest_dist = infinity:
+        closest_dist = max(self.canvas.width, self.canvas.height) + 1
+        for v in self.graph.vertex_iterator():
+            # Check if the click is on edge `vu` with v = leftmost vertex
+            v_x, v_y = canvas_pos[v]
+            if x < v_x:
+                continue
+            for u in self.graph.neighbor_iterator(v):
+                u_x, u_y = canvas_pos[u]
+
+                # First discard cases where the click does not belong
+                # to the square  delimited by u and v
+                if u_x < x:
+                    continue
+                if (y > v_y and
+                    y > u_y):
+                    continue
+                if (y < v_y and
+                    y < u_y):
+                    continue
+
+                delta_y = u_y - v_y
+                delta_x = u_x - v_x
+                slope = ((delta_y if abs(delta_y) > 0.1 else 0.1) /
+                         (delta_x if abs(delta_x) > 0.1 else 0.1))
+                uv_edge_at_c_x = (v_y - (v_x - x) * slope)
+                uv_edge_at_c_y = (v_x - (v_y - y) / slope)
+                dh = abs(y - uv_edge_at_c_x)
+                dv = abs(x - uv_edge_at_c_y)
+                mindist = min(dh, dv)
+                if mindist < thresold:
+                    # The click is close enough from the edge uv
+                    if mindist < closest_dist:
+                        # And it is the closest we have seen so far
+                        if self.graph.has_edge(u, v):
+                            # Case distinction to deal with digraphs
+                            closest_edge = (u, v)
+                        else:
+                            closest_edge = (v, u)
+        return closest_edge
+
     def mouse_action_add_clique(self, clicked_node, click_x, click_y):
         if clicked_node is None:
             # Click on the canvas: we add a vertex
@@ -1157,20 +1234,7 @@ class SimpleGraphEditor():
         """
 
         self.initial_click_pos = (click_x, click_y)
-        # Find the clicked node (if any):
-        clicked_node = None
-
-        canvas_pos = self._get_vertices_pos()
-
-        for v in self.graph.vertex_iterator():
-            v_x, v_y = canvas_pos[v]
-            radius = self._get_radius(v)
-
-            if (abs(click_x - v_x) < radius and
-                    abs(click_y - v_y) < radius):
-                # The user clicked on vertex v!
-                clicked_node = v
-                break
+        clicked_node = self._get_vertex_at(click_x, click_y)
 
         if self.current_tool() == 'add vertex or edge':
             return self.mouse_action_add_ve(clicked_node, click_x, click_y)
@@ -1184,44 +1248,8 @@ class SimpleGraphEditor():
             if clicked_node is not None:
                 return self.mouse_action_del_ve(clicked_node, None)
 
-            # Check for edges:
-            thresold = 20
-            closest_edge = None
-            # closest_dist = infinity:
-            closest_dist = max(self.canvas.width, self.canvas.height) + 1
-            for v in self.graph.vertex_iterator():
-                # Check if the click is on edge `vu` with v = leftmost vertex
-                v_x, v_y = canvas_pos[v]
-                if click_x < v_x:
-                    continue
-                for u in self.graph.neighbor_iterator(v):
-                    u_x, u_y = canvas_pos[u]
+            closest_edge= self._get_edge_at(click_x, click_y)
 
-                    if u_x < click_x:
-                        continue
-                    if (click_y > v_y and
-                            click_y > u_y):
-                        continue
-                    if (click_y < v_y and
-                            click_y < u_y):
-                        continue
-                    delta_y = u_y - v_y
-                    delta_x = u_x - v_x
-                    slope = ((delta_y if abs(delta_y) > 0.1 else 0.1) /
-                             (delta_x if abs(delta_x) > 0.1 else 0.1))
-                    uv_edge_at_c_x = (v_y - (v_x - click_x) * slope)
-                    uv_edge_at_c_y = (v_x - (v_y - click_y) / slope)
-                    dh = abs(click_y - uv_edge_at_c_x)
-                    dv = abs(click_x - uv_edge_at_c_y)
-                    mindist = min(dh, dv)
-                    if mindist < thresold:
-                        # The click is close enough from the edge uv
-                        if mindist < closest_dist:
-                            # And it is the closest we have seen so far
-                            if self.graph.has_edge(u, v):
-                                closest_edge = (u, v)
-                            else:
-                                closest_edge = (v, u)
             return self.mouse_action_del_ve(None, closest_edge)
 
         elif self.current_tool() == 'select / move':
