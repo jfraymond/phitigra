@@ -41,6 +41,11 @@ class SimpleGraphEditor():
     def __init__(self, G=None, drawing_parameters=None):
         if G is None:
             G = Graph(0)
+        else:
+            if G.allows_multiple_edges() or G.allows_loops():
+                raise ValueError ("Cannot deal with graphs that allow"
+                                  " loops or multiple edges")
+            
         self.graph = G
 
         ## Define the default drawing parameters and update them
@@ -720,26 +725,10 @@ class SimpleGraphEditor():
             if neighbors:
                 # We also redraw the incident edges
                 # and the neighbors
-                if self.graph.is_directed():
-                    if self.graph.allows_multiple_edges():
-                        # In this case we must iterate over all edges, so that
-                        # we draw them in the same order as when we draw the
-                        # full graph...
-                        incident_edges = ((u1, u2, l)
-                                          for (u1, u2, l)
-                                          in self.graph.edge_iterator()
-                                          if v == u1 or v == u2)
-                    else:
-                        # We chain the iterators in order to make a unique call
-                        # to _draw_edges, which is important when dealing with
-                        # digraphs with multiple edges
-                        incident_edges = chain(
-                            (e for e in self.graph.incoming_edge_iterator(v)),
-                            (e for e in self.graph.outgoing_edge_iterator(v)))
-                    # Finally we draw those directed edges
-                    self._draw_edges(incident_edges, canvas=canvas)
-                else:
-                    self._draw_edges((e for e in self.graph.edge_iterator(v)),
+
+                # ignore_direction=True to get all edges incident to a
+                # vertex in the case where self.graph is directed
+                self._draw_edges((e for e in self.graph.edge_iterator(v, ignore_direction=True)),
                                      canvas=canvas)
                 # Draw the neighbors:
                 self._draw_vertices((u
@@ -750,26 +739,28 @@ class SimpleGraphEditor():
             if self.selected_vertex==v and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
-    def _draw_edge(self, e, canvas=None, curve=None):
+    def _draw_edge(self, e, canvas=None):
         """
         Draw an edge.
 
-        An arrow is added if the graph is directed. It is possible to specify
-        a curvature for the edge, which is useful when drawing multigraphs
-        (see meth:`~:_draw_edges`).
+        An arrow is added if the graph is directed.
 
         INPUT:
 
         - ``e`` -- edge; of the form (first_end, second_end, label); the
           label is ignored;
         - ``canvas`` -- canvas where to draw the edge (default: ``None``);
-          with the default value, ``self.canvas`` is used
-        - ``curve`` -- the curvature of the edge (default: ``None``); with
-          the default value or 0, the edge is drawn straight.
+          with the default value, ``self.canvas`` is used.
 
         WARNING:
-        The function does not check that ``e`` is an edge of self.
+
+        - The function does not check that ``e`` is an edge of ``self``;
+
+        - The drawn edge start and end at the centers of the shapes of
+          its endpoint vertices, so it is necessary to redraw these
+          vertices after drawing the edge.
         """
+
         u, v, lab = e
         pos_u = self._get_vertex_pos(u)
         pos_v = self._get_vertex_pos(v)
@@ -777,78 +768,36 @@ class SimpleGraphEditor():
         if canvas is None:
             canvas = self.canvas
 
-        if curve is not None:
-            canvas.begin_path()
-            canvas.move_to(*pos_u)
-            # u-v distance:
-            duv = sqrt((pos_u[0] - pos_v[0])**2 +
-                       (pos_u[1] - pos_v[1])**2)
-            # Halfway from u to v:
-            huv = (pos_u[0] + (pos_v[0] - pos_u[0])/2,
-                   pos_u[1] + (pos_v[1] - pos_u[1])/2)
-            # Unit normal vector to uv:
-            nuv = ((pos_v[1] - pos_u[1]) / duv,
-                   - (pos_v[0] - pos_u[0]) / duv)
-            # Control point of the curve
-            cp = (huv[0] + nuv[0] * curve,
-                  huv[1] + nuv[1] * curve)
-            canvas.quadratic_curve_to(*cp, *pos_v)
-            canvas.stroke()
+        canvas.begin_path()
+        canvas.move_to(*pos_u)
+        canvas.line_to(*pos_v)
+        canvas.stroke()
 
-            if self.graph.is_directed():
-                # If the graph is directed, we also have to draw the arrow tip
-                # In this case (curved edge), we draw the arrow at mid-edge.
-                dist_min = self._get_radius(v) + self._get_radius(u)
-                # We only do it if the vertex shapes do not overlap.
-                if (abs(pos_u[0] - pos_v[0]) > dist_min or
-                        abs(pos_u[1] - pos_v[1]) > dist_min):
-                    canvas.save()
-                    # Move the canvas so that v lies at (0,0) and
-                    # rotate it so that v-y is on the x>0 axis:
-                    canvas.translate(*huv)
-                    canvas.rotate(float(atan2(pos_u[1] - pos_v[1],
-                                              pos_u[0] - pos_v[0])))
-                    # Move to the point where the edge joins v's shape and
-                    # draw the arrow there:
-                    canvas.translate(
-                        -self.drawing_parameters['arrow_tip_width'] / 2,
-                        curve/2)
-                    self.drawing_parameters['draw_arrow'](canvas)
-                    canvas.restore()
+        if self.graph.is_directed():
+            # If the graph is directed, we also have to draw the arrow
+            # tip; We draw it at the end of the edge (as usual)
+            radius_v = self._get_radius(v)
+            dist_min = radius_v + self._get_radius(u)
 
-        else:    # curve is None
-            canvas.begin_path()
-            canvas.move_to(*pos_u)
-            canvas.line_to(*pos_v)
-            canvas.stroke()
-
-            if self.graph.is_directed():
-                # If the graph is directed, we also have to draw the arrow tip
-                # We draw it at the end of the edge (as usual)
-                radius_v = self._get_radius(v)
-                dist_min = radius_v + self._get_radius(u)
-
-                # We only do it if the vertex shapes do not overlap.
-                if (abs(pos_u[0] - pos_v[0]) > dist_min
-                        or abs(pos_u[1] - pos_v[1]) > dist_min):
-                    canvas.save()
-                    # Move the canvas so that v lies at (0,0) and
-                    # rotate it so that v-y is on the x>0 axis:
-                    canvas.translate(*pos_v)
-                    canvas.rotate(float(atan2(pos_u[1] - pos_v[1],
-                                              pos_u[0] - pos_v[0])))
-                    # Move to the point where the edge joins v's shape and
-                    # draw the arrow there:
-                    canvas.translate(self._get_radius(v), 0)
-                    self.drawing_parameters['draw_arrow'](canvas)
-                    canvas.restore()
+            # We only do it if the vertex shapes do not overlap.
+            if (abs(pos_u[0] - pos_v[0]) > dist_min
+                or abs(pos_u[1] - pos_v[1]) > dist_min):
+                canvas.save()
+                # Move the canvas so that v lies at (0,0) and
+                # rotate it so that v-y is on the x>0 axis:
+                canvas.translate(*pos_v)
+                canvas.rotate(float(atan2(pos_u[1] - pos_v[1],
+                                          pos_u[0] - pos_v[0])))
+                # Move to the point where the edge joins v's shape and
+                # draw the arrow there:
+                canvas.translate(radius_v, 0)
+                self.drawing_parameters['draw_arrow'](canvas)
+                canvas.restore()
 
     def _draw_edges(self, edges=None, canvas=None, color='black'):
         """
         Draw edges.
 
-        This function can deal with multiple edges and/or oriented
-        edges.
         To use within a ``with hold_canvas`` block, preferably.
 
         INPUT:
@@ -858,12 +807,7 @@ class SimpleGraphEditor():
           ``self.graph`` is drawn
         - ``canvas`` -- the canvas where to draw the edges
           (default: ``None``); if ``None``,  ``self.canvas`` is used
-        - ``color`` -- the color to use for the edges (default: ``'black'``)
-
-        WARNING: When dealing with oriented multigraphs, the following should
-        be applied: for every vertices u and v, all the edges between u and v
-        (in either direction) should be drawn within the same call to
-        _draw_edges (otherwise some edges might be drawn on top of each other).
+        - ``color`` -- the color to use for the edges (default: ``'black'``).
         """
 
         if canvas is None:
@@ -874,53 +818,8 @@ class SimpleGraphEditor():
         canvas.stroke_style = color
         canvas.line_width = 3
 
-        if not self.graph.allows_multiple_edges():
-            for e in edges:
-                self._draw_edge(e, canvas=canvas)
-        else:
-            # To count how many times an edge (u,v) has been drawn
-            # so far:
-            seen_edges = dict()
-            # To remember which of (u,v) and (v,u) was drawn the latest:
-            seen_last = dict()
-
-            def get_curve(e):
-                """
-                Return the curvature of an edge.
-
-                When the graph has multiple edges, each edge between the two
-                same vertices ``u`` and ``v`` is drawn as a curve whose
-                curvature depend on how many such edges have been drawn so
-                for. That way the edges are not drawn on top of each other.
-                This function returns the curvature for ``e`` and updates
-                ``seen_edges`` and ``seen_last`` accordingly.
-
-                WARNING:
-                This function should be called only once for each edge.
-                """
-                u, v, _ = e
-                # How many times we saw an edge between these vertices so far:
-                cur_mul = seen_edges.get((u, v), 0) + seen_edges.get((v, u), 0)
-                seen_edges[(u, v)] = 1 + seen_edges.get((u, v), 0)
-                if not cur_mul:
-                    # No edge between u and v has been drawn so far
-                    seen_last[(u, v)] = True
-                    seen_last[(v, u)] = False
-                    return 0
-                else:
-                    # Among edges of the forms (u,v) and (v,u),
-                    # was an edge of the form (u,v) seen last?
-                    uv_last = seen_last[(u, v)]
-                    seen_last[(u, v)] = True
-                    seen_last[(v, u)] = False
-                    factor = -1 if uv_last else 1
-                    if cur_mul % 2:
-                        return -factor * (cur_mul+1) * 15
-                    else:
-                        return factor * cur_mul * 15
-
         for e in edges:
-            self._draw_edge(e, canvas=canvas, curve=get_curve(e))
+            self._draw_edge(e, canvas=canvas)
 
     def _draw_graph(self):
         """
