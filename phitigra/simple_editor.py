@@ -784,7 +784,7 @@ class SimpleGraphEditor():
             if self.selected_vertex==v and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
-    def _draw_edge(self, e, canvas=None):
+    def _draw_edge(self, e, highlight=False, canvas=None):
         """
         Draw an edge.
 
@@ -806,7 +806,7 @@ class SimpleGraphEditor():
           vertices after drawing the edge.
         """
 
-        u, v, lab = e
+        u, v, *_ = e
         pos_u = self._get_vertex_pos(u)
         pos_v = self._get_vertex_pos(v)
 
@@ -816,11 +816,17 @@ class SimpleGraphEditor():
         canvas.stroke_style = self.get_edge_color((u,v))
         canvas.line_width = 3
 
+        if highlight:
+            # If the edge has to be highlighted, we draw it dashed
+            canvas.set_line_dash([4, 4])
+            
         canvas.begin_path()
         canvas.move_to(*pos_u)
         canvas.line_to(*pos_v)
         canvas.stroke()
-
+        
+        canvas.set_line_dash([]) # Reset dash pattern
+        
         if self.graph.is_directed():
             # If the graph is directed, we also have to draw the arrow
             # tip; We draw it at the end of the edge (as usual)
