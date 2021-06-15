@@ -106,6 +106,7 @@ class SimpleGraphEditor():
         self.interact_canvas = self.multi_canvas[1]
 
         self.selected_vertex = None
+        self.selected = set()
         self.dragged_vertex = None
         self.dragging_canvas_from = None
 
@@ -784,7 +785,7 @@ class SimpleGraphEditor():
             if self.selected_vertex==v and highlight:
                 self._highlight_vertex(self.selected_vertex)
 
-    def _draw_edge(self, e, highlight=False, canvas=None):
+    def _draw_edge(self, e, endpoints=False, canvas=None):
         """
         Draw an edge.
 
@@ -794,6 +795,8 @@ class SimpleGraphEditor():
 
         - ``e`` -- edge; of the form (first_end, second_end, label); the
           label is ignored;
+        - ``endpoints`` -- Boolean (default: ``False``), whether to redraw
+          the endpoints of the edge;
         - ``canvas`` -- canvas where to draw the edge (default: ``None``);
           with the default value, ``self.canvas`` is used.
 
@@ -803,7 +806,8 @@ class SimpleGraphEditor():
 
         - The drawn edge start and end at the centers of the shapes of
           its endpoint vertices, so it is necessary to redraw these
-          vertices after drawing the edge.
+          vertices after drawing the edge. The keyword ``endpoints``
+          exists for that purpose.
         """
 
         u, v, *_ = e
@@ -816,8 +820,8 @@ class SimpleGraphEditor():
         canvas.stroke_style = self.get_edge_color((u,v))
         canvas.line_width = 3
 
-        if highlight:
-            # If the edge has to be highlighted, we draw it dashed
+        if (u, v) in self.selected or (v, u) in self.selected:
+            # If the edge is selected, we draw it dashed
             canvas.set_line_dash([4, 4])
             
         canvas.begin_path()
@@ -848,6 +852,9 @@ class SimpleGraphEditor():
                 canvas.fill_style = self.get_edge_color((u,v))
                 self.drawing_parameters['draw_arrow'](canvas)
                 canvas.restore()
+
+        if endpoints:
+            self._draw_vertices([u,v])
 
     def _draw_edges(self, edges=None, canvas=None, color='black'):
         """
@@ -1145,12 +1152,10 @@ class SimpleGraphEditor():
         self._draw_graph()
         self.text_graph_update()
 
-    def mouse_action_select_move(self, on_vertex, pixel_x, pixel_y):
-        if on_vertex is None:
-            self.dragging_canvas_from = [pixel_x, pixel_y]
-            self._select_vertex() # Unselect
-            return
-        else:
+    def mouse_action_select_move(self,
+                                 on_vertex, closest_edge,
+                                 pixel_x, pixel_y):
+        if on_vertex is not None:
             self.dragged_vertex = on_vertex
             self.output_text("Clicked on vertex " + str(on_vertex))
             with hold_canvas(self.multi_canvas):
@@ -1171,8 +1176,19 @@ class SimpleGraphEditor():
                                     neighbors=True,
                                     highlight=False,
                                     color='gray')
+                
+        elif closest_edge is not None:
+            if closest_edge in self.selected:
+                self.selected.remove(closest_edge)
+            else:
+                self.selected.add(closest_edge)
+            self._draw_edge(closest_edge, endpoints=True)
+        else:
+            # The click was neither on a vertex nor on an edge
+            self.dragging_canvas_from = [pixel_x, pixel_y]
+            self._select_vertex() # Unselect
+            return
 
-        
     @output.capture()
     def mouse_down_handler(self, click_x, click_y):
         """
@@ -1185,7 +1201,8 @@ class SimpleGraphEditor():
 
         self.initial_click_pos = (click_x, click_y)
         clicked_node = self._get_vertex_at(click_x, click_y)
-
+        closest_edge = None
+        
         if self.current_tool() == 'add vertex or edge':
             return self.mouse_action_add_ve(clicked_node, click_x, click_y)
         if self.current_tool() == 'add walk':
@@ -1194,17 +1211,17 @@ class SimpleGraphEditor():
             return self.mouse_action_add_clique(clicked_node, click_x, click_y)
         if self.current_tool() == 'add star':
             return self.mouse_action_add_star(clicked_node, click_x, click_y)
-        elif self.current_tool() == 'delete vertex or edge':
-            if clicked_node is not None:
-                return self.mouse_action_del_ve(clicked_node, None)
 
-            closest_edge= self._get_edge_at(click_x, click_y)
-
-            return self.mouse_action_del_ve(None, closest_edge)
-
-        elif self.current_tool() == 'select / move':
-            self.mouse_action_select_move(clicked_node, click_x, click_y)
-            return
+        if clicked_node is None:
+            closest_edge = self._get_edge_at(click_x, click_y)
+            
+        if self.current_tool() == 'delete vertex or edge':             
+            return self.mouse_action_del_ve(clicked_node, closest_edge)
+        if self.current_tool() == 'select / move':
+            return self.mouse_action_select_move(clicked_node,
+                                                 closest_edge,
+                                                 click_x,
+                                                 click_y)
 
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
@@ -1261,7 +1278,7 @@ class SimpleGraphEditor():
         elif self.dragging_canvas_from is not None:
             # We stop dragging the canvas
             self.dragging_canvas_from = None
-
+            
     def clear_drawing_button_callback(self, b):
         """Callback for the clear_drawing_button."""
         self.graph = Graph(0)
