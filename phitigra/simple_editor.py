@@ -197,12 +197,18 @@ class SimpleGraphEditor():
             min=1,
             max=100,
             step=1,
-            description='V. radius:',
+            description='⌀:',
             disabled=False,
-            layout={'width':'146px'}
+            layout={'width':'150px'}
         )
-        self.vertex_radius_box.observe(self.vertex_radius_box_callback, names='value')
-
+        self.radius_button = Button(description='',
+                                   disabled=False,
+                                   button_style='',
+                                   tooltip='Change the radius of the selected vertices',
+                                   icon='expand',
+                                   layout={'height': '34px', 'width': '34px'})
+        self.radius_button.on_click((lambda x : self.radius_button_callback()))
+        
         self.vertex_name_toggle = ToggleButton(
             value=True,
             description='Show vertex labels',
@@ -257,7 +263,7 @@ class SimpleGraphEditor():
                                       self.zoom_out_button,
                                       self.clear_drawing_button]),
                                 HBox([self.color_selector, self.color_button]),
-                                self.vertex_radius_box,
+                                HBox([self.vertex_radius_box,self.radius_button]),
                                 self.vertex_name_toggle,
                                 self.next_button],layout=Layout(min_width='160px'))
                             ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
@@ -548,6 +554,18 @@ class SimpleGraphEditor():
             self.set_vertex_radius(v, change['new'])
         self.refresh()
 
+    @output.capture()
+    def radius_button_callback(self):
+        """
+        Change the radius of the selected vertices (if any).
+
+        The new radius is that of the radius text box.
+        """
+        r = self.vertex_radius_box.value
+        for v in self.selected_vertices:
+            self.set_vertex_radius(v, r)
+        self.refresh()
+        
     def _normalize_layout(self):
         """
         Update the transformation matrix so that the graph drawing fits well
