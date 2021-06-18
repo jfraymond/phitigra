@@ -234,8 +234,8 @@ class SimpleGraphEditor():
             layout = {'width' : '50px'}
         )
         # We unselect any possibly selected vertex when the currrent
-        # tool is changes, in order to avoid problems with the deletion tool
-        self.tool_selector.observe(lambda _:self._select_vertex())
+        # tool is changed, in order to avoid problems with the deletion tool
+        self.tool_selector.observe(lambda _:self.tool_selector_callback())
         self.current_tool = lambda: self.tool_selector.value
 
         # A 'next' button to call a custom function
@@ -444,6 +444,11 @@ class SimpleGraphEditor():
                        randint(0, n2))
                    for v in self.graph.vertex_iterator()}
         self.graph.set_pos(rnd_pos)
+
+    def tool_selector_callback(self):
+        self._select_vertex()
+        self.selected_edges.clear()
+        self._clean_tools()
 
     @output.capture()
     def layout_selector_callback(self, change):
@@ -973,7 +978,7 @@ class SimpleGraphEditor():
                 # A single vertex was selected and we clicked on a new one:
                 # we link it to the previously selected vertex
                 self.add_edge(only_selected_vertex, on_vertex)
-
+                self._select_vertex() # Unselect
                 self.output_text("Added edge from " +
                                  str(only_selected_vertex) +
                                  " to " + str(on_vertex))
@@ -1279,7 +1284,6 @@ class SimpleGraphEditor():
                 self._redraw_vertex(self.dragged_vertex)
                 self.dragged_vertex = None
             else:
-                self._select_vertex(self.dragged_vertex, redraw=None)
                 self.output_text("Done dragging vertex.")
                 self._draw_graph()
             self.dragged_vertex = None
