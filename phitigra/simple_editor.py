@@ -105,8 +105,8 @@ class SimpleGraphEditor():
         # (moved vertices, etc.):
         self.interact_canvas = self.multi_canvas[1]
 
-        self.selected_vertex = None
-        self.selected = set()
+        self.selected_vertices = set()
+        self.selected_edges = set()
         self.dragged_vertex = None
         self.dragging_canvas_from = None
 
@@ -179,12 +179,18 @@ class SimpleGraphEditor():
         # Selector to change the color of the selected vertex
         self.color_selector = ColorPicker(
             concise=False,
-            description='V. color:',
+            description='',
             value='#437FC0',
             disabled=False,
-            layout={'width':'67px'}
+            layout={'height': '34px', 'width':'110px'}
         )
-        self.color_selector.observe(self.color_selector_callback)
+        self.color_button = Button(description='',
+                                   disabled=False,
+                                   button_style='',
+                                   tooltip='Apply color to the selected elements',
+                                   icon='paint-brush',
+                                   layout={'height': '34px', 'width': '34px'})
+        self.color_button.on_click((lambda x : self.color_button_callback()))
 
         self.vertex_radius_box = BoundedIntText(
             value=self.drawing_parameters['default_radius'],
@@ -250,7 +256,7 @@ class SimpleGraphEditor():
                                       self.zoom_to_fit_button,
                                       self.zoom_out_button,
                                       self.clear_drawing_button]),
-                                self.color_selector,
+                                HBox([self.color_selector, self.color_button]),
                                 self.vertex_radius_box,
                                 self.vertex_name_toggle,
                                 self.next_button],layout=Layout(min_width='160px'))
@@ -392,7 +398,11 @@ class SimpleGraphEditor():
         u, v, *_ = e
         if color is None:
             color = self.drawing_parameters['default_edge_color']
-        self.edge_colors[(u, v)] = color
+
+        if (u,v) in self.edge_colors.keys():
+            self.edge_colors[(u, v)] = color
+        else:
+            self.edge_colors[(v, u)] = color
 
     def get_edge_color(self, e):
         '''
@@ -487,7 +497,7 @@ class SimpleGraphEditor():
                 return
             else:
                 layout_kw['layout'] = 'forest'
-                layout_kw['forest_roots'] = [self.selected_vertex]
+                layout_kw['forest_roots'] = [next((v for v in self.selected_vertices))]
                 if new_layout == 'forest (root up)':
                     layout_kw['tree_orientation'] = 'up'
                 else:
@@ -502,21 +512,19 @@ class SimpleGraphEditor():
         self._draw_graph()
 
     @output.capture()
-    def color_selector_callback(self, change):
+    def color_button_callback(self):
         """
-        Change the color of the selected vertex (if any).
+        Change the color of the selected elements (if any).
 
-        The new color is ``change['new']``.
-        This function is called when the color selector is used.
-        If no vertex is selected or the color did not change, nothing is done.
+        The new color is that of the color wheel: ``self.color_selector.value``.
         """
-        if change['name'] == 'value':
-            new_color = change['new']
+        new_color = self.color_selector.value
 
-            if self.selected_vertex is not None:
-                # Change the color of the selected vertex
-                self.set_vertex_color(self.selected_vertex, new_color)
-                self._redraw_vertex(self.selected_vertex, neighbors=False)
+        for e in self.selected_edges:
+            self.set_edge_color(e, new_color)
+        for v in self.selected_vertices:
+            self.set_vertex_color(v, new_color)
+        self.refresh()
 
     @output.capture()
     def vertex_radius_box_callback(self, change):
@@ -530,14 +538,10 @@ class SimpleGraphEditor():
         default value to be used for new vertices.
         """
 
-        if self.selected_vertex is not None:
-            # Change the radius of the selected_vertex
-            self.set_vertex_radius(self.selected_vertex, change['new'])
-            if change['new'] < change['old']:
-                self.refresh()
-            else:
-                # When the vertex size grows, we do not need to redraw everything
-                self.refresh(self.selected_vertex)
+        for v in self.selected_vertices:
+            # Change the radius of the selected vertices
+            self.set_vertex_radius(v, change['new'])
+        self.refresh()
 
     def _normalize_layout(self):
         """
@@ -758,8 +762,8 @@ class SimpleGraphEditor():
         """
         Redraw a vertex.
 
-        If ``highlight == True`` and ``v == self.selected_vertex``, the colored
-        border around ``v`` is also drawn.
+        If ``highlight == True`` and ``v`` is selected, the colored
+        border (focus) around ``v`` is also drawn.
         If ``neighbors == True``, the incident edges are also redrawn, as well
         as its neighbors, so that the edges incident to the neighbors do not
         overlap their shapes.
@@ -782,10 +786,10 @@ class SimpleGraphEditor():
                                     canvas=canvas)
 
             self._draw_vertex(v, canvas=canvas, color=color)
-            if self.selected_vertex==v and highlight:
-                self._highlight_vertex(self.selected_vertex)
+            if highlight and v in self.selected_vertices:
+                self._highlight_vertex(v)
 
-    def _draw_edge(self, e, endpoints=False, canvas=None):
+    def _draw_edge(self, e, endpoints=False, clear_first=False, canvas=None):
         """
         Draw an edge.
 
@@ -797,6 +801,9 @@ class SimpleGraphEditor():
           label is ignored;
         - ``endpoints`` -- Boolean (default: ``False``), whether to redraw
           the endpoints of the edge;
+        - ``clear_first`` -- Boolean (default: ``False``), whether to erase
+          the edge first by drawing a white edge over it (to use together with
+          ``endpoints``);
         - ``canvas`` -- canvas where to draw the edge (default: ``None``);
           with the default value, ``self.canvas`` is used.
 
@@ -817,10 +824,18 @@ class SimpleGraphEditor():
         if canvas is None:
             canvas = self.canvas
 
-        canvas.stroke_style = self.get_edge_color((u,v))
         canvas.line_width = 3
 
-        if (u, v) in self.selected or (v, u) in self.selected:
+        if clear_first:
+            canvas.stroke_style = 'white'
+            canvas.begin_path()
+            canvas.move_to(*pos_u)
+            canvas.line_to(*pos_v)
+            canvas.stroke()
+
+        canvas.stroke_style = self.get_edge_color((u,v))
+
+        if (u, v) in self.selected_edges or (v, u) in self.selected_edges:
             # If the edge is selected, we draw it dashed
             canvas.set_line_dash([4, 4])
             
@@ -894,8 +909,8 @@ class SimpleGraphEditor():
             self.canvas.clear()
             self._draw_edges()
             self._draw_vertices()
-            if self.selected_vertex is not None:
-                self._highlight_vertex(self.selected_vertex)
+            for v in self.selected_vertices:
+                self._highlight_vertex(v)
 
     def refresh(self, vertex=None):
         if vertex:
@@ -916,25 +931,22 @@ class SimpleGraphEditor():
         If `redraw` is `False`, does not redraw the (un)selected vertex
         (useful when the graph is going to be fully redrawn afterwards anyway).
         """
-        
-        previously_selected = self.selected_vertex
-        self.selected_vertex = vertex
-        self.output_text("Selected vertex: " +
-                         str(self.selected_vertex))
-        if vertex is not None:
-            # The color and radius of the selected vertex becomes
-            # the default ones
-            self.color_selector.value = (
-                self.colors[self.selected_vertex])
-            self.vertex_radius_box.value = (self._get_radius(self.selected_vertex))
+
+        if vertex is None:
+            self.selected_vertices.clear()
+            return
+        else:
+            # We select `vertex` if it was not, and unselect it otherwise
+            self.selected_vertices.symmetric_difference_update([vertex])
+
+            # the radius of the selected vertex becomes the default one
+            self.vertex_radius_box.value = (self._get_radius(vertex))
+            self.output_text("Selected vertex: " +
+                         str(vertex))
 
         if redraw:
-            # Redraw what needs to be redrawn
-            if previously_selected is not None:
-                self._redraw_vertex(previously_selected, neighbors=False)
-            if self.selected_vertex is not None:
-                self._redraw_vertex(self.selected_vertex, neighbors=False)
-   
+            self.refresh()
+
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
         """
         Function that is called after a click on ``on_vertex`` (if not None)
@@ -942,37 +954,41 @@ class SimpleGraphEditor():
         """
         if on_vertex is not None:
             # The click is done on an existing vertex
-            
-            if self.selected_vertex is not None:
-                if self.selected_vertex == on_vertex:
-                    # The click is done on the selected vertex
-                    self._select_vertex() # Unselect
-                else:
-                    # A vertex was selected and we clicked on a new one:
-                    # we link it to the previously selected vertex
-                    self.add_edge(self.selected_vertex, on_vertex)
 
-                    self.output_text("Added edge from " +
-                                     str(self.selected_vertex) +
-                                     " to " + str(on_vertex))
-                    self._select_vertex(redraw=False) # Unselect
-                    self._draw_graph()
-                    self.text_graph_update()
-                    return
-            else:
+            if len(self.selected_vertices) == 0:
                 # No vertex was selected: select the clicked vertex
                 self._select_vertex(on_vertex)
+            else:
+                if on_vertex in self.selected_vertices:
+                    # The click is done on the selected vertex
+                    self._select_vertex() # Unselect
+                    return
+
+                if len(self.selected_vertices) > 1:
+                    raise ValueError
+                
+                selected_iterator = (v for v in self.selected_vertices)
+                only_selected_vertex = next(selected_iterator)
+
+                # A single vertex was selected and we clicked on a new one:
+                # we link it to the previously selected vertex
+                self.add_edge(only_selected_vertex, on_vertex)
+
+                self.output_text("Added edge from " +
+                                 str(only_selected_vertex) +
+                                 " to " + str(on_vertex))
         else:
             # The click is not done on an existing vertex
 
             self.output_text("Click was not on a vertex")
-            if self.selected_vertex is not None:
+            if len(self.selected_vertices):
                 # If a vertex is selected and we click on the background, we
                 # un-select it
-                self._select_vertex() # Unselect (and redraw)
+                self.selected_vertices.clear() # Unselect
             else:
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
+        self.refresh()
         self.text_graph_update()
                 
     def _clean_tools(self):
@@ -1156,6 +1172,7 @@ class SimpleGraphEditor():
                                  on_vertex, closest_edge,
                                  pixel_x, pixel_y):
         if on_vertex is not None:
+            # Click was on a vertex
             self.dragged_vertex = on_vertex
             self.output_text("Clicked on vertex " + str(on_vertex))
             with hold_canvas(self.multi_canvas):
@@ -1178,15 +1195,15 @@ class SimpleGraphEditor():
                                     color='gray')
                 
         elif closest_edge is not None:
-            if closest_edge in self.selected:
-                self.selected.remove(closest_edge)
+            # Click as not on a vertex but near an edge
+            if closest_edge in self.selected_edges:
+                self.selected_edges.remove(closest_edge)
             else:
-                self.selected.add(closest_edge)
-            self._draw_edge(closest_edge, endpoints=True)
+                self.selected_edges.add(closest_edge)
+            self._draw_edge(closest_edge, endpoints=True, clear_first=True)
         else:
             # The click was neither on a vertex nor on an edge
             self.dragging_canvas_from = [pixel_x, pixel_y]
-            self._select_vertex() # Unselect
             return
 
     @output.capture()
@@ -1258,13 +1275,7 @@ class SimpleGraphEditor():
             # we actually wanted to (un)select it
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
-                if self.selected_vertex is None:
-                    self._select_vertex(self.dragged_vertex) # Select
-                    self.output_text("Selected vertex " +
-                                     str(self.selected_vertex))
-                else:
-                    self._select_vertex(redraw=None) # Unselect
-
+                self._select_vertex(self.dragged_vertex) # (Un)select
                 self._redraw_vertex(self.dragged_vertex)
                 self.dragged_vertex = None
             else:
@@ -1278,6 +1289,13 @@ class SimpleGraphEditor():
         elif self.dragging_canvas_from is not None:
             # We stop dragging the canvas
             self.dragging_canvas_from = None
+            # If we dragged the canvas by very little (or not at all),
+            # it was just a click on the canvas to unselect everything
+            if (abs(pixel_x - self.initial_click_pos[0]) < 10
+                    and abs(pixel_y - self.initial_click_pos[1]) < 10):
+                self._select_vertex(redraw=None)
+                self.selected_edges.clear()
+                self.refresh()
             
     def clear_drawing_button_callback(self, b):
         """Callback for the clear_drawing_button."""
