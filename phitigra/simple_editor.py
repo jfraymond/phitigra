@@ -321,7 +321,7 @@ class SimpleGraphEditor():
                                      self.drawing_parameters['default_radius'])
 
     def _get_coord_on_canvas(self, x, y):
-        '''
+        """
         Return the coordinates on the canvas corresponding to the coordinates
         `x` and `y` in the basis where the graph positions are stored.
 
@@ -335,27 +335,27 @@ class SimpleGraphEditor():
             range. They are just the coordinates of ``get_pos`` translated
             and scaled using ``self._transform_matrix``, so they can be
             negative or over the canvas width/height.
-        '''
+        """
 
         m = self._transform_matrix * matrix([[x],[y],[1]])
         return int(m[0][0]), int(m[1][0]) # New x and y
 
     def _get_vertex_pos(self, v):
-        '''
+        """
         Return the vertex coordinates on the canvas.
 
         See :meth:`_get_coord_on_canvas` for details.
-        '''
+        """
         x, y = self.graph.get_pos()[v]
 
         return self._get_coord_on_canvas(x, y)
 
     def _get_vertices_pos(self):
-        '''
+        """
         Return a dictionary of the coordinates of the vertices on the canvas.
 
         See :meth:`_get_coord_on_canvas` for details.
-        '''
+        """
 
         graph_pos = self.graph.get_pos()
         canvas_pos = {v : self._get_coord_on_canvas(*graph_pos[v])
@@ -411,9 +411,9 @@ class SimpleGraphEditor():
             self.edge_colors[(v, u)] = color
 
     def get_edge_color(self, e):
-        '''
+        """
         Return the color of an edge.
-        '''
+        """
 
         u, v, *_ = e
         try:
@@ -699,11 +699,11 @@ class SimpleGraphEditor():
             return name
 
     def add_edge(self, u, v, label=None, color=None):
-        '''
+        """
         Add an edge between two vertices and draw it
 
         If ``color`` is ``None``, use the default color.
-        '''
+        """
         self.graph.add_edge((u, v, label))
         self.set_edge_color((u,v))
 
@@ -1030,11 +1030,11 @@ class SimpleGraphEditor():
                 pass
 
     def _get_vertex_at(self, x, y):
-        '''
+        """
         Return which vertex shape contains the point with coordinates (x,y).
 
         Return `None` if no vertex shape contains (x,y).
-        '''
+        """
 
         canvas_pos = self._get_vertices_pos()
 
@@ -1051,7 +1051,7 @@ class SimpleGraphEditor():
         return None
 
     def _get_edge_at(self, x, y):
-        '''
+        """
         Return which edge runs near the point with coordinates (x,y).
 
         Return `None` if no edge is close enough to (x,y).
@@ -1059,7 +1059,7 @@ class SimpleGraphEditor():
         .. WARNING::
             This function assumes that edges are straigh lines between
             their endpoints.
-        '''
+        """
 
         thresold = 20
         canvas_pos = self._get_vertices_pos()
@@ -1315,6 +1315,7 @@ class SimpleGraphEditor():
             # it was just a click on the canvas to unselect everything
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
+                self.output_text("Empty selection.")
                 self._select_vertex(redraw=None)
                 self.selected_edges.clear()
                 self.refresh()
@@ -1328,7 +1329,7 @@ class SimpleGraphEditor():
         self.text_graph_update()
 
     def set_next_callback(self, f):
-        '''
+        """
         Define a callback for the `Next` button.
-        '''
+        """
         self.next_button.on_click(lambda x: f())
