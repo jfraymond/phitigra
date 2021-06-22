@@ -508,11 +508,15 @@ class SimpleGraphEditor():
                 return
             else:
                 layout_kw['layout'] = 'forest'
-                layout_kw['forest_roots'] = [next((v for v in self.selected_vertices))]
+                try:
+                    root = next((v for v in self.selected_vertices))
+                    layout_kw['forest_roots'] = [root]
+                except StopIteration:
+                    pass
                 if new_layout == 'forest (root up)':
-                    layout_kw['tree_orientation'] = 'up'
-                else:
                     layout_kw['tree_orientation'] = 'down'
+                else:
+                    layout_kw['tree_orientation'] = 'up'
         else:
             layout_kw['layout'] = new_layout
 
@@ -1315,7 +1319,7 @@ class SimpleGraphEditor():
             # it was just a click on the canvas to unselect everything
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
-                self.output_text("Empty selection.")
+                self.output_text("Emptied selection.")
                 self._select_vertex(redraw=None)
                 self.selected_edges.clear()
                 self.refresh()
