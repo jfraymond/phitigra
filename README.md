@@ -7,12 +7,17 @@ when using the [Jupyter](www.jupyter.org) notebook.
 ## Features
 
   * positioning vertices with the mouse, adding edges and vertices
-  * can deal with undirected or directed graphs (but not multigraphs)
+  * can deal with undirected or directed graphs
   * changing the color of vertices and edges
   * easy export of the drawn graph for use with Sage
   * zoom in and zoom out
   * different layout options
   * step-by-step execution of a custom script on the drawn graph
+
+## Non-features
+
+  * does not work with multigraphs (multiple edges are not drawn)
+  * is not designed to handle large graphs
 
 ## Dependencies
 

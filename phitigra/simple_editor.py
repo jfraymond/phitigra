@@ -33,6 +33,7 @@ from copy import copy
 
 from sage.graphs.all import Graph
 from sage.matrix.constructor import matrix
+from sage.modules.free_module_element import vector
 
 class SimpleGraphEditor():
     # Output widget used to see error messages (for debug)
@@ -446,23 +447,32 @@ class SimpleGraphEditor():
 
     def _get_vertex_at(self, x, y):
         """
-        Return which vertex shape contains the point with coordinates (x,y).
+        Return which vertex is drawn at (x,y).
 
-        Return `None` if no vertex shape contains (x,y).
+        Actually return the vertex whose shape contains `(x,y)` and whose
+        center is the closest to `(x,y)`.
+        Return `None` if no vertex shape contains `(x,y)`.
         """
 
         canvas_pos = self._get_vertices_pos()
+
+        min_dist = self.drawing_parameters['width'] # aka infinity
+        arg_min = None
 
         for v in self.graph.vertex_iterator():
             v_x, v_y = canvas_pos[v]
             radius = self._get_radius(v)
 
-            if (abs(x - v_x) < radius and
-                    abs(y - v_y) < radius):
-                # The user clicked on vertex v (approximatively)!
-                return v
+            d_x = abs(x - v_x)
+            d_y = abs(y - v_y)
+            if ( d_x < radius and d_y < radius):
+                # The user clicked close to vertex v (approximatively)!
+                d = sqrt(d_x*d_x + d_y*d_y)
+                if d <= radius and d < min_dist:
+                    min_dist = d
+                    arg_min = v
 
-        return None
+        return arg_min
 
     def _get_edge_at(self, x, y):
         """
@@ -475,49 +485,43 @@ class SimpleGraphEditor():
             their endpoints.
         """
 
+        def sqnorm(a, b):
+            # Square of the norm
+            d = [a[0] - b[0], a[1] - b[1]]
+            return d[0] * d[0] + d[1] * d[1]
+
         thresold = 20
         canvas_pos = self._get_vertices_pos()
 
+        min_dist = 10 # We don't want edges too far from the click
         closest_edge = None
-        # closest_dist = infinity:
-        closest_dist = max(self.canvas.width, self.canvas.height) + 1
-        for v in self.graph.vertex_iterator():
-            # Check if the click is on edge `vu` with v = leftmost vertex
-            v_x, v_y = canvas_pos[v]
-            if x < v_x:
+
+        p = vector([x,y])
+
+        for e in self.graph.edge_iterator():
+            u, v, *_ = e
+
+            pv = vector(canvas_pos[v])
+            pu = vector(canvas_pos[u])
+
+            if (x < min(pv[0], pu[0]) - 10 or
+                x > max(pv[0], pu[0]) + 10 or
+                y < min(pv[1], pu[1]) - 10 or
+                y > max(pv[1], pu[1]) + 10):
+                # In the expression above it is important to keep slack (10
+                # in order to deal with horizontal or vertical edges
                 continue
-            for u in self.graph.neighbor_iterator(v):
-                u_x, u_y = canvas_pos[u]
 
-                # First discard cases where the click does not belong
-                # to the square  delimited by u and v
-                if u_x < x:
-                    continue
-                if (y > v_y and
-                    y > u_y):
-                    continue
-                if (y < v_y and
-                    y < u_y):
-                    continue
-
-                delta_y = u_y - v_y
-                delta_x = u_x - v_x
-                slope = ((delta_y if abs(delta_y) > 0.1 else 0.1) /
-                         (delta_x if abs(delta_x) > 0.1 else 0.1))
-                uv_edge_at_c_x = (v_y - (v_x - x) * slope)
-                uv_edge_at_c_y = (v_x - (v_y - y) / slope)
-                dh = abs(y - uv_edge_at_c_x)
-                dv = abs(x - uv_edge_at_c_y)
-                mindist = min(dh, dv)
-                if mindist < thresold:
-                    # The click is close enough from the edge uv
-                    if mindist < closest_dist:
-                        # And it is the closest we have seen so far
-                        if self.graph.has_edge(u, v):
-                            # Case distinction to deal with digraphs
-                            closest_edge = (u, v)
-                        else:
-                            closest_edge = (v, u)
+            t = (p - pv).dot_product(pu - pv) / sqnorm(pv, pu)
+            proj = pv + t * (pu - pv)
+            d = sqnorm(proj, p)
+            if d < min_dist:
+                min_dist = d
+                if self.graph.has_edge(u, v):
+                    # Case distinction to deal with digraphs
+                    closest_edge = (u, v)
+                else:
+                    closest_edge = (v, u)
         return closest_edge
 
     ## Layout ##
