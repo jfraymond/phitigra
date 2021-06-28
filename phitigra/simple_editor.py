@@ -542,7 +542,7 @@ class SimpleGraphEditor():
 
     def _normalize_layout(self):
         """
-        Update the transformation matrix so that the graph drawing fits well
+        Redefines the transformation matrix so that the graph drawing fits well
         the canvas.
 
         ``x`` and ``y`` coordinates are scaled by the same factor and the
@@ -553,34 +553,23 @@ class SimpleGraphEditor():
             # There is nothing to do with the one vertex graph
             return
 
-        canvas_pos = self._get_vertices_pos()
+        pos = self.graph.get_pos()
 
         # Etrema for vertex centers
-        x_min = min(canvas_pos[v][0] for v in self.graph)
-        x_max = max(canvas_pos[v][0] for v in self.graph)
-        y_min = min(canvas_pos[v][1] for v in self.graph)
-        y_max = max(canvas_pos[v][1] for v in self.graph)
-        # Extrema for vertex shapes
-        s_x_min = min(canvas_pos[v][0] - self._get_radius(v) for v in self.graph)
-        s_x_max = max(canvas_pos[v][0] + self._get_radius(v) for v in self.graph)
-        s_y_min = min(canvas_pos[v][1] - self._get_radius(v) for v in self.graph)
-        s_y_max = max(canvas_pos[v][1] + self._get_radius(v) for v in self.graph)
+        x_min = min(pos[v][0] for v in self.graph)
+        x_max = max(pos[v][0] for v in self.graph)
+        y_min = min(pos[v][1] for v in self.graph)
+        y_max = max(pos[v][1] for v in self.graph)
 
         x_range = max(x_max - x_min, 0.1)    # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
 
         # We keep some margin on the sides
 
-        # The space between the vertex centers and the border of the frame
-        # should be wide enough so show the vertex shapes (x_min - s_x_min)
-        # and we add some extra pixels so that it looks better (5)
-        x_margin_left = x_min - s_x_min + 5
-        x_margin_right = s_x_max - x_max + 5
-        y_margin_bottom = y_min - s_y_min + 5
-        y_margin_top = s_y_max - y_max + 5
+        margin = max((self._get_radius(v) for v in self.graph.vertex_iterator())) + 5
 
-        target_width = self.multi_canvas.width - (x_margin_left + x_margin_right)
-        target_height = self.multi_canvas.height - (y_margin_top + y_margin_bottom)
+        target_width = self.multi_canvas.width - 2 * margin
+        target_height = self.multi_canvas.height - 2 * margin
         # Some computations to decide of the scaling factor in order to
         # simultaneously fill the canvas on at least one axis range and
         # keep proportions, and to center the image
@@ -588,8 +577,8 @@ class SimpleGraphEditor():
         factor_y = target_height / y_range
 
         factor = min(factor_x, factor_y)
-        x_shift = x_margin_left + (target_width - x_range * factor) / 2
-        y_shift = y_margin_bottom + (target_height - y_range * factor) / 2
+        x_shift = margin + (target_width - x_range * factor) / 2
+        y_shift = margin + (target_height - y_range * factor) / 2
 
         # See https://en.wikipedia.org/wiki/Transformation_matrix#Affine_transformations
         translate_to_origin = matrix([[1, 0, -x_min],
@@ -598,14 +587,13 @@ class SimpleGraphEditor():
         scale_to_canvas_size = matrix([[factor, 0     , 0],
                                        [0     , factor, 0],
                                        [0     , 0     , 1]])
-        translate_back_to_center = matrix([[1, 0, x_shift],
+        translate_to_center = matrix([[1, 0, x_shift],
                                       [0, 1, y_shift],
                                       [0, 0, 1]])
 
-        self._transform_matrix = (translate_back_to_center
+        self._transform_matrix = (translate_to_center
                                   * scale_to_canvas_size
-                                  * translate_to_origin
-                                  * self._transform_matrix)
+                                  * translate_to_origin)
 
     def _scale_layout(self, ratio):
         """
