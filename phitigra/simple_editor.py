@@ -719,7 +719,7 @@ class SimpleGraphEditor():
     ## Drawing functions ##
     #######################
 
-    def _draw_vertex_shape(self, v, canvas=None, color=None, highlight=False):
+    def _draw_vertex_shape(self, v, canvas=None, color=None, highlight=True):
         """
         Draw the shape of a vertex.
 
@@ -756,10 +756,14 @@ class SimpleGraphEditor():
             canvas.fill_style = 'black'
             canvas.fill_text(str(v), x, y, max_width=2*radius)
 
-        if highlight:
-            self._highlight_vertex(v)
+        if highlight and v in self.selected_vertices:
+            # Draw the focus
+            canvas.stroke_style = 'white'
+            canvas.set_line_dash([4, 4])
+            canvas.stroke_arc(x, y, radius, 0, 2*pi)
+            canvas.set_line_dash([])
 
-    def _draw_vertex(self, v, canvas=None, color=None, highlight=False, force_highlight=False, neighbors=False):
+    def _draw_vertex(self, v, canvas=None, color=None, highlight=True, force_highlight=False, neighbors=False):
         """
         Draw a given vertex.
 
@@ -793,28 +797,7 @@ class SimpleGraphEditor():
                 for u in self.graph.neighbor_iterator(v):
                     self._draw_vertex_shape(u, canvas=canvas)
 
-            self._draw_vertex_shape(v, canvas, color)
-
-    def _highlight_vertex(self, v, canvas=None, color=None):
-        """Draw the focus on a vertex."""
-
-        x, y = self._get_vertex_pos(v)
-        if canvas is None:
-            canvas = self.canvas
-        if color is None:
-            color = 'black'
-
-        radius = self._get_radius(v)
-
-        # The border
-        canvas.line_width = 2
-        canvas.stroke_style = color
-        canvas.stroke_arc(x, y, radius, 0, 2*pi)
-
-        canvas.stroke_style = 'white'
-        canvas.set_line_dash([4, 4])
-        canvas.stroke_arc(x, y, radius, 0, 2*pi)
-        canvas.set_line_dash([])
+            self._draw_vertex_shape(v, canvas, color,highlight=highlight)
 
     def _draw_edge(self, e, endpoints=False, clear_first=False, canvas=None):
         """
