@@ -795,18 +795,6 @@ class SimpleGraphEditor():
 
             self._draw_vertex_shape(v, canvas, color)
 
-    def _draw_vertices(self, vertices=None, canvas=None):
-        """
-        Draw the ``vertices`` on ``canvas``.
-
-        To use within a ``with hold_canvas`` block, preferably.
-        """
-        if vertices is None:
-            vertices = self.graph.vertex_iterator()
-
-        for v in vertices:
-            self._draw_vertex(v, canvas)
-
     def _highlight_vertex(self, v, canvas=None, color=None):
         """Draw the focus on a vertex."""
 
@@ -908,7 +896,8 @@ class SimpleGraphEditor():
                 canvas.restore()
 
         if endpoints:
-            self._draw_vertices([u,v], canvas=canvas)
+            self._draw_vertex(u, canvas=canvas)
+            self._draw_vertex(v, canvas=canvas)
 
     def _draw_graph(self):
         """
@@ -922,7 +911,9 @@ class SimpleGraphEditor():
             for e in self.graph.edge_iterator():
                 self._draw_edge(e)
 
-            self._draw_vertices()
+            for v in self.graph.vertex_iterator():
+                self._draw_vertex(v)
+
             # Selected vertices are (re)drawn on top
             for v in self.selected_vertices:
                 self._draw_vertex(v, force_highlight=True)
@@ -1123,9 +1114,10 @@ class SimpleGraphEditor():
                 for (u1, u2, label) in self.graph.edge_iterator():
                     if (on_vertex != u1 and on_vertex != u2):
                         self._draw_edge((u1, u2, label))
-                self._draw_vertices((u
-                                     for u in self.graph.vertex_iterator()
-                                     if u != on_vertex))
+                for u in self.graph.vertex_iterator():
+                    if u != on_vertex:
+                        self._draw_vertex(u)
+
                 # We draw the rest on the interact canvas.
                 self.interact_canvas.clear()
                 self._draw_vertex(on_vertex, canvas=self.interact_canvas,
