@@ -126,100 +126,6 @@ class SimpleGraphEditor():
         # Data about the graph:
         self.text_graph = Label("", layout={'width': '100%'})
 
-        # Button to rescale:
-        self.zoom_to_fit_button = Button(description='',
-                                         disabled=False,
-                                         button_style='',
-                                         tooltip=('Zoom to fit'),
-                                         icon='compress',
-                                         layout={'height' : '34px', 'width' : '34px'})
-        self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
-                                                    self._draw_graph()))
-        self.zoom_in_button = Button(description='',
-                                     disabled=False,
-                                     button_style='',
-                                     tooltip='Zoom in',
-                                     icon='search-plus',
-                                     layout={'height' : '34px', 'width' : '34px'})
-        self.zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
-                                                    self._draw_graph()))
-        self.zoom_out_button = Button(description='',
-                                      disabled=False,
-                                      button_style='',
-                                      tooltip='Zoom out',
-                                      icon='search-minus',
-                                      layout={'height' : '34px', 'width' : '34px'})
-        self.zoom_out_button.on_click(lambda x: (self._scale_layout(2/3),
-                                                    self._draw_graph()))
-
-        # To clear the drawing
-        self.clear_drawing_button = Button(description="",
-                                           disabled=False,
-                                           button_style='',
-                                           tooltip='Clear the drawing and delete the graph',
-                                           icon='trash',
-                                           layout={'height' : '34px', 'width' : '34px'})
-        self.clear_drawing_button.on_click(self.clear_drawing_button_callback)
-
-        # Selector to change layout
-        self.layout_selector = Dropdown(
-            options=[('- change layout -', '- change layout -'),
-                     ('random', 'random'),
-                     ('spring', 'spring'),
-                     ('circular', 'circular'),
-                     ('planar', 'planar'),
-                     ('forest (root up)', 'forest (root up)'),
-                     ('forest (root down)', 'forest (root down)'),
-                     ('directed acyclic', 'acyclic')],
-            value='- change layout -',
-            description='',
-            layout={'width':'150px'}
-        )
-        self.layout_selector.observe(self.layout_selector_callback)
-
-        # Selector to change the color of the selected vertex
-        self.color_selector = ColorPicker(
-            concise=False,
-            description='',
-            value='#437FC0',
-            disabled=False,
-            layout={'height': '34px', 'width':'110px'}
-        )
-        self.color_button = Button(description='',
-                                   disabled=False,
-                                   button_style='',
-                                   tooltip='Apply color to the selected elements',
-                                   icon='paint-brush',
-                                   layout={'height': '34px', 'width': '34px'})
-        self.color_button.on_click((lambda x : self.color_button_callback()))
-
-        self.vertex_radius_box = BoundedIntText(
-            value=self.drawing_parameters['default_radius'],
-            min=1,
-            max=100,
-            step=1,
-            description='⌀:',
-            disabled=False,
-            layout={'width':'150px'}
-        )
-        self.radius_button = Button(description='',
-                                   disabled=False,
-                                   button_style='',
-                                   tooltip='Change the radius of the selected vertices',
-                                   icon='expand',
-                                   layout={'height': '34px', 'width': '34px'})
-        self.radius_button.on_click((lambda x : self.radius_button_callback()))
-
-        self.vertex_name_toggle = ToggleButton(
-            value=True,
-            description='Show vertex labels',
-            disabled=False,
-            button_style='',
-            tooltip='Should the vertex label be drawn?',
-            icon=''
-        )
-        self.vertex_name_toggle.observe(lambda _: self._draw_graph())
-
         # The drawing tools
         self.tool_selector = ToggleButtons(
             options=['select / move',
@@ -238,19 +144,130 @@ class SimpleGraphEditor():
                       'Add a clique through new or existing vertices',
                       'Add a star through new or existing vertices',],
             icons=['']*5, #['arrows', 'edit', 'eraser','','',''],
-            layout = {'width' : '50px'}
+            layout = {'width' : '150px', "margin":"0px 2px 0px auto"}
         )
         # We unselect any possibly selected vertex when the currrent
         # tool is changed, in order to avoid problems with the deletion tool
         self.tool_selector.observe(lambda _:self.tool_selector_callback())
         self.current_tool = lambda: self.tool_selector.value
 
+        # Selector to change layout
+        self.layout_selector = Dropdown(
+            options=[('- change layout -', '- change layout -'),
+                     ('random', 'random'),
+                     ('spring', 'spring'),
+                     ('circular', 'circular'),
+                     ('planar', 'planar'),
+                     ('forest (root up)', 'forest (root up)'),
+                     ('forest (root down)', 'forest (root down)'),
+                     ('directed acyclic', 'acyclic')],
+            value='- change layout -',
+            description='',
+            layout={'width':'150px', "margin":"1px 2px 1px auto"}
+        )
+        self.layout_selector.observe(self.layout_selector_callback)
+
+        # Buttons to rescale:
+        self.zoom_in_button = Button(description='',
+                                     disabled=False,
+                                     button_style='',
+                                     tooltip='Zoom in',
+                                     icon='search-plus',
+                                     layout={'height': '36px',
+                                             'width': '36px',
+                                             'margin': '0px 1px 0px 0px'})
+        self.zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
+                                                    self._draw_graph()))
+        self.zoom_to_fit_button = Button(description='',
+                                         disabled=False,
+                                         button_style='',
+                                         tooltip=('Zoom to fit'),
+                                         icon='compress',
+                                         layout={'height': '36px',
+                                                 'width': '36px',
+                                                 'margin': '0px 1px 0px 1px'})
+        self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
+                                                    self._draw_graph()))
+        self.zoom_out_button = Button(description='',
+                                      disabled=False,
+                                      button_style='',
+                                      tooltip='Zoom out',
+                                      icon='search-minus',
+                                      layout={'height': '36px',
+                                              'width': '36px',
+                                              'margin': '0px 1px 0px 1px'})
+        self.zoom_out_button.on_click(lambda x: (self._scale_layout(2/3),
+                                                    self._draw_graph()))
+
+        # To clear the drawing
+        self.clear_drawing_button = Button(description="",
+                                           disabled=False,
+                                           button_style='',
+                                           tooltip='Clear the drawing and delete the graph',
+                                           icon='trash',
+                                           layout={'height': '36px',
+                                                   'width': '36px',
+                                                   'margin': '0px 0px 0px 1px'})
+        self.clear_drawing_button.on_click(self.clear_drawing_button_callback)
+
+        # Selector to change the color of the selected vertex
+        self.color_selector = ColorPicker(
+            concise=False,
+            description='',
+            value='#437FC0',
+            disabled=False,
+            layout={'height': '36px',
+                    'width':'112px',
+                    'margin': '0px 1px 0px 0px'}
+        )
+        self.color_button = Button(description='',
+                                   disabled=False,
+                                   button_style='',
+                                   tooltip='Apply color to the selected elements',
+                                   icon='paint-brush',
+                                   layout={'height': '36px',
+                                           'width': '36px',
+                                           'margin': '0px 0px 0px 1px'})
+        self.color_button.on_click((lambda x : self.color_button_callback()))
+
+        self.vertex_radius_box = BoundedIntText(
+            value=self.drawing_parameters['default_radius'],
+            min=1,
+            max=100,
+            step=1,
+            description="",#'⌀:',
+            disabled=False,
+            layout={'width':'90px',
+                    'margin': 'auto 1px auto 0px'}
+        )
+        self.radius_button = Button(description='',
+                                   disabled=False,
+                                   button_style='',
+                                   tooltip='Change the radius of the selected vertices',
+                                   icon='expand',
+                                   layout={'height': '36px',
+                                           'width': '36px',
+                                           'margin': '0px 0px 0px 1px'})
+        self.radius_button.on_click((lambda x : self.radius_button_callback()))
+
+        self.vertex_name_toggle = ToggleButton(
+            value=True,
+            description='Show vertex labels',
+            disabled=False,
+            button_style='',
+            tooltip='Should the vertex label be drawn?',
+            icon='',
+            layout={"width": "150px", "margin": "1px 2px 1px auto"}
+        )
+        self.vertex_name_toggle.observe(lambda _: self._draw_graph())
+
         # A 'next' button to call a custom function
         self.next_button = Button(description='Next',
                                   disabled=False,
                                   button_style='',
                                   tooltip='Call a custom function. Define it via the \'set_next_callback\' method.',
-                                  icon='forward')
+                                  icon='forward',
+                                  layout={"width": "150px", "margin": "1px 2px 0px auto"})
 
         # The final widget, which contains all the parts defined above
         self.widget = HBox([VBox([self.multi_canvas,
@@ -262,12 +279,18 @@ class SimpleGraphEditor():
                                 HBox([self.zoom_in_button,
                                       self.zoom_to_fit_button,
                                       self.zoom_out_button,
-                                      self.clear_drawing_button]),
-                                HBox([self.color_selector, self.color_button]),
-                                HBox([self.vertex_radius_box,self.radius_button]),
+                                      self.clear_drawing_button],
+                                     layout=Layout(margin="1px 2px 1px auto")),
+                                HBox([self.color_selector, self.color_button],
+                                     layout=Layout(margin="1px 2px 1px auto")),
+                                HBox([Label(value='⌀', layout={'margin': 'auto 2px auto 0px'}),self.vertex_radius_box,self.radius_button],
+                                     layout=Layout(margin="1px 2px 1px auto")),
                                 self.vertex_name_toggle,
-                                self.next_button],layout=Layout(min_width='160px'))
-                            ], layout=Layout(width='100%', height='auto', overflow='auto hidden'))
+                                self.next_button],layout=Layout(min_width='160px',
+                                                                width = "160px"))
+                            ], layout=Layout(width='100%',
+                                             height='auto',
+                                             overflow='auto hidden'))
 
         ### Prepare the graph data
 
