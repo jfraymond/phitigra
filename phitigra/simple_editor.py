@@ -895,11 +895,11 @@ class SimpleGraphEditor():
                 self._draw_edge(e)
 
             for v in self.graph.vertex_iterator():
-                self._draw_vertex(v)
+                self._draw_vertex_shape(v, highlight=False)
 
             # Selected vertices are (re)drawn on top
             for v in self.selected_vertices:
-                self._draw_vertex(v, force_highlight=True)
+                self._draw_vertex_shape(v, highlight=True)
 
     def refresh(self, vertex=None):
         if vertex:
@@ -1207,7 +1207,7 @@ class SimpleGraphEditor():
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 self.output_text("Emptied selection.")
-                self._select_vertex(redraw=None)
+                self._select_vertex(redraw=False)
                 self.selected_edges.clear()
                 self.refresh()
 
@@ -1217,9 +1217,10 @@ class SimpleGraphEditor():
 
     def tool_selector_callback(self):
         """Called when changing tools."""
-        self._select_vertex()
-        self.selected_edges.clear()
         self._clean_tools()
+        self._select_vertex(redraw=False)
+        self.selected_edges.clear()
+        self.refresh()
 
     def layout_selector_callback(self, change):
         """
