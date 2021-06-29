@@ -719,12 +719,12 @@ class SimpleGraphEditor():
     ## Drawing functions ##
     #######################
 
-    def _draw_vertex_shape(self, v, canvas=None, color=None, highlight=True):
+    def _draw_vertex(self, v, canvas=None, color=None, highlight=True):
         """
         Draw the shape of a vertex.
 
         Also write the vertex name.
-        The position is given by ``self.graph.get_vertex_pos()``.
+        The position is given by :meth:`~SimpleGraphEditor._get_vertex_pos`.
         If ``canvas`` is ``None``, the default drawing canvas (``self.canvas``)
         is used.
         If ``color`` is ``None`` the color is as given by ``get_vertex_color``.
@@ -763,41 +763,17 @@ class SimpleGraphEditor():
             canvas.stroke_arc(x, y, radius, 0, 2*pi)
             canvas.set_line_dash([])
 
-    def _draw_vertex(self, v, canvas=None, color=None, highlight=True, force_highlight=False, neighbors=False):
+    def _draw_neighbors(self, v, canvas=None):
         """
-        Draw a given vertex.
-
-        The position is given by ``self.graph.get_vertex_pos()``.
-        If ``canvas`` is ``None``, the default drawing canvas (``self.canvas``)
-        is used.
-
-        If ``highlight == True`` and ``v`` is selected, the colored
-        border (focus) around ``v`` is also drawn.
-        If ``force_highlight == True``, the focus around ``v`` is drawn
-        regardless of whether ``v`` is selected or not.
-        If ``neighbors == True``, the incident edges are also redrawn, as well
-        as its neighbors, so that the edges incident to the neighbors do not
-        overlap their shapes.
+        Draw the neighbors of a vertex and the edges leading to them.
         """
-
-        if canvas is None:
-            canvas = self.canvas
-
-        with hold_canvas(canvas):
-            if neighbors:
-                # We also redraw the incident edges
-                # and the neighbors
-
-                # ignore_direction=True to get all edges incident to a
-                # vertex in the case where self.graph is directed
-                for e in self.graph.edge_iterator(v, ignore_direction=True):
-                    self._draw_edge(e, canvas=canvas)
-
-                # Draw the neighbors:
-                for u in self.graph.neighbor_iterator(v):
-                    self._draw_vertex_shape(u, canvas=canvas)
-
-            self._draw_vertex_shape(v, canvas, color,highlight=highlight)
+        # ignore_direction=True to get all edges incident to a
+        # vertex in the case where self.graph is directed
+        for e in self.graph.edge_iterator(v, ignore_direction=True):
+            self._draw_edge(e, canvas=canvas)
+        # Draw the neighbors:
+        for u in self.graph.neighbor_iterator(v):
+            self._draw_vertex(u, canvas=canvas)
 
     def _draw_edge(self, e, endpoints=False, clear_first=False, canvas=None):
         """
@@ -895,11 +871,11 @@ class SimpleGraphEditor():
                 self._draw_edge(e)
 
             for v in self.graph.vertex_iterator():
-                self._draw_vertex_shape(v, highlight=False)
+                self._draw_vertex(v, highlight=False)
 
             # Selected vertices are (re)drawn on top
             for v in self.selected_vertices:
-                self._draw_vertex_shape(v, highlight=True)
+                self._draw_vertex(v, highlight=True)
 
     def refresh(self, vertex=None):
         if vertex:
@@ -932,7 +908,7 @@ class SimpleGraphEditor():
                          str(vertex))
 
             if redraw:
-                self._draw_vertex(vertex, highlight=True)
+                self._draw_vertex(vertex)
 
     ######################################################
     ## Callbacks for mouse action and related functions ##
@@ -1037,8 +1013,7 @@ class SimpleGraphEditor():
             return
 
         self.add_edge(self.current_walk_vertex, clicked_node)
-        self._select_vertex(clicked_node, redraw=False) # Select
-        self._draw_vertex(clicked_node, neighbors=True)
+        self._select_vertex(clicked_node) # Select & redraw
         self.current_walk_vertex = clicked_node
 
     def mouse_action_add_star(self, clicked_node, click_x, click_y):
@@ -1103,10 +1078,8 @@ class SimpleGraphEditor():
 
                 # We draw the rest on the interact canvas.
                 self.interact_canvas.clear()
-                self._draw_vertex(on_vertex, canvas=self.interact_canvas,
-                                    neighbors=True,
-                                    highlight=False,
-                                    color='gray')
+                self._draw_neighbors(on_vertex, canvas=self.interact_canvas)
+                self._draw_vertex(on_vertex, canvas=self.interact_canvas)
 
         elif closest_edge is not None:
             # Click as not on a vertex but near an edge
@@ -1169,10 +1142,8 @@ class SimpleGraphEditor():
                 # (so that the redrawn edges are not drawn on the neighbors
                 # shapes):
                 self.interact_canvas.clear()
-                self._draw_vertex(v, canvas=self.interact_canvas,
-                                    neighbors=True,
-                                    highlight=False,
-                                    color='gray')
+                self._draw_neighbors(v, canvas=self.interact_canvas)
+                self._draw_vertex(v, canvas=self.interact_canvas)
 
         elif self.dragging_canvas_from is not None:
             translation = [pixel_x - self.dragging_canvas_from[0],
@@ -1189,8 +1160,7 @@ class SimpleGraphEditor():
             # we actually wanted to (un)select it
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
-                self._select_vertex(self.dragged_vertex) # (Un)select
-                self._draw_vertex(self.dragged_vertex)
+                self._select_vertex(self.dragged_vertex) # (Un)select & redraw
                 self.dragged_vertex = None
             else:
                 self.output_text("Done dragging vertex.")
