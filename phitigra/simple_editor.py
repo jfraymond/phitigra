@@ -914,6 +914,57 @@ class SimpleGraphEditor():
     ## Callbacks for mouse action and related functions ##
     ######################################################
 
+    def _clean_tools(self):
+        """
+        Forget that some drawing is taking place.
+        """
+        attrs = ['current_clique',
+                 'current_walk_vertex',
+                 'current_star_center',
+                 'current_star_leaf']
+
+        for attr in attrs:
+            try:
+                delattr(self, attr)
+            except AttributeError:
+                pass
+
+    def mouse_action_select_move(self,
+                                 on_vertex, closest_edge,
+                                 pixel_x, pixel_y):
+        if on_vertex is not None:
+            # Click was on a vertex
+            self.dragged_vertex = on_vertex
+            self.output_text("Clicked on vertex " + str(on_vertex))
+            with hold_canvas(self.multi_canvas):
+                # On the main canvas we draw everything,
+                # except the dragged vertex and the edges
+                # incident to it.
+                self.canvas.clear()
+                for (u1, u2, label) in self.graph.edge_iterator():
+                    if (on_vertex != u1 and on_vertex != u2):
+                        self._draw_edge((u1, u2, label))
+                for u in self.graph.vertex_iterator():
+                    if u != on_vertex:
+                        self._draw_vertex(u)
+
+                # We draw the rest on the interact canvas.
+                self.interact_canvas.clear()
+                self._draw_neighbors(on_vertex, canvas=self.interact_canvas)
+                self._draw_vertex(on_vertex, canvas=self.interact_canvas)
+
+        elif closest_edge is not None:
+            # Click as not on a vertex but near an edge
+            if closest_edge in self.selected_edges:
+                self.selected_edges.remove(closest_edge)
+            else:
+                self.selected_edges.add(closest_edge)
+            self._draw_edge(closest_edge, endpoints=True, clear_first=True)
+        else:
+            # The click was neither on a vertex nor on an edge
+            self.dragging_canvas_from = [pixel_x, pixel_y]
+            return
+
     def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
         """
         Function that is called after a click on ``on_vertex`` (if not None)
@@ -958,20 +1009,16 @@ class SimpleGraphEditor():
         self.refresh()
         self.text_graph_update()
 
-    def _clean_tools(self):
-        """
-        Forget that some drawing is taking place.
-        """
-        attrs = ['current_clique',
-                 'current_walk_vertex',
-                 'current_star_center',
-                 'current_star_leaf']
+    def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
 
-        for attr in attrs:
-            try:
-                delattr(self, attr)
-            except AttributeError:
-                pass
+        if on_vertex is not None:
+            self.graph.delete_vertex(on_vertex)
+        elif on_edge is not None:
+            self.graph.delete_edge(on_edge)
+        else:
+            return
+        self._draw_graph()
+        self.text_graph_update()
 
     def mouse_action_add_clique(self, clicked_node, click_x, click_y):
         if clicked_node is None:
@@ -1045,53 +1092,6 @@ class SimpleGraphEditor():
             self.output_text('Star with center ' +
                              str(self.current_star_center) +
                              ': click on the leaves')
-
-    def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
-
-        if on_vertex is not None:
-            self.graph.delete_vertex(on_vertex)
-        elif on_edge is not None:
-            self.graph.delete_edge(on_edge)
-        else:
-            return
-        self._draw_graph()
-        self.text_graph_update()
-
-    def mouse_action_select_move(self,
-                                 on_vertex, closest_edge,
-                                 pixel_x, pixel_y):
-        if on_vertex is not None:
-            # Click was on a vertex
-            self.dragged_vertex = on_vertex
-            self.output_text("Clicked on vertex " + str(on_vertex))
-            with hold_canvas(self.multi_canvas):
-                # On the main canvas we draw everything,
-                # except the dragged vertex and the edges
-                # incident to it.
-                self.canvas.clear()
-                for (u1, u2, label) in self.graph.edge_iterator():
-                    if (on_vertex != u1 and on_vertex != u2):
-                        self._draw_edge((u1, u2, label))
-                for u in self.graph.vertex_iterator():
-                    if u != on_vertex:
-                        self._draw_vertex(u)
-
-                # We draw the rest on the interact canvas.
-                self.interact_canvas.clear()
-                self._draw_neighbors(on_vertex, canvas=self.interact_canvas)
-                self._draw_vertex(on_vertex, canvas=self.interact_canvas)
-
-        elif closest_edge is not None:
-            # Click as not on a vertex but near an edge
-            if closest_edge in self.selected_edges:
-                self.selected_edges.remove(closest_edge)
-            else:
-                self.selected_edges.add(closest_edge)
-            self._draw_edge(closest_edge, endpoints=True, clear_first=True)
-        else:
-            # The click was neither on a vertex nor on an edge
-            self.dragging_canvas_from = [pixel_x, pixel_y]
-            return
 
     @output.capture()
     def mouse_down_handler(self, click_x, click_y):
