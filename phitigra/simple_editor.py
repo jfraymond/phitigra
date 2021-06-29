@@ -899,13 +899,18 @@ class SimpleGraphEditor():
                 self.refresh()
             return
         else:
-            # We select `vertex` if it was not, and unselect it otherwise
-            self.selected_vertices.symmetric_difference_update([vertex])
+            # Flip selected/unselected state
+            try:
+                self.selected_vertices.remove(vertex)
+                self.output_text("Unselected vertex " +
+                                 str(vertex))
+            except KeyError:
+                self.selected_vertices.add(vertex)
+                self.output_text("Selected vertex " +
+                                 str(vertex))
 
             # the radius of the selected vertex becomes the default one
             self.vertex_radius_box.value = (self._get_radius(vertex))
-            self.output_text("Selected vertex: " +
-                         str(vertex))
 
             if redraw:
                 self._draw_vertex(vertex)
@@ -929,17 +934,23 @@ class SimpleGraphEditor():
             except AttributeError:
                 pass
 
+    @output.capture()
     def mouse_action_select_move(self,
                                  on_vertex, closest_edge,
                                  pixel_x, pixel_y):
         if on_vertex is not None:
             # Click was on a vertex
             self.dragged_vertex = on_vertex
-            self.output_text("Clicked on vertex " + str(on_vertex))
+            self.output_text("Click on vertex " + str(on_vertex))
             with hold_canvas(self.multi_canvas):
-                # On the main canvas we draw everything,
-                # except the dragged vertex and the edges
-                # incident to it.
+
+                # On the interact canvas we draw the moved vertex and
+                # its neighbors
+                self.interact_canvas.clear()
+                self._draw_neighbors(on_vertex, canvas=self.interact_canvas)
+                self._draw_vertex(on_vertex, canvas=self.interact_canvas)
+
+                # Draw everything else on the main canvas
                 self.canvas.clear()
                 for (u1, u2, label) in self.graph.edge_iterator():
                     if (on_vertex != u1 and on_vertex != u2):
@@ -948,13 +959,8 @@ class SimpleGraphEditor():
                     if u != on_vertex:
                         self._draw_vertex(u)
 
-                # We draw the rest on the interact canvas.
-                self.interact_canvas.clear()
-                self._draw_neighbors(on_vertex, canvas=self.interact_canvas)
-                self._draw_vertex(on_vertex, canvas=self.interact_canvas)
-
         elif closest_edge is not None:
-            # Click as not on a vertex but near an edge
+            # Click was not on a vertex but near an edge
             if closest_edge in self.selected_edges:
                 self.selected_edges.remove(closest_edge)
             else:
@@ -1146,6 +1152,7 @@ class SimpleGraphEditor():
                 self._draw_vertex(v, canvas=self.interact_canvas)
 
         elif self.dragging_canvas_from is not None:
+            # We are dragging the canvas
             translation = [pixel_x - self.dragging_canvas_from[0],
                            pixel_y - self.dragging_canvas_from[1]]
             self._translate_layout(translation)
@@ -1160,11 +1167,15 @@ class SimpleGraphEditor():
             # we actually wanted to (un)select it
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
-                self._select_vertex(self.dragged_vertex) # (Un)select & redraw
+                self._select_vertex(self.dragged_vertex, redraw=False) # (Un)select
+                with hold_canvas(self.canvas):
+                    self._draw_neighbors(self.dragged_vertex) # We redraw these
+                    self._draw_vertex(self.dragged_vertex) # on the main canvas
                 self.dragged_vertex = None
             else:
                 self.output_text("Done dragging vertex.")
                 self._draw_graph()
+
             self.dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
             self.interact_canvas.clear()
