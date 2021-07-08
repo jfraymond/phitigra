@@ -6,19 +6,24 @@ when using the [Jupyter](www.jupyter.org) notebook.
 
 ## Features
 
-  * positioning vertices with the mouse, adding edges and vertices
-  * can deal with undirected or directed graphs
-  * changing the color of vertices and edges
-  * easy export of the drawn graph for use with Sage
-  * zoom in and zoom out
-  * different layout options
-  * step-by-step execution of a custom script on the drawn graph
+With phitigra one can:
+
+  * draw graphs using the mouse to add vertices and edges
+  * move the vertices positions, zoom in and out
+  * draw undirected as well as directed graphs
+  * choose the color of vertices and edges
+  * apply various layout algorithms
+  * easily retrieve the drawn graph for use with SageMath
+  * run step-by-step a custom script on the drawn graph
+  * change and refresh the drawing from external functions
 
 ## Non-features
 
-  * does not work with multigraphs (multiple edges are not drawn)
-  * is not designed to handle large graphs
+The following are not supported:
 
+  * multigraphs (multiple edges will not be drawn)
+  * large graphs
+  
 ## Dependencies
 
   * [ipywidgets](https://github.com/jupyter-widgets/ipywidgets)

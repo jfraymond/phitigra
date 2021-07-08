@@ -1066,6 +1066,7 @@ class SimpleGraphEditor():
             return
 
         self.add_edge(self.current_walk_vertex, clicked_node)
+        self._select_vertex(self.current_walk_vertex) # Unselect & redraw
         self._select_vertex(clicked_node) # Select & redraw
         self.current_walk_vertex = clicked_node
 
@@ -1202,6 +1203,7 @@ class SimpleGraphEditor():
         self._select_vertex(redraw=False)
         self.selected_edges.clear()
         self.refresh()
+        self.output_text('')
 
     def layout_selector_callback(self, change):
         """
