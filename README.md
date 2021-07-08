@@ -1,21 +1,30 @@
 # Phitigra
 
-A graph editor widget for [SageMath](www.sagemath.org)
+_Phitigra_ is a graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
 <p><img width="300" src="docs/source/images/phtgr.gif"></p>
+(Note: this animation is from an older version of phitigra.)
 
 ## Features
 
-  * adding and removing edges and vertices with the mouse
-  * easy export of the drawn graph
-  * zoom in and zoom out
-  * different layout options
+With phitigra one can:
 
-## Planned features
+  * draw graphs using the mouse to add vertices and edges
+  * move the vertices positions, zoom in and out
+  * draw undirected as well as directed graphs
+  * choose the color of vertices and edges
+  * apply various layout algorithms
+  * easily retrieve the drawn graph for use with SageMath
+  * run step-by-step a custom script on the drawn graph
+  * change and refresh the drawing from external functions
 
-  * automatic update of the drawing when the graph changes
-  * changes of the drawing attributes from external functions
+## Non-features
 
+The following are not supported:
+
+  * multigraphs (multiple edges will not be drawn)
+  * large graphs
+  
 ## Dependencies
 
   * [ipywidgets](https://github.com/jupyter-widgets/ipywidgets)
