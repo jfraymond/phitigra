@@ -3,6 +3,7 @@
 _Phitigra_ is a graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
 <p><img width="300" src="docs/source/images/phtgr.gif"></p>
+(Note: this animation is from an older version of phitigra.)
 
 ## Features
 

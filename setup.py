@@ -18,14 +18,14 @@ class SageTest(TestCommand):
 
 setuptools.setup(
     name="phitigra",
-    version="0.0.2",
+    version="0.1.0",
     author="Jean-Florent Raymond",
     author_email="j-florent.raymond@uca.fr",
     description="A graph editor for jupyter/sagemath",
     url="https://gitlab.limos.fr/jfraymon/phitigra",
     packages=setuptools.find_packages(),
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Programming Language :: Python :: 3",
