@@ -1,26 +1,29 @@
 r"""
-Graph editor
+Graph editor for sage on jupyter
 
-A simple graph editor where one can see the graph, add vertices/edges, etc.
+A simple graph editor where one can see the graph, add vertices/edges,
+etc.
 
 EXAMPLES::
 
-<Lots and lots of examples> TODO
+    e = SimpleGraphEditor(graphs.RandomGNP(10, 0.5))
+    e.show()
+    # Now you can play with the graph!
 
 AUTHORS:
 
 - Jean-Florent Raymond (2020-04-05): initial version
 """
 
-# ****************************************************************************
-#       Copyright (C) 2020 Jean-Florent Raymond <j-florent.raymond@uca.fr>
+# ***********************************************************************
+#     Copyright (C) 2020 Jean-Florent Raymond <j-florent.raymond@uca.fr>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 2 of the License, or
 # (at your option) any later version.
 #                  https://www.gnu.org/licenses/
-# ****************************************************************************
+# ***********************************************************************
 
 from ipycanvas import MultiCanvas, hold_canvas
 from ipywidgets import (Label, BoundedIntText, VBox, HBox, Output, Button,
@@ -36,16 +39,72 @@ from sage.modules.free_module_element import vector
 
 
 class SimpleGraphEditor():
-    # Output widget used to see error messages (for debug)
+    """
+    Base class for the graph editor.
+    """
+
+    # Output widget used to print error messages (for debug)
     output = Output()
 
-    def __init__(self, G=None, drawing_parameters=None):
-        if G is None:
-            G = Graph(0)
-        else:
-            if G.allows_multiple_edges() or G.allows_loops():
-                raise ValueError("Cannot deal with graphs that allow"
-                                 " loops or multiple edges")
+    @staticmethod
+    def draw_arrow(canvas):
+        """
+        Draw an arrow at with tip at (0,0), pointing to the left.
+
+        Used when drawing directed graphs.
+        """
+        a_x = 15  # Length of the arrow
+        a_y = 8   # Half-width of the arrow
+        canvas.begin_path()
+        canvas.move_to(0, 0)
+        canvas.line_to(a_x, a_y)
+        canvas.line_to(0.75*a_x, 0)
+        canvas.line_to(a_x, -a_y)
+        canvas.move_to(0, 0)
+        canvas.fill()
+
+    def __init__(self, G=Graph(0), drawing_parameters=dict()):
+        """
+        Prepare the widget with the given graph.
+
+        The graph should not allow loops neither multiedges.
+        In this function the properties of vertices and eges (width, color)
+        are initialized and the elements of the graph editor (widgets, canvas,
+        callbacks) are defined.
+
+        INPUT:
+
+        - ``G`` -- graph from :class:`Graph` or :class:`DiGraph` that does not
+          allow loops neither multiedges (default: `Graph(0)`); the graph to
+          plot and edit.
+
+        - ``drawing_parameters`` -- dictionary (default: `{}`); the
+          parameters to use for the drawing, which are `'width'`,
+          `'height'`, `'default_radius'` (for vertex shapes),
+          `'default_vertex_color'` (for drawing the vertice initially in
+          the graph), and `'default_edge_color'`.
+
+        OUTPUT: a graph editor widget
+
+        EXAMPLES:
+
+            sage: param = {'width'=200, 'height'=200}
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph(),drawing_parameters=param)
+            sage: type(e)
+            <class 'phitigra.simple_editor.SimpleGraphEditor'>
+
+            sage: g = Graph(0)
+            sage: g.allow_multiple_edges(True)
+            sage: SimpleGraphEditor(g)
+            Traceback (most recent call last):
+            ...
+            ValueError: Cannot deal with graphs that allow loops or multiple edges
+
+        """
+
+        if G.allows_multiple_edges() or G.allows_loops():
+            raise ValueError("Cannot deal with graphs that allow"
+                             " loops or multiple edges")
 
         self.graph = G
 
@@ -60,41 +119,19 @@ class SimpleGraphEditor():
             # Defaults for drawing vertices
             'default_radius': 20,
             'default_vertex_color': None,
-            'default_edge_color': 'black',
-            # An arrow tip is defined by two values: the distance on the
-            # edge taken by the arrow (arrow_tip_length) and the distance
-            # between the two symmetric angles of the arrow
-            # (arrow_tip_height is half this value).
-            'arrow_tip_width': 15,
-            'arrow_tip_height': 8,
-            'draw_arrow': None  # To be defined just below
+            'default_edge_color': 'black'
         }
 
-        # The default arrow for directed edges
-        def draw_arrow(canvas):
-            """Draw an arrow at with tip at (0,0), pointing to the left."""
-            a_x = self.drawing_parameters['arrow_tip_width']
-            a_y = self.drawing_parameters['arrow_tip_height']
-            canvas.begin_path()
-            canvas.move_to(0, 0)
-            canvas.line_to(a_x, a_y)
-            canvas.line_to(0.75*a_x, 0)
-            canvas.line_to(a_x, -a_y)
-            canvas.move_to(0, 0)
-            canvas.fill()
+        # Take into account the provided drawing parameters (if any)
+        self.drawing_parameters.update(drawing_parameters)
 
-        self.drawing_parameters['draw_arrow'] = draw_arrow
-
-        # If drawing parameters have been provided, we take them
-        # into account
-        if drawing_parameters:
-            self.drawing_parameters.update(drawing_parameters)
-
-        # The canvas where to draw
+        # The layout (+6 to account for the 3px border on both sides)
         lyt = {'border': '3px solid lightgrey',
                'width': str(self.drawing_parameters['width'] + 6) + 'px',
                'height': str(self.drawing_parameters['height'] + 6) + 'px',
                'overflow': 'visible'}
+        
+        # The canvas where to draw
         self.multi_canvas = (
             MultiCanvas(2,
                         width=self.drawing_parameters['width'],
@@ -102,7 +139,6 @@ class SimpleGraphEditor():
                         sync_image_data=True,
                         layout=lyt)
         )
-        # above: +6 to account for the 3px border on both sides
 
         # It consists in two layers
         self.canvas = self.multi_canvas[0]    # The main layer
@@ -878,7 +914,7 @@ class SimpleGraphEditor():
                 # draw the arrow there:
                 canvas.translate(radius_v, 0)
                 canvas.fill_style = self.get_edge_color((u, v))
-                self.drawing_parameters['draw_arrow'](canvas)
+                SimpleGraphEditor.draw_arrow(canvas)
                 canvas.restore()
 
         if endpoints:
