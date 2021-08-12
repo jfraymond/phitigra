@@ -383,7 +383,16 @@ class SimpleGraphEditor():
         self.text_graph_update()
 
     def show(self):
-        """Return the editor widget."""
+        """
+        Return the editor widget.
+        
+        TESTS::
+
+            sage: e = SimpleGraphEditor()
+            sage: w = e.show()
+            sage: type(w)
+            <class 'ipywidgets.widgets.widget_box.HBox'>
+        """
         return self.widget
 
     # Getters and setters
@@ -391,6 +400,16 @@ class SimpleGraphEditor():
     def get_graph(self):
         """
         Return a copy of the drawn graph.
+
+        EXAMPLES:
+
+        The returned graph is different from that of the editor:
+
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: g = e.get_graph()
+            sage: g.delete_vertex(0)
+            sage: (len(g), len(e.graph))
+            (9, 10)
         """
         return copy(self.graph)
 
@@ -399,6 +418,15 @@ class SimpleGraphEditor():
         Return the radius of a vertex.
 
         If the radius of v has not been set, return the default radius.
+
+        EXAMPLES:
+        
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={default_radius: 41})
+            sage: e.vertex_radius(0)
+            41
+            sage: e.set_vertex_radius(0, 42)
+            sage: e.vertex_radius(0)
+            42
         """
         return self.vertex_radii.get(v,
                                      self.drawing_parameters['default_radius'])
@@ -410,6 +438,23 @@ class SimpleGraphEditor():
         If ``radius`` is ``None``, use the radius in the radius box.
 
         WARNING: this function does not redraw the graph.
+        
+        EXAMPLES:
+        
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={default_radius: 41})
+            sage: e.vertex_radius(0)
+            41
+            sage: e.set_vertex_radius(0, 42)
+            sage: e.vertex_radius(0)
+            42
+
+        TESTS::
+
+        Behavior when no radius is provided:
+
+            sage: e.set_vertex_radius(0)
+            sage: e.vertex_radius(0) == self.vertex_radius_box.value
+            True
         """
         if radius is None:
             self.vertex_radii[v] = self.vertex_radius_box.value
@@ -417,7 +462,21 @@ class SimpleGraphEditor():
             self.vertex_radii[v] = radius
 
     def get_vertex_color(self, v):
-        """Get the color of a vertex."""
+        """
+        Get the color of a vertex.
+
+        EXAMPLES:
+        
+        Colors can be given as named colors or hex values:
+
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e.set_vertex_color(0, 'blue')
+            sage: e.get_vertex_color(0)
+            'blue'
+            sage: e.set_vertex_color(0, '#fff')
+            sage: e.get_vertex_color(0)
+            '#fff'
+        """
         return self.colors[v]
 
     def set_vertex_color(self, v, color=None):
@@ -427,6 +486,27 @@ class SimpleGraphEditor():
         If ``color`` is ``None``, use the color of the color selector.
 
         WARNING: this function does not redraw the graph.
+
+        EXAMPLES:
+        
+        Colors can be given as named colors or hex values:
+
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e.set_vertex_color(0, 'blue')
+            sage: e.get_vertex_color(0)
+            'blue'
+            sage: e.set_vertex_color(0, '#fff')
+            sage: e.get_vertex_color(0)
+            '#fff'
+
+        TESTS::
+
+        Behavior when no color is provided:
+
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e.set_vertex_color(0)
+            sage: e.get_vertex_color(0) == self.color_selector.value
+            True
         """
         if color is None:
             self.colors[v] = self.color_selector.value
@@ -436,13 +516,44 @@ class SimpleGraphEditor():
     def get_edge_color(self, e):
         """
         Return the color of an edge.
+
+        EXAMPLES:
+        
+        Edge colors for undirected graphs:
+
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: e.set_edge_color((1, 6), '#123456')
+            sage: e.get_edge_color((1, 6))
+            '#123456'
+            sage: e.get_edge_color((6, 1))
+            '#123456'
+            sage: e.get_edge_color((6, 1, 'label'))
+            '#123456'
+            sage: e.get_edge_color((5, 9))
+            Traceback (most recent call last):
+            ...
+            KeyError: (5, 9)
+
+        Edge colors for directed graphs:
+
+            sage: e = SimpleGraphEditor(digraphs.Circuit(4))
+            sage: e.set_edge_color((0, 1), '#123456')
+            sage: e.get_edge_color((0, 1))
+            '#123456'
+            sage: e.get_edge_color((1, 0))
+            Traceback (most recent call last):
+            ...
+            KeyError: (1, 0)
         """
 
         u, v, *_ = e
         try:
             c = self.edge_colors[(u, v)]
         except KeyError:
-            c = self.edge_colors[(v, u)]
+            if not self.graph.is_directed():
+                c = self.edge_colors[(v, u)]
+            else:
+                raise
 
         return c
 
@@ -451,12 +562,29 @@ class SimpleGraphEditor():
         Set the color of an edge.
 
         If ``color`` is ``None``, use the default color.
+        Raise an exception if the edge does not belong to the graph.
+        See :meth:`get_edge_color` for examples.
+        
+       .. WARNING:: this function does not redraw the graph.
 
-        WARNING: this function does not redraw the graph.
+        TESTS:
+
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: e.set_edge_color((1, 6)
+            sage: e.get_edge_color((1,6)) == self.drawing_parameters['default_edge_color']
+            True
+            sage: e.set_edge_color((1,5))
+            Traceback (most recent call last):
+            ...
+            ValueError: edge (1, 5) does not belong to the graph
         """
+        
         u, v, *_ = e
         if color is None:
             color = self.drawing_parameters['default_edge_color']
+
+        if not self.graph.has_edge(e):
+            raise ValueError("edge " + str(e) + " does not belong to the graph")
 
         if (u, v) in self.edge_colors.keys():
             self.edge_colors[(u, v)] = color
@@ -479,6 +607,15 @@ class SimpleGraphEditor():
             canvas range. They are just the coordinates of ``(x,y)``
             translated and scaled using ``self._transform_matrix``,
             so they can be negative or over the canvas width/height.
+
+        TESTS::
+        
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: x, y = e.graph.get_pos()[0]
+            sage: cx, cy = e._get_coord_on_canvas(x, y)
+            sage: abs(cx - 50) < 2 and abs(cy - 50) < 2
+            True
         """
 
         m = self._transform_matrix * matrix([[x], [y], [1]])
@@ -489,6 +626,14 @@ class SimpleGraphEditor():
         Return the vertex coordinates on the canvas.
 
         See :meth:`_get_coord_on_canvas` for details.
+
+        TESTS::
+
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: x, y = e._get_vertex_pos(0)
+            sage: abs(x - 50) < 2 and abs(y - 50) < 2
+            True
         """
         x, y = self.graph.get_pos()[v]
 
@@ -500,6 +645,17 @@ class SimpleGraphEditor():
         canvas.
 
         See :meth:`_get_coord_on_canvas` for details.
+
+        TESTS::
+
+            Interesting tests are actually done in :meth:`_get_coord_on_canvas`.
+
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: d = e._get_vertices_pos()
+            sage: type(d)
+            <class 'dict'>
+            sage: len(d) == len(e.graph)
+            True
         """
 
         graph_pos = self.graph.get_pos()
@@ -515,6 +671,16 @@ class SimpleGraphEditor():
         (in pixel) where the vertex ``v`` should be placed.
         These values are translated and scaled using the inverse of
         ``self._transform_matrix`` before being stored.
+
+        TESTS::
+
+        Same as in :meth:`_get_vertex_pos`.
+
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: x, y = e._get_vertex_pos(0)
+            sage: abs(x - 50) < 2 and abs(y - 50) < 2
+            True
         """
 
         pos = self.graph.get_pos()
@@ -525,9 +691,6 @@ class SimpleGraphEditor():
         m = self._transform_matrix.inverse() * matrix([[x], [y], [1]])
         pos[v] = [m[0][0], m[1][0]]
 
-        # No vertex was found near (x,y)
-        return None
-
     def _get_vertex_at(self, x, y):
         """
         Return which vertex is drawn at (x,y).
@@ -535,6 +698,18 @@ class SimpleGraphEditor():
         Actually return the vertex whose shape contains `(x,y)` and whose
         center is the closest to `(x,y)`.
         Return `None` if no vertex shape contains `(x,y)`.
+
+        EXAMPLES:
+
+            sage: e = SimpleGraphEditor(Graph(2), drawing_parameters={'default_radius': 20})
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: e._set_vertex_pos(1, 70, 50)
+            sage: e._get_vertex_at(55, 50)
+            0
+            sage: e._get_vertex_at(65, 50)
+            1
+            sage: e._get_vertex_at(60, 25)
+            None
         """
 
         canvas_pos = self._get_vertices_pos()
@@ -566,10 +741,27 @@ class SimpleGraphEditor():
         .. WARNING::
             This function assumes that edges are straigh lines between
             their endpoints.
+
+        EXAMPLES:
+        
+            sage: e = SimpleGraphEditor(graphs.PathGraph(3))
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: e._set_vertex_pos(1, 50, 100)
+            sage: e._set_vertex_pos(2, 100, 100)
+            sage: e._set_vertex_pos(3, 100, 50)
+            sage: e._get_edge_at(50, 75)
+            (0, 1)
+            sage: e._get_edge_at(51, 75)
+            (0, 1)
+            sage: e._get_edge_at(75, 100)
+            (1, 2)
+            sage: e._get_edge_at(52, 98)
+            (1, 2)
         """
 
         def sqnorm(a, b):
             # Square of the norm
+            # (to avoid computing square roots)
             d = [a[0] - b[0], a[1] - b[1]]
             return d[0] * d[0] + d[1] * d[1]
 
@@ -616,6 +808,13 @@ class SimpleGraphEditor():
 
         Coordinates are integers chosen between 0 and the square of the
         order of the graph.
+
+        TESTS::
+
+            sage: e = SimpleGraphEditor(graphs.PathGraph(3))
+            sage: self._random_layout()
+            sage: self.graph.get_pos(1) >= 0 and self.graph.get_pos(1) <= 9
+            True
         """
         n = self.graph.order()
         n2 = n*n
@@ -631,6 +830,23 @@ class SimpleGraphEditor():
 
         ``x`` and ``y`` coordinates are scaled by the same factor and
         the graph is centered.
+
+        TESTS::
+
+            sage: e = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 101, height: 101})
+            sage: e._set_vertex_pos(0, 10, 10)
+            sage: e._set_vertex_pos(1, 5, 10)
+            sage: e._set_vertex_pos(2, 15, 10)
+            sage: e._set_vertex_pos(3, 10, 8)
+            sage: e._set_vertex_pos(4, 10, 12)
+            sage: e._normalize_layout()
+            sage: d = e._get_vertices_pos()
+            sage: d[0] == (50, 50)
+            True
+            sage: d[1][0] < 6
+            True
+            sage: d[3][1] >= 6
+            True
         """
 
         if not self.graph:
@@ -686,6 +902,23 @@ class SimpleGraphEditor():
         and with respect to the given ratio.
 
         This is done by updating the transform matrix.
+
+        TESTS::
+        
+            sage: e = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 101, 'height': 101})
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: e._set_vertex_pos(1, 30, 50)
+            sage: e._set_vertex_pos(2, 70, 50)
+            sage: e._set_vertex_pos(3, 50, 30)
+            sage: e._set_vertex_pos(4, 50, 70)
+            sage: e._scale_layout(1.5)
+            sage: x, y = e._get_vertex_pos(0)
+            sage abs(x - 50) <= 1 and abs(y - 50) <= 1
+            True
+            sage: e._get_vertex_pos(1)[0] <= 21
+            True
+            sage: abs(e._get_vertex_pos(1)[1] - 50) <= 1
+            True
         """
 
         x_shift = self.multi_canvas.width * (1 - ratio) / 2
@@ -701,6 +934,15 @@ class SimpleGraphEditor():
         Translate the vertices coordinates.
 
         This is done by updating the transform matrix.
+        
+        TESTS::
+        
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e._set_vertex_pos(0, 50, 50)
+            sage: e._translate_layout((25, 25))
+            sage: x, y = e._get_vertex_pos(0)
+            sage: x, y == (75, 75)
+            True
         """
 
         x_shift, y_shift = vec
