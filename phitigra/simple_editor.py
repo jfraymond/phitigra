@@ -956,12 +956,28 @@ class SimpleGraphEditor():
     #########################
 
     def output_text(self, text):
-        """Write the input string in the textbox of the editor."""
+        """
+        Write the input string in the textbox of the editor.
+        
+        TESTS::
+        
+            sage: e = SimpleGraphEditor(Graph(1))
+            sage: e.output_text("Hello world!")
+            sage: e.tex_output.value == "Hello world!"
+            True
+        """
 
         self.text_output.value = text
 
     def text_graph_update(self):
-        """Update the caption with data about the graph."""
+        """Update the caption with data about the graph.
+
+        TESTS::
+        
+            sage: e = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: print(e.text_graph.value)
+            Graph on 10 vertices and 15 edges.
+        """
 
         self.text_graph.value = ("Graph on " + str(self.graph.order())
                                  + " vertices and "
@@ -980,6 +996,20 @@ class SimpleGraphEditor():
         picker.
         The return value is the same as with
         :meth:`~GenericGraph.add_vertex`.
+
+        TESTS::
+
+            sage: e = SimpleGraphEditor(Graph(0))
+            sage: e.add_vertex_at(10, 42, name="vert", color='#112233')
+            sage: v=next(e.graph.vertex_iterator())
+            sage: v
+            'vert'
+            sage: e.get_vertex_pos(v)
+            (10, 42)
+            sage: e.colors[v]
+            '#112233'
+            sage: e.add_vertex_at(20, 20)
+            0
         """
 
         if name is None:
@@ -990,7 +1020,7 @@ class SimpleGraphEditor():
             return_name = False
 
         self._set_vertex_pos(name, x, y)
-        self.set_vertex_color(name)
+        self.set_vertex_color(name, color)
         self.set_vertex_radius(name)
 
         self._draw_vertex(name)
@@ -1006,9 +1036,19 @@ class SimpleGraphEditor():
         Add an edge between two vertices and draw it
 
         If ``color`` is ``None``, use the default color.
+
+        TESTS::
+
+            sage: e = SimpleGraphEditor(Graph(['u', 'v']))
+            sage: e.graph.has_edge('u', 'v')
+            False
+            sage: e.add_edge('u', 'v', color='#112233'); e.graph.has_edge('u', 'v')
+            True
+            sage: e.get_edge_color(('u', 'v'))
+            '#112233'
         """
         self.graph.add_edge((u, v, label))
-        self.set_edge_color((u, v))
+        self.set_edge_color((u, v), color)
 
         with hold_canvas(self.canvas):
             self._draw_edge((u, v, label))
@@ -1033,6 +1073,19 @@ class SimpleGraphEditor():
         If ``color`` is ``None`` the color is as given by
         :meth:`~SimpleGraphEditor.`get_vertex_color`.
         If ``highlight`` is true, also draw the focus on ``v``.
+        
+        TESTS::
+        
+        Check that something is drawn. It is hard to check more...
+
+        sage: e = SimpleGraphEditor(Graph(0))
+        sage: e.vertex_name_toggle.value = False
+        sage: e.canvas.sync_image_data = True; e.canvas.get_image_data(20, 20, 1, 1)
+        array([[[0, 0, 0, 0]]], dtype=uint8)
+        sage: e.canvas.sync_image_data = False
+        sage: e.add_vertex_at(20, 20, name=0, color='#000000')
+        sage: e.canvas.sync_image_data = True; e.canvas.get_image_data(20, 20, 1, 1)
+        array([[[  0,   0,   0, 255]]], dtype=uint8)
         """
 
         if canvas is None:
