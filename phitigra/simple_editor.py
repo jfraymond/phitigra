@@ -1078,14 +1078,14 @@ class SimpleGraphEditor():
         
         Check that something is drawn. It is hard to check more...
 
-        sage: e = SimpleGraphEditor(Graph(0))
-        sage: e.vertex_name_toggle.value = False
-        sage: e.canvas.sync_image_data = True; e.canvas.get_image_data(20, 20, 1, 1)
-        array([[[0, 0, 0, 0]]], dtype=uint8)
-        sage: e.canvas.sync_image_data = False
-        sage: e.add_vertex_at(20, 20, name=0, color='#000000')
-        sage: e.canvas.sync_image_data = True; e.canvas.get_image_data(20, 20, 1, 1)
-        array([[[  0,   0,   0, 255]]], dtype=uint8)
+            sage: e = SimpleGraphEditor(Graph(0))
+            sage: e.vertex_name_toggle.value = False
+            sage: e.canvas.sync_image_data = True; e.canvas.get_image_data(20, 20, 1, 1)
+            array([[[0, 0, 0, 0]]], dtype=uint8)
+            sage: e.canvas.sync_image_data = False
+            sage: e.add_vertex_at(20, 20, name=0, color='#000000')
+            sage: e.canvas.sync_image_data = True; e.canvas.get_image_data(20, 20, 1, 1)
+            array([[[  0,   0,   0, 255]]], dtype=uint8)
         """
 
         if canvas is None:
@@ -1124,7 +1124,8 @@ class SimpleGraphEditor():
         """
         Draw the neighbors of a vertex and the edges leading to them.
         """
-        # ignore_direction=True to get all edges incident to a
+        
+        # Below We use ignore_direction=True to get all edges incident to a
         # vertex in the case where self.graph is directed
         for e in self.graph.edge_iterator(v, ignore_direction=True):
             self._draw_edge(e, canvas=canvas)
@@ -1243,14 +1244,28 @@ class SimpleGraphEditor():
 
     def _select_vertex(self, vertex=None, redraw=True):
         """
-        Select a vertex, or unselect the currently selected vertex.
+        Add or remove a vertex from the set of selected vertices.
 
-        If `vertex` is `None`, unselect the currently selected vertex if
-        any.
+        INPUT:
+
+        - `vertex` -- vertex (default: `None`); the vertex to be (un)selected;
+        if `vertex` is `None` then the set of selected vertices is emptied;
+        - `redraw` -- Boolean (default: `True`); when True, redraw `vertex`,
+        otherwise does not change the drawing (useful when the graph is going
+        to be fully redrawn afterwards anyway).
+
+        OUTPUT:
+
+        No output. Only side effects:
+
+        - if `vertex` is `None` then the set `self.selected_vertices` is
+        empied; otherwise `vertex` is added (if not already present) or
+        removed (otherwise) in `self.selected_vertices`.
+        - if `redraw` is `True`, `vertex` is redrawn, with or without the
+        selection focus depending on whether it was selected or unselected.
+
+        WARNING:
         No check is done that `vertex` indeed is a vertex of the graph.
-        If `redraw` is `False`, does not redraw the (un)selected vertex
-        (useful when the graph is going to be fully redrawn afterwards
-        anyway).
         """
 
         if vertex is None:
@@ -1282,6 +1297,20 @@ class SimpleGraphEditor():
     def _clean_tools(self):
         """
         Forget that some drawing is taking place.
+
+        This function deletes the `current_clique`, `current_walk_vertex`,
+        `current_star_center`, and `current_star_leaf` variables of `self`,
+        that store data used when adding a clique, a walk or a star to the
+        graph.
+
+        TESTS::
+
+            sage: e = SimpleGraphEditor(Graph(0))
+            sage: attrs = ['current_clique', 'current_walk_vertex', 'current_star_center', 'current_star_leaf']
+            sage: for attr in attrs: setattr(e, attr, 42)
+            sage: e._clean_tools()
+            sage: any((hasattr(e, a) for a in attrs)
+            False
         """
         attrs = ['current_clique',
                  'current_walk_vertex',
