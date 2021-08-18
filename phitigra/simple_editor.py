@@ -92,7 +92,7 @@ class SimpleGraphEditor():
             sage: from phitigra import SimpleGraphEditor
             sage: param = {'width': 200, 'height': 200}
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph(),drawing_parameters=param)
-            sage: type(e)
+            sage: type(ed)
             <class 'phitigra.simple_editor.SimpleGraphEditor'>
 
             sage: g = Graph(0)
@@ -426,11 +426,11 @@ class SimpleGraphEditor():
         EXAMPLES:
         
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': 41})
-            sage: ed.vertex_radius(0)
+            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
+            sage: ed.vertex_radii[0]
             41
             sage: ed.set_vertex_radius(0, 42)
-            sage: ed.vertex_radius(0)
+            sage: ed.vertex_radii[0]
             42
         """
         return self.vertex_radii.get(v,
@@ -447,11 +447,11 @@ class SimpleGraphEditor():
         EXAMPLES:
         
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': 41})
-            sage: ed.vertex_radius(0)
+            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
+            sage: ed.vertex_radii[0]
             41
             sage: ed.set_vertex_radius(0, 42)
-            sage: ed.vertex_radius(0)
+            sage: ed.vertex_radii[0]
             42
 
         TESTS::
@@ -459,7 +459,7 @@ class SimpleGraphEditor():
         Behavior when no radius is provided:
 
             sage: ed.set_vertex_radius(0)
-            sage: ed.vertex_radius(0) == self.vertex_radius_box.value
+            sage: ed.vertex_radii[0] == ed.vertex_radius_box.value
             True
         """
         if radius is None:
@@ -513,7 +513,7 @@ class SimpleGraphEditor():
 
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed.set_vertex_color(0)
-            sage: ed.get_vertex_color(0) == self.color_selector.value
+            sage: ed.get_vertex_color(0) == ed.color_selector.value
             True
         """
         if color is None:
@@ -539,6 +539,7 @@ class SimpleGraphEditor():
             sage: ed.get_edge_color((6, 1, 'label'))
             '#123456'
             sage: ed.get_edge_color((5, 9))
+
             Traceback (most recent call last):
             ...
             KeyError: (5, 9)
@@ -580,8 +581,8 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
-            sage: ed.set_edge_color((1, 6)
-            sage: ed.get_edge_color((1,6)) == self.drawing_parameters['default_edge_color']
+            sage: ed.set_edge_color((1, 6))
+            sage: ed.get_edge_color((1,6)) == ed.drawing_parameters['default_edge_color']
             True
             sage: ed.set_edge_color((1,5))
             Traceback (most recent call last):
@@ -639,7 +640,8 @@ class SimpleGraphEditor():
         See :meth:`_get_coord_on_canvas` for details.
 
         TESTS::
-
+        
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: x, y = ed._get_vertex_pos(0)
@@ -661,6 +663,7 @@ class SimpleGraphEditor():
 
             Interesting tests are actually done in :meth:`_get_coord_on_canvas`.
 
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
             sage: d = ed._get_vertices_pos()
             sage: type(d)
@@ -687,6 +690,7 @@ class SimpleGraphEditor():
 
         Same as in :meth:`_get_vertex_pos`.
 
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: x, y = ed._get_vertex_pos(0)
@@ -713,15 +717,15 @@ class SimpleGraphEditor():
         EXAMPLES:
 
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2), drawing_parameters={'default_radius': 20})
+            sage: ed = SimpleGraphEditor(Graph(2), drawing_parameters={'default_radius': int(20)})
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._set_vertex_pos(1, 70, 50)
             sage: ed._get_vertex_at(55, 50)
             0
             sage: ed._get_vertex_at(65, 50)
             1
-            sage: ed._get_vertex_at(60, 25)
-            None
+            sage: ed._get_vertex_at(60, 25) is None
+            True
         """
 
         canvas_pos = self._get_vertices_pos()
@@ -768,7 +772,7 @@ class SimpleGraphEditor():
             (0, 1)
             sage: ed._get_edge_at(75, 100)
             (1, 2)
-            sage: ed._get_edge_at(52, 98)
+            sage: ed._get_edge_at(60, 98)
             (1, 2)
         """
 
@@ -824,9 +828,10 @@ class SimpleGraphEditor():
 
         TESTS::
 
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
-            sage: self._random_layout()
-            sage: self.graph.get_pos(1) >= 0 and self.graph.get_pos(1) <= 9
+            sage: ed._random_layout()
+            sage: ed.graph.get_pos(1) >= 0 and ed.graph.get_pos(1) <= 9
             True
         """
         n = self.graph.order()
@@ -846,7 +851,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: ed = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 101, height: 101})
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 101, 'height': 101})
             sage: ed._set_vertex_pos(0, 10, 10)
             sage: ed._set_vertex_pos(1, 5, 10)
             sage: ed._set_vertex_pos(2, 15, 10)
@@ -927,7 +933,7 @@ class SimpleGraphEditor():
             sage: ed._set_vertex_pos(4, 50, 70)
             sage: ed._scale_layout(1.5)
             sage: x, y = ed._get_vertex_pos(0)
-            sage abs(x - 50) <= 1 and abs(y - 50) <= 1
+            sage: abs(x - 50) <= 1 and abs(y - 50) <= 1
             True
             sage: ed._get_vertex_pos(1)[0] <= 21
             True
@@ -956,8 +962,8 @@ class SimpleGraphEditor():
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._translate_layout((25, 25))
             sage: x, y = ed._get_vertex_pos(0)
-            sage: x, y == (75, 75)
-            True
+            sage: (x, y)
+            (75, 75)
         """
 
         x_shift, y_shift = vec
@@ -1016,12 +1022,13 @@ class SimpleGraphEditor():
 
         TESTS::
 
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(0))
             sage: ed.add_vertex_at(10, 42, name="vert", color='#112233')
             sage: v=next(ed.graph.vertex_iterator())
             sage: v
             'vert'
-            sage: ed.get_vertex_pos(v)
+            sage: ed._get_vertex_pos(v)
             (10, 42)
             sage: ed.colors[v]
             '#112233'
@@ -1056,10 +1063,11 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: ed = SimpleGraphEditor(Graph(['u', 'v']))
-            sage: ed.graph.has_edge('u', 'v')
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: ed.graph.has_edge(0, 1)
             False
-            sage: ed.add_edge('u', 'v', color='#112233'); ed.graph.has_edge('u', 'v')
+            sage: ed.add_edge(0, 1, color='#112233'); ed.graph.has_edge(0, 1)
             True
             sage: ed.get_edge_color(('u', 'v'))
             '#112233'
@@ -1323,11 +1331,12 @@ class SimpleGraphEditor():
 
         TESTS::
 
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(0))
             sage: attrs = ['current_clique', 'current_walk_vertex', 'current_star_center', 'current_star_leaf']
-            sage: for attr in attrs: setattr(e, attr, 42)
+            sage: for attr in attrs: setattr(ed, attr, 42)
             sage: ed._clean_tools()
-            sage: any((hasattr(e, a) for a in attrs)
+            sage: any((hasattr(ed, a) for a in attrs))
             False
         """
         attrs = ['current_clique',
