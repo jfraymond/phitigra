@@ -1249,6 +1249,7 @@ class SimpleGraphEditor():
                 self._draw_vertex(v, highlight=True)
 
     def refresh(self, vertex=None):
+        self.text_graph_update()
         if vertex:
             self._draw_vertex(vertex)
         else:
@@ -1340,6 +1341,35 @@ class SimpleGraphEditor():
     def mouse_action_select_move(self,
                                  on_vertex, closest_edge,
                                  pixel_x, pixel_y):
+        """
+        Start moving or (un)selecting a vertex or an edge or moving the
+        whole graph.
+
+        This function is called after a (down) click when the current
+        tool is 'select / move'.
+
+        INPUT:
+
+        - `on_vertex` -- vertex; the clicked vertex if any, can be `None1
+        otherwise;
+        - `closest_edge` -- edge; the clicked edge if any, can be `None`
+        otherwise;
+        - `pixel_x` -- integer; the x-coordinate on the canvas of the click;
+        - `pixel_y` -- integer; the y-coordinate on the canvas of the click.
+
+        OUTPUT:
+
+        No output. Only side effects:
+
+        - if `on_vertex` is not `None`, draw this vertex and its neighbors
+        on the interact canvas (`self.interact_canvas`) and the rest of the
+        graph on the main canvas (so that we can move `on_vertex` without
+        redrawing the whole graph many times;
+        - otherwise, if `closest_edge` is not `None`, (un)select it;
+        - otherwise, the click was done on the canvas: record its position
+        in order to later move the drawing when the mouse is moved. 
+        """
+        
         if on_vertex is not None:
             # Click was on a vertex
             self.dragged_vertex = on_vertex
@@ -1373,10 +1403,56 @@ class SimpleGraphEditor():
             self.dragging_canvas_from = [pixel_x, pixel_y]
             return
 
-    def mouse_action_add_ve(self, on_vertex=None, pixel_x=None, pixel_y=None):
+    def mouse_action_add_ve(self, on_vertex, pixel_x, pixel_y):
         """
-        Function that is called after a click on ``on_vertex``
-        (if not None) when the tool is 'add vertex or edge'.
+        Add a vertex or an edge.
+
+        This function is called after a down click is done and the current
+        tool is "add vertex or edge".
+
+        INPUT:
+
+        - `on_vertex` -- vertex; the clicked vertex, if any;
+        - `pixel_x` -- integer; the x-coordinate on the canvas of the click;
+        - `pixel_y` -- integer; the y-coordinate on the canvas of the click.
+
+        OUTPUT:
+
+        No output. Only side effects:
+
+        - if the click is not on a vertex (i.e. `on_vertex` is `None`) and
+        there is a selected vertex : empty the set of selected vertices;
+        - if the click is not on a vertex and there is no selected vertex :
+        add a new vertex at the clicked position;
+        - if the click is on a vertex `v`, that is selected: unselect `v`;
+        - if the click is on an unselected vertex `v` and there is a selected
+        vertex `u`: add the edge `uv`;
+        - if the click is on a vertex `v` and there is no selected vertex:
+        select `v`.
+
+        In all cases redraw the graph.
+
+        TESTS::
+
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: ed.mouse_action_add_ve(0, 0, 0)
+            sage: ed.selected_vertices
+            {0}
+            sage: ed.mouse_action_add_ve(None, 0, 0)
+            sage: ed.selected_vertices
+            set()
+
+            sage: ed.mouse_action_add_ve(0, 0, 0)
+            sage: ed.mouse_action_add_ve(1, 0, 0)
+            sage: ed.graph.has_edge(0, 1)
+            True
+            sage: ed.selected_vertices
+            set()
+
+            sage: ed.mouse_action_add_ve(None, 20, 20)
+            sage: len(ed.graph)
+            3
         """
         if on_vertex is not None:
             # The click is done on an existing vertex
@@ -1415,23 +1491,89 @@ class SimpleGraphEditor():
                 # Otherwise, we add a new vertex
                 self.add_vertex_at(pixel_x, pixel_y)
         self.refresh()
-        self.text_graph_update()
 
-    def mouse_action_del_ve(self, on_vertex=None, on_edge=None):
+    def mouse_action_del_ve(self, on_vertex, on_edge):
+        """
+        Delete a vertex or an edge.
 
+        This function is called after a down click is done and the current
+        tool is "delete vertex or edge".
+
+        INPUT:
+
+        - `on_vertex` -- vertex; the clicked vertex, if any;
+        - `on_edge` -- edge; the clicked edge, if any;
+
+        OUTPUT:
+
+        No output. Only side effects:
+        
+        - if `on_vertex` is not `None`, delete this vertex;
+        - otherwise, of `on_edge` is not `None`, delete this edge;
+        
+        In both cases redraw the graph.
+
+        TESTS::
+
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
+            sage: ed.mouse_action_del_ve(2, None)
+            sage: len(ed.graph)
+            2
+            sage: ed.mouse_action_del_ve(None, (0, 1))
+            sage: ed.graph.num_edges()
+            0
+        """
+        
         if on_vertex is not None:
             self.graph.delete_vertex(on_vertex)
         elif on_edge is not None:
             self.graph.delete_edge(on_edge)
         else:
             return
-        self._draw_graph()
-        self.text_graph_update()
+        self.refresh()
 
-    def mouse_action_add_clique(self, clicked_node, click_x, click_y):
+    def mouse_action_add_clique(self, clicked_node, pixel_x, pixel_y):
+        """
+        Add a vertex to the current clique.
+
+        This function is called after a down click is done and the current
+        tool is "add clique". It adds a vertex (new or existing) to the clique
+        that is being constructed.
+
+        INPUT:
+
+        - `clicked_node` -- vertex; the clicked vertex, if any;
+        - `pixel_x`, `pixel_y` -- integers; the coordinates of the click;
+
+        OUTPUT:
+
+        No output. Only side effects:
+
+        - if `clicked_node` is `None`, add a new vertex at
+        `(pixel_x, pixel_y)`;
+        - if `clicked_node` is a vertex of the current clique,
+        delete `self.current_clique`: the construction of this
+        clique is done.
+        - otherwise, add `clicked_node` to `self.current_clique`
+        and add edges to all other vertices of this set.
+
+        TESTS::
+
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: ed.mouse_action_add_clique(0, 0, 0) # add 0 to the current clique
+            sage: ed.mouse_action_add_clique(1, 0, 0) # add 1
+            sage: ed.mouse_action_add_clique(None, 20, 20) # add a new vertex ajacent to the two others
+            sage: G = ed.graph
+            sage: u, v, w = G.vertices()
+            sage: G.has_edge(u, v) and G.has_edge(v, w) and G.has_edge(w, u)
+            True
+        """
+        
         if clicked_node is None:
             # Click on the canvas: we add a vertex
-            clicked_node = self.add_vertex_at(click_x, click_y)
+            clicked_node = self.add_vertex_at(pixel_x, pixel_y)
 
         if not hasattr(self, 'current_clique'):
             self.current_clique = [clicked_node]
@@ -1445,10 +1587,60 @@ class SimpleGraphEditor():
             self.add_edge(clicked_node, u)
         self.current_clique.append(clicked_node)
 
-    def mouse_action_add_walk(self, clicked_node, click_x, click_y):
+    def mouse_action_add_walk(self, clicked_node, pixel_x, pixel_y):
+        """
+        Add a vertex to the current walk.
+
+        This function is called after a down click is done and the current
+        tool is "add walk". It adds a vertex (new or existing) to the walk
+        that is being constructed.
+
+        INPUT:
+
+        - `clicked_node` -- vertex; the clicked vertex, if any;
+        - `pixel_x`, `pixel_y` -- integers; the coordinates of the click;
+
+        OUTPUT:
+
+        No output. Only side effects:
+
+        - if `clicked_node` is `None`, add a new vertex at
+        `(pixel_x, pixel_y)` and call it `clicked_node`.
+
+        Then:
+
+        - if there is no current walk (i.e. `self.current_walk_vertex` does
+        not exist), start a new walk with `clicked_node`;
+        - if there is a current walk and `clicked_node` is the last
+        vertex of it (i.e. it is `self.current_walk_vertex`), then end
+        the construction of the current walk, that is, delete
+        `self.current_walk_vertex`;
+        - otherwise add an edge from the last vertex of the walk to
+        `clicked_node` and set `self.current_walk_vertex` to `clicked_node`.
+
+        TESTS::
+
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: hasattr(ed, current_walk_vertex)
+            False
+            sage: ed.mouse_action_add_walk(0, 0, 0)
+            sage: ed.current_walk_vertex
+            0
+            sage: ed.mouse_action_add_walk(None, 20, 20)
+            sage: ed.mouse_action_add_walk(1, 0, 0)
+            sage: ed.current_walk_vertex
+            1
+            sage: ed.mouse_action_add_walk(1, 0, 0)
+            sage: hasattr(ed, current_walk_vertex)
+            False
+            sage: ed.graph.num_edges()
+            2
+        """
+        
         if clicked_node is None:
             # Click on the canvas: we add a vertex
-            clicked_node = self.add_vertex_at(click_x, click_y)
+            clicked_node = self.add_vertex_at(pixel_x, pixel_y)
 
         if not hasattr(self, 'current_walk_vertex'):
             # The clicked vertex is the first vertex of the walk
@@ -1507,9 +1699,12 @@ class SimpleGraphEditor():
         """
         Callback for mouse (down) clicks.
 
-        If a vertex is selected and a different vertex is clicked, add
-        an edge between these vertices. Otherwise, start dragging the
-        clicked vertex.
+        This function is called when a down click is done on the canvas.
+        Depending on the current tool in use, call the appropriate function.
+
+
+        INPUT:
+        - `click_x`, `click_y` -- integers; the coordinates of the clicked vertex
         """
 
         self.initial_click_pos = (click_x, click_y)
