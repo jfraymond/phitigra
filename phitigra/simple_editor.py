@@ -50,9 +50,17 @@ class SimpleGraphEditor():
     @staticmethod
     def draw_arrow(canvas):
         """
-        Draw an arrow at with tip at (0,0), pointing to the left.
+        Draw an arrow at with tip at `(0,0)`, pointing to the left.
 
         Used when drawing directed graphs.
+
+        INPUT:
+
+        - ``canvas`` -- canvas; the canvas where to draw the arrow.
+
+        OUTPUT:
+
+        No output, only side effects. Draws an arrow on the canvas.
         """
         a_x = 15  # Length of the arrow
         a_y = 8   # Half-width of the arrow
@@ -80,10 +88,10 @@ class SimpleGraphEditor():
           plot and edit.
 
         - ``drawing_parameters`` -- dictionary (default: `{}`); the
-          parameters to use for the drawing, which are `'width'`,
-          `'height'`, `'default_radius'` (for vertex shapes),
-          `'default_vertex_color'` (for drawing the vertice initially in
-          the graph), and `'default_edge_color'`.
+          parameters to use for the drawing, which are ``width``,
+          ``height``, ``default_radius`` (for vertex shapes),
+          ``default_vertex_color`` (for drawing the vertice initially in
+          the graph), and ``default_edge_color``.
 
         OUTPUT: a graph editor widget
 
@@ -132,8 +140,7 @@ class SimpleGraphEditor():
                'width': str(self.drawing_parameters['width'] + 6) + 'px',
                'height': str(self.drawing_parameters['height'] + 6) + 'px',
                'overflow': 'visible'}
-        
-        # The canvas where to draw
+            # The canvas where to draw
         self.multi_canvas = (
             MultiCanvas(2,
                         width=self.drawing_parameters['width'],
@@ -387,8 +394,7 @@ class SimpleGraphEditor():
     def show(self):
         """
         Return the editor widget.
-        
-        TESTS::
+            TESTS::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor()
@@ -407,7 +413,7 @@ class SimpleGraphEditor():
 
         EXAMPLES:
 
-        The returned graph is different from that of the editor:
+        The returned graph is different from that of the editor::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
@@ -422,11 +428,10 @@ class SimpleGraphEditor():
         """
         Return the radius of a vertex.
 
-        If the radius of v has not been set, return the default radius.
+        If the radius of ``v`` has not been set, return the default radius.
 
         EXAMPLES:
-        
-            sage: from phitigra import SimpleGraphEditor
+                sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
             sage: ed.vertex_radii[0]
             41
@@ -443,10 +448,12 @@ class SimpleGraphEditor():
 
         If ``radius`` is ``None``, use the radius in the radius box.
 
-        WARNING: this function does not redraw the graph.
-        
-        EXAMPLES:
-        
+        .. WARNING:
+
+        This function does not redraw the graph.
+
+        EXAMPLES::
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
             sage: ed.vertex_radii[0]
@@ -456,8 +463,6 @@ class SimpleGraphEditor():
             42
 
         TESTS::
-
-        Behavior when no radius is provided:
 
             sage: ed.set_vertex_radius(0)
             sage: ed.vertex_radii[0] == ed.vertex_radius_box.value
@@ -472,18 +477,28 @@ class SimpleGraphEditor():
         """
         Get the color of a vertex.
 
+        INPUT:
+
+        - `v` -- vertex; the vertex of which we want to know the color.
+
+        OUTPUT:
+
+        `v`'s color.
+
         EXAMPLES:
-        
-        Colors can be given as named colors or hex values:
+
+        We color a vertex and ask for its color::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed.set_vertex_color(0, 'blue')
             sage: ed.get_vertex_color(0)
             'blue'
+
             sage: ed.set_vertex_color(0, '#fff')
             sage: ed.get_vertex_color(0)
             '#fff'
+
         """
         return self.colors[v]
 
@@ -493,11 +508,23 @@ class SimpleGraphEditor():
 
         If ``color`` is ``None``, use the color of the color selector.
 
-        WARNING: this function does not redraw the graph.
+        INPUT:
+
+        - ``v`` -- vertex; the vertex to color;
+        - ``color`` -- color (default: ``None``); the new color for ``v``.
+
+        OUTPUT:
+
+        No output. Only a side effect: set the color of ``v`` to ``color`` if
+        it is not ``None``, or to the color of the color selector otherwise.
+
+        .. WARNING:
+
+            This function does not redraw the graph.
 
         EXAMPLES:
-        
-        Colors can be given as named colors or hex values:
+
+        Colors can be given as named colors or hex values::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
@@ -509,8 +536,6 @@ class SimpleGraphEditor():
             '#fff'
 
         TESTS::
-
-        Behavior when no color is provided:
 
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed.set_vertex_color(0)
@@ -526,9 +551,17 @@ class SimpleGraphEditor():
         """
         Return the color of an edge.
 
+        INPUT:
+
+        - ``e`` -- edge; the edge in question;
+
+        OUTPUT:
+
+        The color of ``e``.
+
         EXAMPLES:
-        
-        Edge colors for undirected graphs:
+
+        Edge colors for undirected graphs::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
@@ -544,7 +577,7 @@ class SimpleGraphEditor():
             ...
             KeyError: (5, 9)
 
-        Edge colors for directed graphs:
+        Edge colors for directed graphs::
 
             sage: ed = SimpleGraphEditor(digraphs.Circuit(4))
             sage: ed.set_edge_color((0, 1), '#123456')
@@ -560,7 +593,7 @@ class SimpleGraphEditor():
 
         if self.graph.is_directed():
             return self.edge_colors[(u, v)]
-        
+
         if (v, u) in self.edge_colors:
             return self.edge_colors[(v, u)]
         else:
@@ -570,13 +603,22 @@ class SimpleGraphEditor():
         """
         Set the color of an edge.
 
-        If ``color`` is ``None``, use the default color.
+        INPUT:
+
+        - ``e`` -- edge; the edge to color;
+        - ``color`` -- color (default: ``None``); the new color for ``e``.
+
+        OUTPUT:
+
+        No output. Only a side effect: set the color of ``e`` to ``color`` if
+        it is not ``None``, or to the color of the color selector otherwise.
+
         Raise an exception if the edge does not belong to the graph.
         See :meth:`get_edge_color` for examples.
-        
-       .. WARNING:: this function does not redraw the graph.
 
-        TESTS:
+        .. WARNING:: this function does not redraw the graph.
+
+        TESTS::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
@@ -588,7 +630,7 @@ class SimpleGraphEditor():
             ...
             ValueError: edge (1, 5) does not belong to the graph
         """
-        
+
         u, v, *_ = e
         if color is None:
             color = self.drawing_parameters['default_edge_color']
@@ -603,13 +645,21 @@ class SimpleGraphEditor():
 
     def _get_coord_on_canvas(self, x, y):
         """
-        Return the coordinates on the canvas corresponding to the
-        coordinates `x` and `y` in the basis where the graph positions
-        are stored.
+        Translate from the basis of the graph vertices to the basis of the
+        canvas.
 
-        These coordinates are obtained from the coordinates from
-        ``Graph.get_pos`` by applying the transformations stored in
-        ``self._transform_matrix`` and casting to integer.
+        INPUT:
+
+        - x,y -- floating point numbers; coordinates in the same basis
+          as the graphs's vertices.
+
+
+        OUTPUT:
+
+        Pair `(a,b)` of integer, which correspond to `(x, y)` in the
+        basis of the canvas.
+        These coordinates are obtained by applying the transformations
+        stored in ``self._transform_matrix`` and casting to integer.
 
         .. WARNING::
 
@@ -619,7 +669,7 @@ class SimpleGraphEditor():
             so they can be negative or over the canvas width/height.
 
         TESTS::
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
@@ -639,7 +689,7 @@ class SimpleGraphEditor():
         See :meth:`_get_coord_on_canvas` for details.
 
         TESTS::
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
@@ -680,10 +730,17 @@ class SimpleGraphEditor():
         """
         Set the position of a vertex.
 
-        The arguments ``x`` and ``y`` denote the position on the canvas
-        (in pixel) where the vertex ``v`` should be placed.
-        These values are translated and scaled using the inverse of
-        ``self._transform_matrix`` before being stored.
+        INPUT:
+
+        - `v` -- vertex; the vertex that needs to have its position set
+        - `x`, `y` -- integers; the coordinates on the canvas for `v`.
+
+        OUTPUT:
+
+        No output. Only a side effect: the coordinates `x` and `y` are
+        translated to the basis of the coordinates of the other
+        vertices (using the inverse of ``self._transform_matrix``)
+        before being stored.
 
         TESTS::
 
@@ -709,9 +766,15 @@ class SimpleGraphEditor():
         """
         Return which vertex is drawn at (x,y).
 
-        Actually return the vertex whose shape contains `(x,y)` and whose
-        center is the closest to `(x,y)`.
-        Return `None` if no vertex shape contains `(x,y)`.
+        INPUT:
+
+        - `x`, `y` -- integers; coordinates on the canvas.
+
+        OUTPUT:
+
+        A vertex whose shape contains `(x,y)` and whose center is the
+        closest to `(x,y)`. If this does not exists, the returned
+        value is ``None``.
 
         EXAMPLES:
 
@@ -751,14 +814,25 @@ class SimpleGraphEditor():
         """
         Return the closest edge near the point with coordinates (x,y).
 
-        Return `None` if no edge is close enough to (x,y).
+        Return ``None`` if no edge is close enough to (x,y).
+
+        INPUT:
+
+        - `x`, `y` -- integers; coordinates on the canvas.
+
+        OUTPUT:
+
+        An edge that run close enough from `(x, y)` and minimizes the
+        distance to this point. If this does not exists, the returned
+        value is ``None``.
+
 
         .. WARNING::
             This function assumes that edges are straigh lines between
             their endpoints.
 
         EXAMPLES:
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
             sage: ed._set_vertex_pos(0, 50, 50)
@@ -923,7 +997,7 @@ class SimpleGraphEditor():
         This is done by updating the transform matrix.
 
         TESTS::
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 101, 'height': 101})
             sage: ed._set_vertex_pos(0, 50, 50)
@@ -954,9 +1028,9 @@ class SimpleGraphEditor():
         Translate the vertices coordinates.
 
         This is done by updating the transform matrix.
-        
+
         TESTS::
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
@@ -979,9 +1053,9 @@ class SimpleGraphEditor():
     def output_text(self, text):
         """
         Write the input string in the textbox of the editor.
-        
+
         TESTS::
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed.output_text("Hello world!")
@@ -995,7 +1069,7 @@ class SimpleGraphEditor():
         """Update the caption with data about the graph.
 
         TESTS::
-        
+
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
             sage: print(ed.text_graph.value)
@@ -1136,7 +1210,7 @@ class SimpleGraphEditor():
         """
         Draw the neighbors of a vertex and the edges leading to them.
         """
-        
+
         # Below We use ignore_direction=True to get all edges incident to a
         # vertex in the case where self.graph is directed
         for e in self.graph.edge_iterator(v, ignore_direction=True):
@@ -1164,7 +1238,7 @@ class SimpleGraphEditor():
           (default: ``None``); with the default value,
           ``self.canvas`` is used.
 
-        WARNING:
+        .. WARNING:
 
         - The function does not check that ``e`` is an edge of ``self``;
 
@@ -1261,23 +1335,24 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `vertex` -- vertex (default: `None`); the vertex to be (un)selected;
-        if `vertex` is `None` then the set of selected vertices is emptied;
+        - `vertex` -- vertex (default: ``None``); the vertex to be (un)selected;
+          if `vertex` is ``None`` then the set of selected vertices is emptied;
         - `redraw` -- Boolean (default: `True`); when True, redraw `vertex`,
-        otherwise does not change the drawing (useful when the graph is going
-        to be fully redrawn afterwards anyway).
+          otherwise does not change the drawing (useful when the graph is going
+          to be fully redrawn afterwards anyway).
 
         OUTPUT:
 
         No output. Only side effects:
 
-        - if `vertex` is `None` then the set `self.selected_vertices` is
-        empied; otherwise `vertex` is added (if not already present) or
-        removed (otherwise) in `self.selected_vertices`.
+        - if `vertex` is ``None`` then the set `self.selected_vertices` is
+          empied; otherwise `vertex` is added (if not already present) or
+          removed (otherwise) in `self.selected_vertices`.
         - if `redraw` is `True`, `vertex` is redrawn, with or without the
-        selection focus depending on whether it was selected or unselected.
+          selection focus depending on whether it was selected or unselected.
 
-        WARNING:
+        .. WARNING:
+
         No check is done that `vertex` indeed is a vertex of the graph.
         """
 
@@ -1350,10 +1425,10 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `on_vertex` -- vertex; the clicked vertex if any, can be `None1
-        otherwise;
-        - `closest_edge` -- edge; the clicked edge if any, can be `None`
-        otherwise;
+        - `on_vertex` -- vertex; the clicked vertex if any, can be ``None``
+          otherwise;
+        - `closest_edge` -- edge; the clicked edge if any, can be ``None``
+          otherwise;
         - `pixel_x` -- integer; the x-coordinate on the canvas of the click;
         - `pixel_y` -- integer; the y-coordinate on the canvas of the click.
 
@@ -1361,15 +1436,15 @@ class SimpleGraphEditor():
 
         No output. Only side effects:
 
-        - if `on_vertex` is not `None`, draw this vertex and its neighbors
-        on the interact canvas (`self.interact_canvas`) and the rest of the
-        graph on the main canvas (so that we can move `on_vertex` without
-        redrawing the whole graph many times;
-        - otherwise, if `closest_edge` is not `None`, (un)select it;
+        - if `on_vertex` is not ``None``, draw this vertex and its neighbors
+          on the interact canvas (`self.interact_canvas`) and the rest of the
+          graph on the main canvas (so that we can move `on_vertex` without
+          redrawing the whole graph many times;
+        - otherwise, if `closest_edge` is not ``None``, (un)select it;
         - otherwise, the click was done on the canvas: record its position
-        in order to later move the drawing when the mouse is moved. 
+          in order to later move the drawing when the mouse is moved. 
         """
-        
+
         if on_vertex is not None:
             # Click was on a vertex
             self.dragged_vertex = on_vertex
@@ -1412,23 +1487,23 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `on_vertex` -- vertex; the clicked vertex, if any;
-        - `pixel_x` -- integer; the x-coordinate on the canvas of the click;
-        - `pixel_y` -- integer; the y-coordinate on the canvas of the click.
+        - ``on_vertex`` -- vertex; the clicked vertex, if any;
+        - ``pixel_x`` -- integer; the x-coordinate on the canvas of the click;
+        - ``pixel_y`` -- integer; the y-coordinate on the canvas of the click.
 
         OUTPUT:
 
         No output. Only side effects:
 
-        - if the click is not on a vertex (i.e. `on_vertex` is `None`) and
-        there is a selected vertex : empty the set of selected vertices;
+        - if the click is not on a vertex (i.e. ``on_vertex`` is ``None``) and
+          there is a selected vertex : empty the set of selected vertices;
         - if the click is not on a vertex and there is no selected vertex :
-        add a new vertex at the clicked position;
-        - if the click is on a vertex `v`, that is selected: unselect `v`;
-        - if the click is on an unselected vertex `v` and there is a selected
-        vertex `u`: add the edge `uv`;
-        - if the click is on a vertex `v` and there is no selected vertex:
-        select `v`.
+          add a new vertex at the clicked position;
+        - if the click is on a vertex ``v``, that is selected: unselect ``v``;
+        - if the click is on an unselected vertex ``v`` and there is a selected
+          vertex ``u``: add the edge ``uv``;
+        - if the click is on a vertex ``v`` and there is no selected vertex:
+          select ``v``.
 
         In all cases redraw the graph.
 
@@ -1501,16 +1576,16 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `on_vertex` -- vertex; the clicked vertex, if any;
-        - `on_edge` -- edge; the clicked edge, if any;
+        - ``on_vertex`` -- vertex; the clicked vertex, if any;
+        - ``on_edge`` -- edge; the clicked edge, if any;
 
         OUTPUT:
 
         No output. Only side effects:
-        
-        - if `on_vertex` is not `None`, delete this vertex;
-        - otherwise, of `on_edge` is not `None`, delete this edge;
-        
+
+        - if ``on_vertex`` is not ``None``, delete this vertex;
+        - otherwise, of ``on_edge`` is not ``None``, delete this edge;
+
         In both cases redraw the graph.
 
         TESTS::
@@ -1524,7 +1599,7 @@ class SimpleGraphEditor():
             sage: ed.graph.num_edges()
             0
         """
-        
+
         if on_vertex is not None:
             self.graph.delete_vertex(on_vertex)
         elif on_edge is not None:
@@ -1543,20 +1618,20 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `clicked_node` -- vertex; the clicked vertex, if any;
-        - `pixel_x`, `pixel_y` -- integers; the coordinates of the click;
+        - ``clicked_node`` -- vertex; the clicked vertex, if any;
+        - ``pixel_x``, ``pixel_y`` -- integers; the coordinates of the click;
 
         OUTPUT:
 
         No output. Only side effects:
 
-        - if `clicked_node` is `None`, add a new vertex at
-        `(pixel_x, pixel_y)`;
-        - if `clicked_node` is a vertex of the current clique,
-        delete `self.current_clique`: the construction of this
-        clique is done.
-        - otherwise, add `clicked_node` to `self.current_clique`
-        and add edges to all other vertices of this set.
+        - if ``clicked_node`` is ``None``, add a new vertex at
+          ``(pixel_x, pixel_y)``;
+        - if ``clicked_node`` is a vertex of the current clique,
+          delete ``self.current_clique``: the construction of this
+          clique is done.
+        - otherwise, add ``clicked_node`` to ``self.current_clique``
+          and add edges to all other vertices of this set.
 
         TESTS::
 
@@ -1570,7 +1645,7 @@ class SimpleGraphEditor():
             sage: G.has_edge(u, v) and G.has_edge(v, w) and G.has_edge(w, u)
             True
         """
-        
+
         if clicked_node is None:
             # Click on the canvas: we add a vertex
             clicked_node = self.add_vertex_at(pixel_x, pixel_y)
@@ -1597,26 +1672,27 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `clicked_node` -- vertex; the clicked vertex, if any;
-        - `pixel_x`, `pixel_y` -- integers; the coordinates of the click;
+        - ``clicked_node`` -- vertex; the clicked vertex, if any;
+        - ``pixel_x``, ``pixel_y`` -- integers; the coordinates of the click;
 
         OUTPUT:
 
         No output. Only side effects:
 
-        - if `clicked_node` is `None`, add a new vertex at
-        `(pixel_x, pixel_y)` and call it `clicked_node`.
+        - if ``clicked_node`` is ``None``, add a new vertex at
+          ``(pixel_x, pixel_y)`` and call it ``clicked_node``.
 
         Then:
 
-        - if there is no current walk (i.e. `self.current_walk_vertex` does
-        not exist), start a new walk with `clicked_node`;
-        - if there is a current walk and `clicked_node` is the last
-        vertex of it (i.e. it is `self.current_walk_vertex`), then end
-        the construction of the current walk, that is, delete
-        `self.current_walk_vertex`;
+        - if there is no current walk (i.e. ``self.current_walk_vertex`` does
+          not exist), start a new walk with ``clicked_node``;
+        - if there is a current walk and ``clicked_node`` is the last
+          vertex of it (i.e. it is ``self.current_walk_vertex``), then end
+          the construction of the current walk, that is, delete
+          ``self.current_walk_vertex``;
         - otherwise add an edge from the last vertex of the walk to
-        `clicked_node` and set `self.current_walk_vertex` to `clicked_node`.
+          ``clicked_node`` and set ``self.current_walk_vertex`` to
+          ``clicked_node``.
 
         TESTS::
 
@@ -1637,7 +1713,7 @@ class SimpleGraphEditor():
             sage: ed.graph.num_edges()
             2
         """
-        
+
         if clicked_node is None:
             # Click on the canvas: we add a vertex
             clicked_node = self.add_vertex_at(pixel_x, pixel_y)
@@ -1704,7 +1780,12 @@ class SimpleGraphEditor():
 
 
         INPUT:
-        - `click_x`, `click_y` -- integers; the coordinates of the clicked vertex
+        - ``click_x``, ``click_y`` -- integers;
+          the coordinates of the click.
+
+        OUTPUT:
+
+        No output, just a call to the appropriate function.
         """
 
         self.initial_click_pos = (click_x, click_y)
@@ -1733,7 +1814,20 @@ class SimpleGraphEditor():
 
     @output.capture()
     def mouse_move_handler(self, pixel_x, pixel_y):
-        """Callback for mouse movement."""
+        """
+        Callback for mouse movement.
+
+        This function is called when the mouse is moved.
+        Depending on the current tool in use, call the appropriate function.
+
+        INPUT:
+        - ``click_x``, ``click_y`` -- integers;
+          the coordinates of the mouse.
+
+        OUTPUT:
+
+        No output, just a call to the appropriate function.
+        """
         if self.dragged_vertex is not None:
             # We are dragging a vertex...
             self.output_text("Dragging vertex " + str(self.dragged_vertex))
@@ -1759,7 +1853,20 @@ class SimpleGraphEditor():
 
     @output.capture()
     def mouse_up_handler(self, pixel_x, pixel_y):
-        """Callback for mouse (up) click."""
+        """
+        Callback for mouse (up) click.
+
+        This function is called when an up-click is done on the canvas.
+        Depending on the current tool in use, call the appropriate function.
+
+        INPUT:
+        - ``click_x``, ``click_y`` -- integers;
+          the coordinates of the click.
+
+        OUTPUT:
+
+        No output, just a call to the appropriate function.
+        """
         if self.dragged_vertex is not None:
             # If we dragged the vertex very close to its initial
             # position, we actually wanted to (un)select it
@@ -1797,7 +1904,14 @@ class SimpleGraphEditor():
     ##############################################
 
     def tool_selector_callback(self):
-        """Called when changing tools."""
+        """
+        Called when changing tools.
+
+        Redraw the graph, unselect selected vertices and clears
+        variables used with some tools (when constructing cliques
+        for instance).
+
+        """
         self._clean_tools()
         self._select_vertex(redraw=False)
         self.selected_edges.clear()
@@ -1920,15 +2034,32 @@ class SimpleGraphEditor():
         self.refresh()
 
     def clear_drawing_button_callback(self, b):
-        """Callback for the clear_drawing_button."""
+        """
+        Callback for the clear_drawing_button.
+
+        Replaces the current graph with the empty graph and clears the
+        canvas.
+        """
         self.graph = Graph(0)
         self._select_vertex(redraw=None)
-        self._draw_graph()
+        self.refresh()
         self.output_text("Cleared drawing.")
-        self.text_graph_update()
 
     def set_next_callback(self, f):
         """
         Define a callback for the `Next` button.
+
+        INPUT:
+
+        - ``f`` -- function of arity.
+
+        OUTPUT:
+
+        No output. After calling ``set_next_callback` on a function
+        `f`, that function will be called at each click on the `Next`
+        button. 
+        This can be used to show the different steps of an algorithm
+        that processes the drawn graph, where each click on `Next`
+        goes to the next step.
         """
         self.next_button.on_click(lambda x: f())
