@@ -140,7 +140,7 @@ class SimpleGraphEditor():
                'width': str(self.drawing_parameters['width'] + 6) + 'px',
                'height': str(self.drawing_parameters['height'] + 6) + 'px',
                'overflow': 'visible'}
-            # The canvas where to draw
+        # The canvas where to draw
         self.multi_canvas = (
             MultiCanvas(2,
                         width=self.drawing_parameters['width'],
@@ -431,7 +431,8 @@ class SimpleGraphEditor():
         If the radius of ``v`` has not been set, return the default radius.
 
         EXAMPLES:
-                sage: from phitigra import SimpleGraphEditor
+
+            sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
             sage: ed.vertex_radii[0]
             41
@@ -1442,7 +1443,7 @@ class SimpleGraphEditor():
           redrawing the whole graph many times;
         - otherwise, if `closest_edge` is not ``None``, (un)select it;
         - otherwise, the click was done on the canvas: record its position
-          in order to later move the drawing when the mouse is moved. 
+          in order to later move the drawing when the mouse is moved.
         """
 
         if on_vertex is not None:
@@ -2027,6 +2028,17 @@ class SimpleGraphEditor():
         Change the radius of the selected vertices (if any).
 
         The new radius is that of the radius text box.
+
+        TESTS::
+
+            sage: from phitigra import SimpleGraphEditor
+            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: r = ed._get_radius(0)
+            sage: ed._select_vertex(1)
+            sage: ed.vertex_radius_box.value = 2*r
+            sage: ed.radius_button_callback()
+            sage: ed._get_radius(1) == 2*r
+            True
         """
         r = self.vertex_radius_box.value
         for v in self.selected_vertices:
@@ -2051,13 +2063,13 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - ``f`` -- function of arity.
+        - ``f`` -- function of arity zero.
 
         OUTPUT:
 
         No output. After calling ``set_next_callback` on a function
         `f`, that function will be called at each click on the `Next`
-        button. 
+        button.
         This can be used to show the different steps of an algorithm
         that processes the drawn graph, where each click on `Next`
         goes to the next step.
