@@ -81,11 +81,18 @@ calling the appropriate methods::
     sage: from phitigra import SimpleGraphEditor
     sage: G = graphs.CompleteGraph(10)
     sage: ed = SimpleGraphEditor(G)
+
+At first the vertices have the default color::
+
     sage: ed.show() # random
-    # The vertices have the default color
+
+We set vertices color depending on parity:
+
     sage: for v in G: ed.set_vertex_color(v, 'blue' if is_odd(v) else 'red')
     sage: ed.refresh()
-    # The vertices have color depending on their parity
+
+Same for edges::
+
     sage: for (u, v, _) in G.edge_iterator(): ed.set_edge_color((u, v), 'green' if is_odd(u+v) else 'orange')
     sage: ed.refresh()
 
@@ -95,7 +102,8 @@ One of the text boxes of the widget can be edited::
     sage: ed = SimpleGraphEditor()
     sage: ed.show() # random
     sage: ed.output_text("Hello world!")
-    # Hello world should appear below the drawing
+
+"Hello world" should appear below the drawing.
 
 The "Next" button can be used to trigger an action on the graph::
 
@@ -103,17 +111,22 @@ The "Next" button can be used to trigger an action on the graph::
     sage: G = graphs.RandomGNP(10, 0.5)
     sage: ed = SimpleGraphEditor(G)
     sage: ed.show() # random
-    # We define the function to be called after clicks on "Next"
+
+ We define the function to be called after clicks on "Next"
+
     sage: def callback(w):
     ....:     v = randint(0, 9)
     ....:     c = f"#{randrange(0x1000000):06x}" # random color
     ....:     w.set_vertex_color(v, c)
     sage: ed.set_next_callback(callback)
-    # Now clicks on "Next" randomly recolor random vertices, one at a time
-    # Calling `set_next_callback` again adds a new callback and does not
-    # cancel the one previously set
+
+Now clicks on "Next" randomly recolor random vertices, one at a time
+Calling `set_next_callback` again adds a new callback and does not
+cancel the one previously set::
+
     sage: ed.set_next_callback(callback)
-    # Now clicks on "Next" randomly recolor random vertices, *two* at a time
+
+Now clicks on "Next" randomly recolor random vertices, *two* at a time.
 
 
 AUTHORS:
@@ -177,7 +190,9 @@ class SimpleGraphEditor():
         canvas.move_to(0, 0)
         canvas.fill()
 
-    def __init__(self, G=Graph(0), drawing_parameters=dict()):
+    def __init__(self, G=None,
+                 width=600, height=400, default_radius=20,
+                 default_vertex_color=None, default_edge_color='black'):
         """
         Prepare the widget with the given graph.
 
@@ -189,22 +204,27 @@ class SimpleGraphEditor():
         INPUT:
 
         - ``G`` -- graph from :class:`Graph` or :class:`DiGraph` that does not
-          allow loops neither multiedges (default: `Graph(0)`); the graph to
-          plot and edit.
+          allow loops neither multiedges (default: `None`); the graph to
+          plot and edit. If `None`, an empty graph will be used instead.
 
-        - ``drawing_parameters`` -- dictionary (default: `{}`); the
-          parameters to use for the drawing, which are ``width``,
-          ``height``, ``default_radius`` (for vertex shapes),
-          ``default_vertex_color`` (for drawing the vertice initially in
-          the graph), and ``default_edge_color``.
+        - ``width`` and ``height`` -- integers (default 600 and 400
+          respectively); the sizes in pixel of the canvas where
+          the graph is drawn;
+        - ``default_radius`` -- integer (default 20); the default radius for
+          the shape of vertices;
+        - ``default_vertex_color`` -- integer (default ``None``); the initial
+          colors of the vertices of ``G``; if ``None`` a random color will be
+          used for each vertex;
+        - ``default_edge_color`` -- color (default: ``'black'``);
+        - ``drawing_parameters`` -- dictionary (default: `{}`); the initial
+          color of the edges of ``G``.
 
         OUTPUT: a graph editor widget
 
         EXAMPLES:
 
             sage: from phitigra import SimpleGraphEditor
-            sage: param = {'width': 200, 'height': 200}
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(),drawing_parameters=param)
+            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), width=200, height=200)
             sage: type(ed)
             <class 'phitigra.simple_editor.SimpleGraphEditor'>
 
@@ -217,28 +237,24 @@ class SimpleGraphEditor():
 
         """
 
+        if G is None:
+            G=Graph(0)
+
         if G.allows_multiple_edges() or G.allows_loops():
             raise ValueError("Cannot deal with graphs that allow"
                              " loops or multiple edges")
 
         self.graph = G
 
-        # Define the default drawing parameters and update them
-        # with the provided parameters (if any)
-
-        # Default parameters
         self._drawing_parameters = {
             # Sizes of the widget
-            'width': 600,
-            'height': 400,
+            'width': width,
+            'height': height,
             # Defaults for drawing vertices
-            'default_radius': 20,
-            'default_vertex_color': None,
-            'default_edge_color': 'black'
+            'default_radius': default_radius,
+            'default_vertex_color': default_vertex_color,
+            'default_edge_color': default_edge_color
         }
-
-        # Take into account the provided drawing parameters (if any)
-        self._drawing_parameters.update(drawing_parameters)
 
         # The layout (+6 to account for the 3px border on both sides)
         lyt = {'border': '3px solid lightgrey',
@@ -510,7 +526,7 @@ class SimpleGraphEditor():
             sage: ed = SimpleGraphEditor()
             sage: w = ed.show()
             sage: type(w)
-            <class 'ipywidgets._widgets._widget_box.HBox'>
+            <class 'ipywidgets.widgets.widget_box.HBox'>
         """
         self.refresh()
         return self._widget
@@ -543,7 +559,7 @@ class SimpleGraphEditor():
         EXAMPLES:
 
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
+            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), default_radius=41)
             sage: ed._vertex_radii[0]
             41
             sage: ed.set_vertex_radius(0, 42)
@@ -564,7 +580,7 @@ class SimpleGraphEditor():
         EXAMPLES::
 
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
+            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), default_radius=41)
             sage: ed.get_vertex_radius(0)
             41
             sage: ed.set_vertex_radius(0, 42)
@@ -747,7 +763,9 @@ class SimpleGraphEditor():
                              + str(e)
                              + " does not belong to the graph")
 
-        if (u, v) in self._edge_colors.keys():
+        if self.graph.is_directed():
+            self._edge_colors[(u, v)] = color
+        elif (u, v) in self._edge_colors.keys():
             self._edge_colors[(u, v)] = color
         else:
             self._edge_colors[(v, u)] = color
@@ -888,7 +906,7 @@ class SimpleGraphEditor():
         EXAMPLES:
 
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2), drawing_parameters={'default_radius': int(20)})
+            sage: ed = SimpleGraphEditor(Graph(2), default_radius=20)
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._set_vertex_pos(1, 70, 50)
             sage: ed._get_vertex_at(55, 50)
@@ -1035,7 +1053,7 @@ class SimpleGraphEditor():
         TESTS::
 
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 501, 'height': 501})
+            sage: ed = SimpleGraphEditor(Graph(5), width=501, height=501)
             sage: ed._set_vertex_pos(0, 10, 10)
             sage: ed._set_vertex_pos(1, 5, 10)
             sage: ed._set_vertex_pos(2, 15, 10)
@@ -1108,7 +1126,7 @@ class SimpleGraphEditor():
         TESTS::
 
             sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(5), drawing_parameters={'width': 101, 'height': 101})
+            sage: ed = SimpleGraphEditor(Graph(5), width=101, height=101)
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._set_vertex_pos(1, 30, 50)
             sage: ed._set_vertex_pos(2, 70, 50)
@@ -1507,16 +1525,16 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(0))
-            sage: attrs = ['current_clique', 'current_walk_vertex', 'current_star_center', 'current_star_leaf']
+            sage: attrs = ['_current_clique', '_current_walk_vertex', '_current_star_center', '_current_star_leaf']
             sage: for attr in attrs: setattr(ed, attr, 42)
             sage: ed._clean_tools()
             sage: any((hasattr(ed, a) for a in attrs))
             False
         """
-        attrs = ['current_clique',
-                 'current_walk_vertex',
-                 'current_star_center',
-                 'current_star_leaf']
+        attrs = ['_current_clique',
+                 '_current_walk_vertex',
+                 '_current_star_center',
+                 '_current_star_leaf']
 
         for attr in attrs:
             try:
@@ -1730,7 +1748,9 @@ class SimpleGraphEditor():
         INPUT:
 
         - ``clicked_node`` -- vertex; the clicked vertex, if any;
-        - ``pixel_x``, ``pixel_y`` -- integers; the coordinates of the click;
+        - ``pixel_x``, ``pixel_y`` -- integers; the coordinates of the click,
+          relevant only if ``clicked_node`` is ``None`` (new vertex to be
+          added).
 
         OUTPUT:
 
@@ -1739,9 +1759,9 @@ class SimpleGraphEditor():
         - if ``clicked_node`` is ``None``, add a new vertex at
           ``(pixel_x, pixel_y)``;
         - if ``clicked_node`` is a vertex of the current clique,
-          delete ``self.current_clique``: the construction of this
+          delete ``self._current_clique``: the construction of this
           clique is done.
-        - otherwise, add ``clicked_node`` to ``self.current_clique``
+        - otherwise, add ``clicked_node`` to ``self._current_clique``
           and add edges to all other vertices of this set.
 
         TESTS::
@@ -1761,17 +1781,17 @@ class SimpleGraphEditor():
             # Click on the canvas: we add a vertex
             clicked_node = self._add_vertex_at(pixel_x, pixel_y)
 
-        if not hasattr(self, 'current_clique'):
-            self.current_clique = [clicked_node]
+        if not hasattr(self, '_current_clique'):
+            self._current_clique = [clicked_node]
             return
-        if clicked_node in self.current_clique:
+        if clicked_node in self._current_clique:
             self.output_text("Done constructing clique")
-            del self.current_clique
+            del self._current_clique
             return
 
-        for u in self.current_clique:
+        for u in self._current_clique:
             self._add_edge(clicked_node, u)
-        self.current_clique.append(clicked_node)
+        self._current_clique.append(clicked_node)
 
     def _mouse_action_add_walk(self, clicked_node, pixel_x, pixel_y):
         """
@@ -1795,31 +1815,31 @@ class SimpleGraphEditor():
 
         Then:
 
-        - if there is no current walk (i.e. ``self.current_walk_vertex`` does
+        - if there is no current walk (i.e. ``self._current_walk_vertex`` does
           not exist), start a new walk with ``clicked_node``;
         - if there is a current walk and ``clicked_node`` is the last
-          vertex of it (i.e. it is ``self.current_walk_vertex``), then end
+          vertex of it (i.e. it is ``self._current_walk_vertex``), then end
           the construction of the current walk, that is, delete
-          ``self.current_walk_vertex``;
+          ``self._current_walk_vertex``;
         - otherwise add an edge from the last vertex of the walk to
-          ``clicked_node`` and set ``self.current_walk_vertex`` to
+          ``clicked_node`` and set ``self._current_walk_vertex`` to
           ``clicked_node``.
 
         TESTS::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(2))
-            sage: hasattr(ed, current_walk_vertex)
+            sage: hasattr(ed, '_current_walk_vertex')
             False
             sage: ed._mouse_action_add_walk(0, 0, 0)
-            sage: ed.current_walk_vertex
+            sage: ed._current_walk_vertex
             0
             sage: ed._mouse_action_add_walk(None, 20, 20)
             sage: ed._mouse_action_add_walk(1, 0, 0)
-            sage: ed.current_walk_vertex
+            sage: ed._current_walk_vertex
             1
             sage: ed._mouse_action_add_walk(1, 0, 0)
-            sage: hasattr(ed, current_walk_vertex)
+            sage: hasattr(ed, '_current_walk_vertex')
             False
             sage: ed.graph.num_edges()
             2
@@ -1829,55 +1849,55 @@ class SimpleGraphEditor():
             # Click on the canvas: we add a vertex
             clicked_node = self._add_vertex_at(pixel_x, pixel_y)
 
-        if not hasattr(self, 'current_walk_vertex'):
+        if not hasattr(self, '_current_walk_vertex'):
             # The clicked vertex is the first vertex of the walk
             self.output_text("Constructing a walk - "
                              "click on the last vertex when you are done.")
-            self.current_walk_vertex = clicked_node
+            self._current_walk_vertex = clicked_node
             self._select_vertex(clicked_node)  # Select and redraw
             self._text_graph_update()
             return
 
-        if clicked_node == self.current_walk_vertex:
+        if clicked_node == self._current_walk_vertex:
             self.output_text("Done constructing walk")
-            del self.current_walk_vertex
+            del self._current_walk_vertex
             self._select_vertex(clicked_node, redraw=False)  # Select
             self.refresh()
             return
 
-        self._add_edge(self.current_walk_vertex, clicked_node)
-        self._select_vertex(self.current_walk_vertex)  # Unselect&redraw
+        self._add_edge(self._current_walk_vertex, clicked_node)
+        self._select_vertex(self._current_walk_vertex)  # Unselect&redraw
         self._select_vertex(clicked_node)  # Select & redraw
-        self.current_walk_vertex = clicked_node
+        self._current_walk_vertex = clicked_node
 
     def _mouse_action_add_star(self, clicked_node, click_x, click_y):
         if clicked_node is None:
             # Click on the canvas: we add a vertex
             clicked_node = self._add_vertex_at(click_x, click_y)
 
-        if not hasattr(self, 'current_star_center'):
+        if not hasattr(self, '_current_star_center'):
             # We start drawing a star from the center
-            self.current_star_center = clicked_node
-            self.current_star_leaf = clicked_node
+            self._current_star_center = clicked_node
+            self._current_star_leaf = clicked_node
             self._select_vertex(clicked_node)
             self.output_text('Star with center ' +
-                             str(self.current_star_center) +
+                             str(self._current_star_center) +
                              ': click on the leaves')
-        elif (clicked_node == self.current_star_center or
-                clicked_node == self.current_star_leaf):
+        elif (clicked_node == self._current_star_center or
+                clicked_node == self._current_star_leaf):
             # We are done drawing a star
             self.output_text("Done drawing star")
-            del self.current_star_center
-            del self.current_star_leaf
+            del self._current_star_center
+            del self._current_star_leaf
             self._select_vertex(redraw=False)
             self._draw_graph()
         else:
             # We are drawing a star
-            self.current_star_leaf = clicked_node
-            self._add_edge(self.current_star_center,
-                           self.current_star_leaf)
+            self._current_star_leaf = clicked_node
+            self._add_edge(self._current_star_center,
+                           self._current_star_leaf)
             self.output_text('Star with center ' +
-                             str(self.current_star_center) +
+                             str(self._current_star_center) +
                              ': click on the leaves')
 
     def _mouse_down_handler(self, click_x, click_y):
