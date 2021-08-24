@@ -65,3 +65,11 @@ A copy of the currently drawn graph can be obtained with the `get_graph` functio
 G = e.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
+
+## Changelog
+
+### In v0.2.0
+
+  * Docstrings and doctests in (almost) all functions
+  * Hiding of internal objects
+  * Cleaning code
