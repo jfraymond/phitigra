@@ -16,19 +16,19 @@ With phitigra one can:
   * apply various layout algorithms
   * easily retrieve the drawn graph for use with SageMath
   * run step-by-step a custom script on the drawn graph
-  * change and refresh the drawing from external functions
+  * change and refresh the drawing with external functions
 
 ## Non-features
 
 The following are not supported:
 
-  * multigraphs (multiple edges will not be drawn)
-  * large graphs
+  * multigraphs: multiple edges will not be drawn
+  * large graphs: the rendering will be unpraticably slow
   
 ## Dependencies
 
-  * [ipywidgets](https://github.com/jupyter-widgets/ipywidgets)
-  * [ipycanvas](https://github.com/martinRenou/ipycanvas)
+  * [ipywidgets](https://github.com/jupyter-widgets/ipywidgets), for user interaction
+  * [ipycanvas](https://github.com/martinRenou/ipycanvas), for the drawing
 
 Do not forget the following
 ```
@@ -36,7 +36,7 @@ jupyter nbextension enable --py widgetsnbextension
 ```
 after you install ipywidgets (see the [documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html)).
 
-Phitigra is not known to work with JupyterLab at the moment.
+_Note:_ Phitigra is not known to work with JupyterLab at the moment.
 
 ## Installation
 
@@ -66,6 +66,10 @@ G = e.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
-## Known bugs
+## Changelog
 
-  * with digraphs, multiple edges are not always all drawn (depending on parity)
+### In v0.2.0
+
+  * Docstrings and doctests in (almost) all functions
+  * Hiding of internal objects
+  * Cleaning code
