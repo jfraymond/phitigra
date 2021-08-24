@@ -1,4 +1,4 @@
-r"""
+"""
 Graph editor for sage on jupyter
 
 A simple graph editor where one can see the graph, add vertices/edges,
@@ -161,12 +161,12 @@ class SimpleGraphEditor():
         self.dragging_canvas_from = None
 
         # Registering callbacks for mouse interaction on the canvas
-        self.interact_canvas.on_mouse_down(self.mouse_down_handler)
-        self.interact_canvas.on_mouse_move(self.mouse_move_handler)
-        self.interact_canvas.on_mouse_up(self.mouse_up_handler)
+        self.interact_canvas.on_mouse_down(self._mouse_down_handler)
+        self.interact_canvas.on_mouse_move(self._mouse_move_handler)
+        self.interact_canvas.on_mouse_up(self._mouse_up_handler)
         # When the mouse leaves the canvas, we free the node that
         # was being dragged, if any:
-        self.interact_canvas.on_mouse_out(self.mouse_up_handler)
+        self.interact_canvas.on_mouse_out(self._mouse_up_handler)
 
         # The widgets of the graph editor (besides the canvas):
 
@@ -198,7 +198,7 @@ class SimpleGraphEditor():
         # We unselect any possibly selected vertex when the currrent
         # tool is changed, in order to avoid problems with the deletion
         # tool
-        self.tool_selector.observe(lambda _: self.tool_selector_callback())
+        self.tool_selector.observe(lambda _: self._tool_selector_callback())
         self.current_tool = lambda: self.tool_selector.value
 
         # Selector to change layout
@@ -215,7 +215,7 @@ class SimpleGraphEditor():
             description='',
             layout={'width': '150px', "margin": "1px 2px 1px auto"}
         )
-        self.layout_selector.observe(self.layout_selector_callback)
+        self.layout_selector.observe(self._layout_selector_callback)
 
         # Buttons to rescale:
         self.zoom_in_button = Button(description='',
@@ -260,7 +260,7 @@ class SimpleGraphEditor():
                                                    'width': '36px',
                                                    'margin': ('0px 0px '
                                                               '0px 1px')})
-        self.clear_drawing_button.on_click(self.clear_drawing_button_callback)
+        self.clear_drawing_button.on_click(self._clear_drawing_button_callback)
 
         # Selector to change the color of the selected vertex
         self.color_selector = ColorPicker(
@@ -281,7 +281,7 @@ class SimpleGraphEditor():
                                    layout={'height': '36px',
                                            'width': '36px',
                                            'margin': '0px 0px 0px 1px'})
-        self.color_button.on_click((lambda x: self.color_button_callback()))
+        self.color_button.on_click((lambda x: self._color_button_callback()))
 
         self.vertex_radius_box = BoundedIntText(
             value=self.drawing_parameters['default_radius'],
@@ -302,7 +302,7 @@ class SimpleGraphEditor():
                                     layout={'height': '36px',
                                             'width': '36px',
                                             'margin': '0px 0px 0px 1px'})
-        self.radius_button.on_click((lambda x: self.radius_button_callback()))
+        self.radius_button.on_click((lambda x: self._radius_button_callback()))
 
         self.vertex_name_toggle = ToggleButton(
             value=True,
@@ -1772,7 +1772,7 @@ class SimpleGraphEditor():
                              ': click on the leaves')
 
     @output.capture()
-    def mouse_down_handler(self, click_x, click_y):
+    def _mouse_down_handler(self, click_x, click_y):
         """
         Callback for mouse (down) clicks.
 
@@ -1814,7 +1814,7 @@ class SimpleGraphEditor():
                                                  click_y)
 
     @output.capture()
-    def mouse_move_handler(self, pixel_x, pixel_y):
+    def _mouse_move_handler(self, pixel_x, pixel_y):
         """
         Callback for mouse movement.
 
@@ -1853,7 +1853,7 @@ class SimpleGraphEditor():
             self._draw_graph()
 
     @output.capture()
-    def mouse_up_handler(self, pixel_x, pixel_y):
+    def _mouse_up_handler(self, pixel_x, pixel_y):
         """
         Callback for mouse (up) click.
 
@@ -1904,7 +1904,7 @@ class SimpleGraphEditor():
     # Callback functions for the widget elements #
     ##############################################
 
-    def tool_selector_callback(self):
+    def _tool_selector_callback(self):
         """
         Called when changing tools.
 
@@ -1919,7 +1919,7 @@ class SimpleGraphEditor():
         self.refresh()
         self.output_text('')
 
-    def layout_selector_callback(self, change):
+    def _layout_selector_callback(self, change):
         """
         Apply the graph layout given by ``change['name']`` (if any).
 
@@ -1992,7 +1992,7 @@ class SimpleGraphEditor():
         self._draw_graph()
         self.output_text('Done updating layout.')
 
-    def color_button_callback(self):
+    def _color_button_callback(self):
         """
         Change the color of the selected elements (if any).
 
@@ -2007,23 +2007,7 @@ class SimpleGraphEditor():
             self.set_vertex_color(v, new_color)
         self.refresh()
 
-    def vertex_radius_box_callback(self, change):
-        """
-        Change the radius of the selected vertex (if any).
-
-        The new radius is ``change['new']``.
-        This function is called when the value in the
-        ``vertex_radius_box`` box is changed.
-        If no vertex is selected, nothing is done the set value becomes
-        the new default value to be used for new vertices.
-        """
-
-        for v in self.selected_vertices:
-            # Change the radius of the selected vertices
-            self.set_vertex_radius(v, change['new'])
-        self.refresh()
-
-    def radius_button_callback(self):
+    def _radius_button_callback(self):
         """
         Change the radius of the selected vertices (if any).
 
@@ -2036,7 +2020,7 @@ class SimpleGraphEditor():
             sage: r = ed._get_radius(0)
             sage: ed._select_vertex(1)
             sage: ed.vertex_radius_box.value = 2*r
-            sage: ed.radius_button_callback()
+            sage: ed._radius_button_callback()
             sage: ed._get_radius(1) == 2*r
             True
         """
@@ -2045,12 +2029,16 @@ class SimpleGraphEditor():
             self.set_vertex_radius(v, r)
         self.refresh()
 
-    def clear_drawing_button_callback(self, b):
+    def _clear_drawing_button_callback(self, _):
         """
-        Callback for the clear_drawing_button.
+        Callback for the ``clear_drawing_button``.
 
         Replaces the current graph with the empty graph and clears the
         canvas.
+
+        .. WARNING:
+
+            The current drawn graph is lost.
         """
         self.graph = Graph(0)
         self._select_vertex(redraw=None)
