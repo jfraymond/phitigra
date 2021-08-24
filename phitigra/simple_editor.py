@@ -227,7 +227,7 @@ class SimpleGraphEditor():
         # with the provided parameters (if any)
 
         # Default parameters
-        self.drawing_parameters = {
+        self._drawing_parameters = {
             # Sizes of the widget
             'width': 600,
             'height': 400,
@@ -238,50 +238,50 @@ class SimpleGraphEditor():
         }
 
         # Take into account the provided drawing parameters (if any)
-        self.drawing_parameters.update(drawing_parameters)
+        self._drawing_parameters.update(drawing_parameters)
 
         # The layout (+6 to account for the 3px border on both sides)
         lyt = {'border': '3px solid lightgrey',
-               'width': str(self.drawing_parameters['width'] + 6) + 'px',
-               'height': str(self.drawing_parameters['height'] + 6) + 'px',
+               'width': str(self._drawing_parameters['width'] + 6) + 'px',
+               'height': str(self._drawing_parameters['height'] + 6) + 'px',
                'overflow': 'visible'}
         # The canvas where to draw
-        self.multi_canvas = (
+        self._multi_canvas = (
             MultiCanvas(2,
-                        width=self.drawing_parameters['width'],
-                        height=self.drawing_parameters['height'],
+                        width=self._drawing_parameters['width'],
+                        height=self._drawing_parameters['height'],
                         sync_image_data=True,
                         layout=lyt)
         )
 
         # It consists in two layers
-        self.canvas = self.multi_canvas[0]    # The main layer
+        self._canvas = self._multi_canvas[0]    # The main layer
         # The layer where we draw objects in interaction
         # (moved vertices, etc.):
-        self.interact_canvas = self.multi_canvas[1]
+        self._interact_canvas = self._multi_canvas[1]
 
-        self.selected_vertices = set()
-        self.selected_edges = set()
-        self.dragged_vertex = None
-        self.dragging_canvas_from = None
+        self._selected_vertices = set()
+        self._selected_edges = set()
+        self._dragged_vertex = None
+        self._dragging_canvas_from = None
 
         # Registering callbacks for mouse interaction on the canvas
-        self.interact_canvas.on_mouse_down(self._mouse_down_handler)
-        self.interact_canvas.on_mouse_move(self._mouse_move_handler)
-        self.interact_canvas.on_mouse_up(self._mouse_up_handler)
+        self._interact_canvas.on_mouse_down(self._mouse_down_handler)
+        self._interact_canvas.on_mouse_move(self._mouse_move_handler)
+        self._interact_canvas.on_mouse_up(self._mouse_up_handler)
         # When the mouse leaves the canvas, we free the node that
         # was being dragged, if any:
-        self.interact_canvas.on_mouse_out(self._mouse_up_handler)
+        self._interact_canvas.on_mouse_out(self._mouse_up_handler)
 
         # The widgets of the graph editor (besides the canvas):
 
         # Where to display messages:
-        self.text_output = Label("Graph Editor", layout={'width': '100%'})
+        self._text_output = Label("Graph Editor", layout={'width': '100%'})
         # Data about the graph:
-        self.text_graph = Label("", layout={'width': '100%'})
+        self._text_graph = Label("", layout={'width': '100%'})
 
         # The drawing tools
-        self.tool_selector = ToggleButtons(
+        self._tool_selector = ToggleButtons(
             options=['select / move',
                      'add vertex or edge',
                      'delete vertex or edge',
@@ -303,11 +303,11 @@ class SimpleGraphEditor():
         # We unselect any possibly selected vertex when the currrent
         # tool is changed, in order to avoid problems with the deletion
         # tool
-        self.tool_selector.observe(lambda _: self._tool_selector_callback())
-        self.current_tool = lambda: self.tool_selector.value
+        self._tool_selector.observe(lambda _: self._tool_selector_callback())
+        self._current_tool = lambda: self._tool_selector.value
 
         # Selector to change layout
-        self.layout_selector = Dropdown(
+        self._layout_selector = Dropdown(
             options=[('- change layout -', '- change layout -'),
                      ('random', 'random'),
                      ('spring', 'spring'),
@@ -320,55 +320,55 @@ class SimpleGraphEditor():
             description='',
             layout={'width': '150px', "margin": "1px 2px 1px auto"}
         )
-        self.layout_selector.observe(self._layout_selector_callback)
+        self._layout_selector.observe(self._layout_selector_callback)
 
         # Buttons to rescale:
-        self.zoom_in_button = Button(description='',
-                                     disabled=False,
-                                     button_style='',
-                                     tooltip='Zoom in',
-                                     icon='search-plus',
-                                     layout={'height': '36px',
-                                             'width': '36px',
-                                             'margin': '0px 1px 0px 0px'})
-        self.zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
-                                                self._draw_graph()))
-        self.zoom_to_fit_button = Button(description='',
-                                         disabled=False,
-                                         button_style='',
-                                         tooltip=('Zoom to fit'),
-                                         icon='compress',
-                                         layout={'height': '36px',
-                                                 'width': '36px',
-                                                 'margin': '0px 1px 0px 1px'})
-        self.zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
-                                                    self._draw_graph()))
-        self.zoom_out_button = Button(description='',
+        self._zoom_in_button = Button(description='',
                                       disabled=False,
                                       button_style='',
-                                      tooltip='Zoom out',
-                                      icon='search-minus',
+                                      tooltip='Zoom in',
+                                      icon='search-plus',
                                       layout={'height': '36px',
                                               'width': '36px',
-                                              'margin': '0px 1px 0px 1px'})
-        self.zoom_out_button.on_click(lambda x: (self._scale_layout(2/3),
-                                                 self._draw_graph()))
+                                              'margin': '0px 1px 0px 0px'})
+        self._zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
+                                                self._draw_graph()))
+        self._zoom_to_fit_button = Button(description='',
+                                          disabled=False,
+                                          button_style='',
+                                          tooltip=('Zoom to fit'),
+                                          icon='compress',
+                                          layout={'height': '36px',
+                                                 'width': '36px',
+                                                 'margin': '0px 1px 0px 1px'})
+        self._zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
+                                                    self._draw_graph()))
+        self._zoom_out_button = Button(description='',
+                                       disabled=False,
+                                       button_style='',
+                                       tooltip='Zoom out',
+                                       icon='search-minus',
+                                       layout={'height': '36px',
+                                               'width': '36px',
+                                               'margin': '0px 1px 0px 1px'})
+        self._zoom_out_button.on_click(lambda x: (self._scale_layout(2/3),
+                                                  self._draw_graph()))
 
         # To clear the drawing
-        self.clear_drawing_button = Button(description="",
-                                           disabled=False,
-                                           button_style='',
-                                           tooltip=('Clear the drawing and '
-                                                    'delete the graph'),
-                                           icon='trash',
-                                           layout={'height': '36px',
-                                                   'width': '36px',
-                                                   'margin': ('0px 0px '
-                                                              '0px 1px')})
-        self.clear_drawing_button.on_click(self._clear_drawing_button_callback)
+        self._clear_drawing_button = Button(description="",
+                                            disabled=False,
+                                            button_style='',
+                                            tooltip=('Clear the drawing and '
+                                                     'delete the graph'),
+                                            icon='trash',
+                                            layout={'height': '36px',
+                                                    'width': '36px',
+                                                    'margin': ('0px 0px '
+                                                               '0px 1px')})
+        self._clear_drawing_button.on_click(self._clear_drawing_button_callback)
 
         # Selector to change the color of the selected vertex
-        self.color_selector = ColorPicker(
+        self._color_selector = ColorPicker(
             concise=False,
             description='',
             value='#437FC0',
@@ -377,7 +377,7 @@ class SimpleGraphEditor():
                     'width': '112px',
                     'margin': '0px 1px 0px 0px'}
         )
-        self.color_button = Button(description='',
+        self._color_button = Button(description='',
                                    disabled=False,
                                    button_style='',
                                    tooltip=('Apply color to the '
@@ -386,10 +386,10 @@ class SimpleGraphEditor():
                                    layout={'height': '36px',
                                            'width': '36px',
                                            'margin': '0px 0px 0px 1px'})
-        self.color_button.on_click((lambda x: self._color_button_callback()))
+        self._color_button.on_click((lambda x: self._color_button_callback()))
 
-        self.vertex_radius_box = BoundedIntText(
-            value=self.drawing_parameters['default_radius'],
+        self._vertex_radius_box = BoundedIntText(
+            value=self._drawing_parameters['default_radius'],
             min=1,
             max=100,
             step=1,
@@ -398,7 +398,7 @@ class SimpleGraphEditor():
             layout={'width': '90px',
                     'margin': 'auto 1px auto 0px'}
         )
-        self.radius_button = Button(description='',
+        self._radius_button = Button(description='',
                                     disabled=False,
                                     button_style='',
                                     tooltip=('Change the radius of the '
@@ -407,9 +407,9 @@ class SimpleGraphEditor():
                                     layout={'height': '36px',
                                             'width': '36px',
                                             'margin': '0px 0px 0px 1px'})
-        self.radius_button.on_click((lambda x: self._radius_button_callback()))
+        self._radius_button.on_click((lambda x: self._radius_button_callback()))
 
-        self.vertex_name_toggle = ToggleButton(
+        self._vertex_name_toggle = ToggleButton(
             value=True,
             description='Show vertex labels',
             disabled=False,
@@ -418,65 +418,69 @@ class SimpleGraphEditor():
             icon='',
             layout={"width": "150px", "margin": "1px 2px 1px auto"}
         )
-        self.vertex_name_toggle.observe(lambda _: self._draw_graph())
+        self._vertex_name_toggle.observe(lambda _: self._draw_graph())
 
         # A 'next' button to call a custom function
-        self.next_button = Button(description='Next',
-                                  disabled=False,
-                                  button_style='',
-                                  tooltip=('Call a custom function. Define it'
-                                           ' via the \'set_next_callback\''
-                                           ' method.'),
-                                  icon='forward',
-                                  layout={"width": "150px",
-                                          "margin": "1px 2px 0px auto"})
+        self._next_button = Button(description='Next',
+                                   disabled=False,
+                                   button_style='',
+                                   tooltip=('Call a custom function. Define it'
+                                            ' via the \'set_next_callback\''
+                                            ' method.'),
+                                   icon='forward',
+                                   layout={"width": "150px",
+                                           "margin": "1px 2px 0px auto"})
 
         # The final widget, which contains all the parts defined above
-        self.widget = HBox([VBox([self.multi_canvas,
-                                  HBox([self.text_graph, self.text_output]),
-                                  self._output]),
-                            VBox([
-                                self.tool_selector,
-                                self.layout_selector,
-                                HBox([self.zoom_in_button,
-                                      self.zoom_to_fit_button,
-                                      self.zoom_out_button,
-                                      self.clear_drawing_button],
-                                     layout=Layout(margin="1px 2px 1px auto")),
-                                HBox([self.color_selector, self.color_button],
-                                     layout=Layout(margin="1px 2px 1px auto")),
-                                HBox([Label(value='⌀',
-                                            layout={'margin': ('auto '
-                                                               '2px auto 0px')
-                                                    }),
-                                      self.vertex_radius_box,
-                                      self.radius_button],
-                                     layout=Layout(margin="1px 2px 1px auto")),
-                                self.vertex_name_toggle,
-                                self.next_button],
-                                 layout=Layout(min_width='160px',
-                                               width="160px"))
-                            ], layout=Layout(width='100%',
-                                             height='auto',
-                                             overflow='auto hidden'))
+        self._widget = HBox([VBox([self._multi_canvas,
+                                   HBox([self._text_graph, self._text_output]),
+                                   self._output]),
+                             VBox([
+                                 self._tool_selector,
+                                 self._layout_selector,
+                                 HBox([self._zoom_in_button,
+                                       self._zoom_to_fit_button,
+                                       self._zoom_out_button,
+                                       self._clear_drawing_button],
+                                      layout=Layout(margin="1px 2px "
+                                                    + "1px auto")),
+                                 HBox([self._color_selector,
+                                       self._color_button],
+                                      layout=Layout(margin="1px 2px "
+                                                    + "1px auto")),
+                                 HBox([Label(value='⌀',
+                                             layout={'margin': ('auto '
+                                                                '2px auto 0px')
+                                                     }),
+                                       self._vertex_radius_box,
+                                       self._radius_button],
+                                      layout=Layout(margin="1px 2px 1px auto")),
+                                 self._vertex_name_toggle,
+                                 self._next_button],
+                                  layout=Layout(min_width='160px',
+                                                width="160px"))
+                             ], layout=Layout(width='100%',
+                                              height='auto',
+                                              overflow='auto hidden'))
 
         # Prepare the graph data
 
         # Radii, positions and colors of the vertices or edges on the drawing
-        self.vertex_radii = dict()
+        self._vertex_radii = dict()
         self._vertex_colors = dict()
 
         for v in self.graph.vertex_iterator():
             self.set_vertex_radius(v,
-                                   self.drawing_parameters['default_radius'])
-            c = self.drawing_parameters['default_vertex_color']
+                                   self._drawing_parameters['default_radius'])
+            c = self._drawing_parameters['default_vertex_color']
             if c is None:
                 c = f"#{randrange(0x1000000):06x}"    # Random color
             self.set_vertex_color(v, c)
 
         self._edge_colors = dict()
+        c = self._drawing_parameters['default_edge_color']
         for e in self.graph.edge_iterator(labels=False):
-            self.set_edge_color(e, 'black')
+            self.set_edge_color(e, c)
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
@@ -506,10 +510,10 @@ class SimpleGraphEditor():
             sage: ed = SimpleGraphEditor()
             sage: w = ed.show()
             sage: type(w)
-            <class 'ipywidgets.widgets.widget_box.HBox'>
+            <class 'ipywidgets._widgets._widget_box.HBox'>
         """
         self.refresh()
-        return self.widget
+        return self._widget
 
     # Getters and setters
 
@@ -540,14 +544,14 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
-            sage: ed.vertex_radii[0]
+            sage: ed._vertex_radii[0]
             41
             sage: ed.set_vertex_radius(0, 42)
-            sage: ed.vertex_radii[0]
+            sage: ed._vertex_radii[0]
             42
         """
-        return self.vertex_radii.get(v,
-                                     self.drawing_parameters['default_radius'])
+        return self._vertex_radii.get(v,
+                                     self._drawing_parameters['default_radius'])
 
     def set_vertex_radius(self, v, radius=None):
         """
@@ -561,22 +565,22 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), drawing_parameters={'default_radius': int(41)})
-            sage: ed.vertex_radii[0]
+            sage: ed.get_vertex_radius(0)
             41
             sage: ed.set_vertex_radius(0, 42)
-            sage: ed.vertex_radii[0]
+            sage: ed.get_vertex_radius(0)
             42
 
         TESTS::
 
             sage: ed.set_vertex_radius(0)
-            sage: ed.vertex_radii[0] == ed.vertex_radius_box.value
+            sage: ed.get_vertex_radius(0) == ed._vertex_radius_box.value
             True
         """
         if radius is None:
-            self.vertex_radii[v] = self.vertex_radius_box.value
+            self._vertex_radii[v] = self._vertex_radius_box.value
         else:
-            self.vertex_radii[v] = radius
+            self._vertex_radii[v] = radius
 
     def get_vertex_color(self, v):
         """
@@ -642,11 +646,11 @@ class SimpleGraphEditor():
 
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed.set_vertex_color(0)
-            sage: ed.get_vertex_color(0) == ed.color_selector.value
+            sage: ed.get_vertex_color(0) == ed._color_selector.value
             True
         """
         if color is None:
-            self._vertex_colors[v] = self.color_selector.value
+            self._vertex_colors[v] = self._color_selector.value
         else:
             self._vertex_colors[v] = color
 
@@ -726,7 +730,7 @@ class SimpleGraphEditor():
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
             sage: ed.set_edge_color((1, 6))
-            sage: ed.get_edge_color((1,6)) == ed.drawing_parameters['default_edge_color']
+            sage: ed.get_edge_color((1,6)) == ed._drawing_parameters['default_edge_color']
             True
             sage: ed.set_edge_color((1,5))
             Traceback (most recent call last):
@@ -736,7 +740,7 @@ class SimpleGraphEditor():
 
         u, v, *_ = e
         if color is None:
-            color = self.drawing_parameters['default_edge_color']
+            color = self._drawing_parameters['default_edge_color']
 
         if not self.graph.has_edge(e):
             raise ValueError("edge "
@@ -897,7 +901,7 @@ class SimpleGraphEditor():
 
         canvas_pos = self._get_vertices_pos()
 
-        min_dist = self.drawing_parameters['width']  # aka infinity
+        min_dist = self._drawing_parameters['width']  # aka infinity
         arg_min = None
 
         for v in self.graph.vertex_iterator():
@@ -1067,8 +1071,8 @@ class SimpleGraphEditor():
         margin = max((self.get_vertex_radius(v)
                       for v in self.graph.vertex_iterator())) + 5
 
-        target_width = self.multi_canvas.width - 2 * margin
-        target_height = self.multi_canvas.height - 2 * margin
+        target_width = self._multi_canvas.width - 2 * margin
+        target_height = self._multi_canvas.height - 2 * margin
         # Some computations to decide of the scaling factor in order to
         # simultaneously fill the canvas on at least one axis range and
         # keep proportions, and to center the image
@@ -1120,8 +1124,8 @@ class SimpleGraphEditor():
             True
         """
 
-        x_shift = self.multi_canvas.width * (1 - ratio) / 2
-        y_shift = self.multi_canvas.height * (1 - ratio) / 2
+        x_shift = self._multi_canvas.width * (1 - ratio) / 2
+        y_shift = self._multi_canvas.height * (1 - ratio) / 2
 
         scale_and_center = matrix([[ratio, 0,     x_shift],
                                    [0,     ratio, y_shift],
@@ -1164,11 +1168,11 @@ class SimpleGraphEditor():
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(1))
             sage: ed.output_text("Hello world!")
-            sage: ed.text_output.value == "Hello world!"
+            sage: ed._text_output.value == "Hello world!"
             True
         """
 
-        self.text_output.value = text
+        self._text_output.value = text
 
     def _text_graph_update(self):
         """Update the caption with data about the graph.
@@ -1177,11 +1181,11 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
-            sage: print(ed.text_graph.value)
+            sage: print(ed._text_graph.value)
             Graph on 10 vertices and 15 edges.
         """
 
-        self.text_graph.value = ("Graph on " + str(self.graph.order())
+        self._text_graph.value = ("Graph on " + str(self.graph.order())
                                  + " vertices and "
                                  + str(self.graph.num_edges())
                                  + " edges.")
@@ -1255,7 +1259,7 @@ class SimpleGraphEditor():
         self.graph.add_edge((u, v, label))
         self.set_edge_color((u, v), color)
 
-        with hold_canvas(self.canvas):
+        with hold_canvas(self._canvas):
             self._draw_edge((u, v, label))
             self._draw_vertex(u)
             self._draw_vertex(v)
@@ -1274,14 +1278,14 @@ class SimpleGraphEditor():
         The position is given by
         :meth:`~SimpleGraphEditor._get_vertex_pos`.
         If ``canvas`` is ``None``, the default drawing canvas
-        (``self.canvas``) is used.
+        (``self._canvas``) is used.
         If ``color`` is ``None`` the color is as given by
         :meth:`~SimpleGraphEditor.`get_vertex_color`.
         If ``highlight`` is true, also draw the focus on ``v``.
         """
 
         if canvas is None:
-            canvas = self.canvas
+            canvas = self._canvas
         if color is None:
             color = self.get_vertex_color(v)
 
@@ -1297,7 +1301,7 @@ class SimpleGraphEditor():
         canvas.stroke_style = 'black'
         canvas.stroke_arc(x, y, radius, 0, 2*pi)
 
-        if self.vertex_name_toggle.value:
+        if self._vertex_name_toggle.value:
             # The vertex name
             canvas.font = '20px sans'
             canvas.text_align = 'center'
@@ -1305,7 +1309,7 @@ class SimpleGraphEditor():
             canvas.fill_style = 'black'
             canvas.fill_text(str(v), x, y, max_width=2*radius)
 
-        if highlight and v in self.selected_vertices:
+        if highlight and v in self._selected_vertices:
             # Draw the focus
             canvas.stroke_style = 'white'
             canvas.set_line_dash([4, 4])
@@ -1342,7 +1346,7 @@ class SimpleGraphEditor():
           together with ``endpoints``);
         - ``canvas`` -- canvas where to draw the edge
           (default: ``None``); with the default value,
-          ``self.canvas`` is used.
+          ``self._canvas`` is used.
 
         .. WARNING::
 
@@ -1359,7 +1363,7 @@ class SimpleGraphEditor():
         pos_v = self._get_vertex_pos(v)
 
         if canvas is None:
-            canvas = self.canvas
+            canvas = self._canvas
 
         canvas.line_width = 3
 
@@ -1372,7 +1376,7 @@ class SimpleGraphEditor():
 
         canvas.stroke_style = self.get_edge_color((u, v))
 
-        if (u, v) in self.selected_edges or (v, u) in self.selected_edges:
+        if (u, v) in self._selected_edges or (v, u) in self._selected_edges:
             # If the edge is selected, we draw it dashed
             canvas.set_line_dash([4, 4])
 
@@ -1413,11 +1417,11 @@ class SimpleGraphEditor():
         """
         Redraw the whole graph.
 
-        Clear the drawing canvas (``self.canvas``) and draw the whole
+        Clear the drawing canvas (``self._canvas``) and draw the whole
         graph on it.
         """
-        with hold_canvas(self.canvas):
-            self.canvas.clear()
+        with hold_canvas(self._canvas):
+            self._canvas.clear()
             for e in self.graph.edge_iterator():
                 self._draw_edge(e)
 
@@ -1425,7 +1429,7 @@ class SimpleGraphEditor():
                 self._draw_vertex(v, highlight=False)
 
             # Selected vertices are (re)drawn on top
-            for v in self.selected_vertices:
+            for v in self._selected_vertices:
                 self._draw_vertex(v, highlight=True)
 
     def refresh(self):
@@ -1453,9 +1457,9 @@ class SimpleGraphEditor():
 
         No output. Only side effects:
 
-        - if `vertex` is ``None`` then the set `self.selected_vertices` is
+        - if `vertex` is ``None`` then the set `self._selected_vertices` is
           empied; otherwise `vertex` is added (if not already present) or
-          removed (otherwise) in `self.selected_vertices`.
+          removed (otherwise) in `self._selected_vertices`.
         - if `redraw` is `True`, `vertex` is redrawn, with or without the
           selection focus depending on whether it was selected or unselected.
 
@@ -1465,23 +1469,23 @@ class SimpleGraphEditor():
         """
 
         if vertex is None:
-            self.selected_vertices.clear()
+            self._selected_vertices.clear()
             if redraw:
                 self.refresh()
             return
         else:
             # Flip selected/unselected state
             try:
-                self.selected_vertices.remove(vertex)
+                self._selected_vertices.remove(vertex)
                 self.output_text("Unselected vertex " +
                                  str(vertex))
             except KeyError:
-                self.selected_vertices.add(vertex)
+                self._selected_vertices.add(vertex)
                 self.output_text("Selected vertex " +
                                  str(vertex))
 
             # the radius of the selected vertex becomes the default one
-            self.vertex_radius_box.value = (self.get_vertex_radius(vertex))
+            self._vertex_radius_box.value = (self.get_vertex_radius(vertex))
 
             if redraw:
                 self._draw_vertex(vertex)
@@ -1544,7 +1548,7 @@ class SimpleGraphEditor():
         No output. Only side effects:
 
         - if `on_vertex` is not ``None``, draw this vertex and its neighbors
-          on the interact canvas (`self.interact_canvas`) and the rest of the
+          on the interact canvas (`self._interact_canvas`) and the rest of the
           graph on the main canvas (so that we can move `on_vertex` without
           redrawing the whole graph many times;
         - otherwise, if `closest_edge` is not ``None``, (un)select it;
@@ -1554,18 +1558,18 @@ class SimpleGraphEditor():
 
         if on_vertex is not None:
             # Click was on a vertex
-            self.dragged_vertex = on_vertex
+            self._dragged_vertex = on_vertex
             self.output_text("Click on vertex " + str(on_vertex))
-            with hold_canvas(self.multi_canvas):
+            with hold_canvas(self._multi_canvas):
 
                 # On the interact canvas we draw the moved vertex and
                 # its neighbors
-                self.interact_canvas.clear()
-                self._draw_neighbors(on_vertex, canvas=self.interact_canvas)
-                self._draw_vertex(on_vertex, canvas=self.interact_canvas)
+                self._interact_canvas.clear()
+                self._draw_neighbors(on_vertex, canvas=self._interact_canvas)
+                self._draw_vertex(on_vertex, canvas=self._interact_canvas)
 
                 # Draw everything else on the main canvas
-                self.canvas.clear()
+                self._canvas.clear()
                 for (u1, u2, label) in self.graph.edge_iterator():
                     if (on_vertex != u1 and on_vertex != u2):
                         self._draw_edge((u1, u2, label))
@@ -1575,14 +1579,14 @@ class SimpleGraphEditor():
 
         elif closest_edge is not None:
             # Click was not on a vertex but near an edge
-            if closest_edge in self.selected_edges:
-                self.selected_edges.remove(closest_edge)
+            if closest_edge in self._selected_edges:
+                self._selected_edges.remove(closest_edge)
             else:
-                self.selected_edges.add(closest_edge)
+                self._selected_edges.add(closest_edge)
             self._draw_edge(closest_edge, endpoints=True, clear_first=True)
         else:
             # The click was neither on a vertex nor on an edge
-            self.dragging_canvas_from = [pixel_x, pixel_y]
+            self._dragging_canvas_from = [pixel_x, pixel_y]
             return
 
     def _mouse_action_add_ve(self, on_vertex, pixel_x, pixel_y):
@@ -1619,17 +1623,17 @@ class SimpleGraphEditor():
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(2))
             sage: ed._mouse_action_add_ve(0, 0, 0)
-            sage: ed.selected_vertices
+            sage: ed._selected_vertices
             {0}
             sage: ed._mouse_action_add_ve(None, 0, 0)
-            sage: ed.selected_vertices
+            sage: ed._selected_vertices
             set()
 
             sage: ed._mouse_action_add_ve(0, 0, 0)
             sage: ed._mouse_action_add_ve(1, 0, 0)
             sage: ed.graph.has_edge(0, 1)
             True
-            sage: ed.selected_vertices
+            sage: ed._selected_vertices
             set()
 
             sage: ed._mouse_action_add_ve(None, 20, 20)
@@ -1639,19 +1643,19 @@ class SimpleGraphEditor():
         if on_vertex is not None:
             # The click is done on an existing vertex
 
-            if len(self.selected_vertices) == 0:
+            if len(self._selected_vertices) == 0:
                 # No vertex was selected: select the clicked vertex
                 self._select_vertex(on_vertex)
             else:
-                if on_vertex in self.selected_vertices:
+                if on_vertex in self._selected_vertices:
                     # The click is done on the selected vertex
                     self._select_vertex()  # Unselect
                     return
 
-                if len(self.selected_vertices) > 1:
+                if len(self._selected_vertices) > 1:
                     raise ValueError
 
-                selected_iterator = (v for v in self.selected_vertices)
+                selected_iterator = (v for v in self._selected_vertices)
                 only_selected_vertex = next(selected_iterator)
 
                 # A single vertex was selected and we clicked on a new
@@ -1665,10 +1669,10 @@ class SimpleGraphEditor():
             # The click is not done on an existing vertex
 
             self.output_text("Click was not on a vertex")
-            if len(self.selected_vertices):
+            if len(self._selected_vertices):
                 # If a vertex is selected and we click on the
                 # background, we un-select it:
-                self.selected_vertices.clear()
+                self._selected_vertices.clear()
             else:
                 # Otherwise, we add a new vertex
                 self._add_vertex_at(pixel_x, pixel_y)
@@ -1897,22 +1901,22 @@ class SimpleGraphEditor():
         clicked_node = self._get_vertex_at(click_x, click_y)
         closest_edge = None
 
-        if self.current_tool() == 'add vertex or edge':
+        if self._current_tool() == 'add vertex or edge':
             return self._mouse_action_add_ve(clicked_node, click_x, click_y)
-        if self.current_tool() == 'add walk':
+        if self._current_tool() == 'add walk':
             return self._mouse_action_add_walk(clicked_node, click_x, click_y)
-        if self.current_tool() == 'add clique':
+        if self._current_tool() == 'add clique':
             return self._mouse_action_add_clique(clicked_node,
                                                  click_x, click_y)
-        if self.current_tool() == 'add star':
+        if self._current_tool() == 'add star':
             return self._mouse_action_add_star(clicked_node, click_x, click_y)
 
         if clicked_node is None:
             closest_edge = self._get_edge_at(click_x, click_y)
 
-        if self.current_tool() == 'delete vertex or edge':
+        if self._current_tool() == 'delete vertex or edge':
             return self._mouse_action_del_ve(clicked_node, closest_edge)
-        if self.current_tool() == 'select / move':
+        if self._current_tool() == 'select / move':
             return self._mouse_action_select_move(clicked_node,
                                                   closest_edge,
                                                   click_x,
@@ -1933,27 +1937,27 @@ class SimpleGraphEditor():
 
         No output, just a call to the appropriate function.
         """
-        if self.dragged_vertex is not None:
+        if self._dragged_vertex is not None:
             # We are dragging a vertex...
-            self.output_text("Dragging vertex " + str(self.dragged_vertex))
-            v = self.dragged_vertex
+            self.output_text("Dragging vertex " + str(self._dragged_vertex))
+            v = self._dragged_vertex
             self._set_vertex_pos(v, pixel_x, pixel_y)
 
-            with hold_canvas(self.interact_canvas):
+            with hold_canvas(self._interact_canvas):
                 # We only redraw what changes: the position of the
                 # dragged vertex, the edges incident to it and also its
                 # neighbors (so that the redrawn edges are not drawn on
                 # the neighbors shapes):
-                self.interact_canvas.clear()
-                self._draw_neighbors(v, canvas=self.interact_canvas)
-                self._draw_vertex(v, canvas=self.interact_canvas)
+                self._interact_canvas.clear()
+                self._draw_neighbors(v, canvas=self._interact_canvas)
+                self._draw_vertex(v, canvas=self._interact_canvas)
 
-        elif self.dragging_canvas_from is not None:
+        elif self._dragging_canvas_from is not None:
             # We are dragging the canvas
-            translation = [pixel_x - self.dragging_canvas_from[0],
-                           pixel_y - self.dragging_canvas_from[1]]
+            translation = [pixel_x - self._dragging_canvas_from[0],
+                           pixel_y - self._dragging_canvas_from[1]]
             self._translate_layout(translation)
-            self.dragging_canvas_from = [pixel_x, pixel_y]
+            self._dragging_canvas_from = [pixel_x, pixel_y]
             self._draw_graph()
 
     def _mouse_up_handler(self, pixel_x, pixel_y):
@@ -1971,36 +1975,36 @@ class SimpleGraphEditor():
 
         No output, just a call to the appropriate function.
         """
-        if self.dragged_vertex is not None:
+        if self._dragged_vertex is not None:
             # If we dragged the vertex very close to its initial
             # position, we actually wanted to (un)select it
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 # (Un)select
-                self._select_vertex(self.dragged_vertex, redraw=False)
-                with hold_canvas(self.canvas):
+                self._select_vertex(self._dragged_vertex, redraw=False)
+                with hold_canvas(self._canvas):
                     # We redraw these on the main canvas
-                    self._draw_neighbors(self.dragged_vertex)
-                    self._draw_vertex(self.dragged_vertex)
-                self.dragged_vertex = None
+                    self._draw_neighbors(self._dragged_vertex)
+                    self._draw_vertex(self._dragged_vertex)
+                self._dragged_vertex = None
             else:
                 self.output_text("Done dragging vertex.")
                 self._draw_graph()
 
-            self.dragged_vertex = None
+            self._dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
-            self.interact_canvas.clear()
+            self._interact_canvas.clear()
 
-        elif self.dragging_canvas_from is not None:
+        elif self._dragging_canvas_from is not None:
             # We stop dragging the canvas
-            self.dragging_canvas_from = None
+            self._dragging_canvas_from = None
             # If we dragged the canvas by very little (or not at all),
             # it was just a click on the canvas to unselect everything
             if (abs(pixel_x - self.initial_click_pos[0]) < 10
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 self.output_text("Emptied selection.")
                 self._select_vertex(redraw=False)
-                self.selected_edges.clear()
+                self._selected_edges.clear()
                 self.refresh()
 
     ##############################################
@@ -2018,7 +2022,7 @@ class SimpleGraphEditor():
         """
         self._clean_tools()
         self._select_vertex(redraw=False)
-        self.selected_edges.clear()
+        self._selected_edges.clear()
         self.refresh()
         self.output_text('')
 
@@ -2036,7 +2040,7 @@ class SimpleGraphEditor():
             return
 
         new_layout = change['new']
-        self.layout_selector.value = '- change layout -'
+        self._layout_selector.value = '- change layout -'
 
         # Interrupt any drawing action that is taking place:
         self._clean_tools()
@@ -2077,7 +2081,7 @@ class SimpleGraphEditor():
                     layout_kw['layout'] = 'forest'
                     try:
                         # Pick a selected vertex (if any) as root
-                        root = next((v for v in self.selected_vertices))
+                        root = next((v for v in self._selected_vertices))
                         layout_kw['forest_roots'] = [root]
                     except StopIteration:
                         pass
@@ -2100,13 +2104,13 @@ class SimpleGraphEditor():
         Change the color of the selected elements (if any).
 
         The new color is that of the color wheel:
-        ``self.color_selector.value``.
+        ``self._color_selector.value``.
         """
-        new_color = self.color_selector.value
+        new_color = self._color_selector.value
 
-        for e in self.selected_edges:
+        for e in self._selected_edges:
             self.set_edge_color(e, new_color)
-        for v in self.selected_vertices:
+        for v in self._selected_vertices:
             self.set_vertex_color(v, new_color)
         self.refresh()
 
@@ -2122,13 +2126,13 @@ class SimpleGraphEditor():
             sage: ed = SimpleGraphEditor(Graph(2))
             sage: r = ed.get_vertex_radius(0)
             sage: ed._select_vertex(1)
-            sage: ed.vertex_radius_box.value = 2*r
+            sage: ed._vertex_radius_box.value = 2*r
             sage: ed._radius_button_callback()
             sage: ed.get_vertex_radius(1) == 2*r
             True
         """
-        r = self.vertex_radius_box.value
-        for v in self.selected_vertices:
+        r = self._vertex_radius_box.value
+        for v in self._selected_vertices:
             self.set_vertex_radius(v, r)
         self.refresh()
 
@@ -2165,4 +2169,4 @@ class SimpleGraphEditor():
         that processes the drawn graph, where each click on "Next"
         goes to the next step.
         """
-        self.next_button.on_click(lambda x: f(self))
+        self._next_button.on_click(lambda x: f(self))
