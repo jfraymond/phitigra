@@ -4,12 +4,117 @@ Graph editor for sage on jupyter
 A simple graph editor where one can see the graph, add vertices/edges,
 etc.
 
-EXAMPLES::
+**Main methods:**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~SimpleGraphEditor.show` | Show the widget
+    :meth:`~SimpleGraphEditor.refresh` | Redraw everything
+
+**Graph appearance:**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~SimpleGraphEditor.set_vertex_radius` | Set the radius of a vertex shape
+    :meth:`~SimpleGraphEditor.get_vertex_radius` | Get the radius of a vertex shape
+    :meth:`~SimpleGraphEditor.set_vertex_color` | Set the color of a vertex
+    :meth:`~SimpleGraphEditor.get_vertex_color` | Get the color of a vertex
+    :meth:`~SimpleGraphEditor.set_edge_color` | Set the color of an edge
+    :meth:`~SimpleGraphEditor.get_edge_color` | Get the color of an edge
+
+**Misc:**
+
+.. csv-table::
+    :class: contentstable
+    :widths: 30, 70
+    :delim: |
+
+    :meth:`~SimpleGraphEditor.output_text` | Write text below the drawing
+    :meth:`~SimpleGraphEditor.set_next_callback` | Register a callback for the "Next" button
+
+There are more methods to edit the graph (adding vertices / edges), that
+are private and can be discovered if needed by looking at the source.
+
+EXAMPLES:
+
+When the editor is called with no argument, an empty graph is created::
 
     sage: from phitigra import SimpleGraphEditor
-    sage: ed = SimpleGraphEditor(graphs.RandomGNP(10, 0.5))
+    sage: ed = SimpleGraphEditor()
     sage: ed.show() # random
-    # Now you can play with the graph!
+    # The canvas is empty and you can add vertices and edges with the mouse
+
+When a graph is given to the editor constructor, this graph is drawn and all
+the changes done with the widget (adding or removing vertices for instance)
+are performed on the given graph::
+
+    sage: from phitigra import SimpleGraphEditor
+    sage: G = graphs.RandomGNP(10, 0.5)
+    sage: ed = SimpleGraphEditor(G)
+    sage: ed.show() # random
+    # Any change done now in the widget is done on G
+    # The graph in the widget can be accessed with .graph
+    sage: ed.graph is G
+    True
+
+A copy of the drawn graph can be obtained with the
+:meth:`~SimpleGraphEditor.get_graph` method::
+
+    sage: from phitigra import SimpleGraphEditor
+    sage: G = graphs.RandomGNP(10, 0.5)
+    sage: ed = SimpleGraphEditor(G)
+    sage: H = ed.get_graph()
+    sage: H == G
+    True
+    sage: H is G
+    False
+
+Changing the color of vertices or edges is possible with the widget but also by
+calling the appropriate methods::
+
+    sage: from phitigra import SimpleGraphEditor
+    sage: G = graphs.CompleteGraph(10)
+    sage: ed = SimpleGraphEditor(G)
+    sage: ed.show() # random
+    # The vertices have the default color
+    sage: for v in G: ed.set_vertex_color(v, 'blue' if is_odd(v) else 'red')
+    sage: ed.refresh()
+    # The vertices have color depending on their parity
+    sage: for (u, v, _) in G.edge_iterator(): ed.set_edge_color((u, v), 'green' if is_odd(u+v) else 'orange')
+    sage: ed.refresh()
+
+One of the text boxes of the widget can be edited::
+
+    sage: from phitigra import SimpleGraphEditor
+    sage: ed = SimpleGraphEditor()
+    sage: ed.show() # random
+    sage: ed.output_text("Hello world!")
+    # Hello world should appear below the drawing
+
+The "Next" button can be used to trigger an action on the graph::
+
+    sage: from phitigra import SimpleGraphEditor
+    sage: G = graphs.RandomGNP(10, 0.5)
+    sage: ed = SimpleGraphEditor(G)
+    sage: ed.show() # random
+    # We define the function to be called after clicks on "Next"
+    sage: def callback(w):
+    ....:     v = randint(0, 9)
+    ....:     c = f"#{randrange(0x1000000):06x}" # random color
+    ....:     w.set_vertex_color(v, c)
+    sage: ed.set_next_callback(callback)
+    # Now clicks on "Next" randomly recolor random vertices, one at a time
+    # Calling `set_next_callback` again adds a new callback and does not
+    # cancel the one previously set
+    sage: ed.set_next_callback(callback)
+    # Now clicks on "Next" randomly recolor random vertices, *two* at a time
+
 
 AUTHORS:
 
@@ -45,10 +150,10 @@ class SimpleGraphEditor():
     """
 
     # Output widget used to print error messages (for debug)
-    output = Output()
+    _output = Output()
 
     @staticmethod
-    def draw_arrow(canvas):
+    def _draw_arrow(canvas):
         """
         Draw an arrow at with tip at `(0,0)`, pointing to the left.
 
@@ -329,7 +434,7 @@ class SimpleGraphEditor():
         # The final widget, which contains all the parts defined above
         self.widget = HBox([VBox([self.multi_canvas,
                                   HBox([self.text_graph, self.text_output]),
-                                  self.output]),
+                                  self._output]),
                             VBox([
                                 self.tool_selector,
                                 self.layout_selector,
@@ -359,18 +464,19 @@ class SimpleGraphEditor():
 
         # Radii, positions and colors of the vertices or edges on the drawing
         self.vertex_radii = dict()
-        self.vertex_radii = {v: self.drawing_parameters['default_radius']
-                             for v in self.graph.vertex_iterator()}
+        self._vertex_colors = dict()
 
-        if self.drawing_parameters['default_vertex_color'] is None:
-            self.colors = {v: f"#{randrange(0x1000000):06x}"    # Random color
-                           for v in self.graph.vertex_iterator()}
-        else:
-            self.colors = {v: self.drawing_parameters['default_vertex_color']
-                           for v in self.graph.vertex_iterator()}
+        for v in self.graph.vertex_iterator():
+            self.set_vertex_radius(v,
+                                   self.drawing_parameters['default_radius'])
+            c = self.drawing_parameters['default_vertex_color']
+            if c is None:
+                c = f"#{randrange(0x1000000):06x}"    # Random color
+            self.set_vertex_color(v, c)
 
-        self.edge_colors = {e: 'black'
-                            for e in self.graph.edge_iterator(labels=False)}
+        self._edge_colors = dict()
+        for e in self.graph.edge_iterator(labels=False):
+            self.set_edge_color(e, 'black')
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
@@ -388,13 +494,13 @@ class SimpleGraphEditor():
         # fit the canvas
         self._normalize_layout()
 
-        self._draw_graph()
-        self.text_graph_update()
+        self.refresh()
 
     def show(self):
         """
         Return the editor widget.
-            TESTS::
+
+        TESTS::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor()
@@ -424,7 +530,7 @@ class SimpleGraphEditor():
         """
         return copy(self.graph)
 
-    def _get_radius(self, v):
+    def get_vertex_radius(self, v):
         """
         Return the radius of a vertex.
 
@@ -449,9 +555,7 @@ class SimpleGraphEditor():
 
         If ``radius`` is ``None``, use the radius in the radius box.
 
-        .. WARNING:
-
-        This function does not redraw the graph.
+        .. WARNING:: This function does not redraw the graph.
 
         EXAMPLES::
 
@@ -501,7 +605,7 @@ class SimpleGraphEditor():
             '#fff'
 
         """
-        return self.colors[v]
+        return self._vertex_colors[v]
 
     def set_vertex_color(self, v, color=None):
         """
@@ -519,9 +623,7 @@ class SimpleGraphEditor():
         No output. Only a side effect: set the color of ``v`` to ``color`` if
         it is not ``None``, or to the color of the color selector otherwise.
 
-        .. WARNING:
-
-            This function does not redraw the graph.
+        .. WARNING:: This function does not redraw the graph.
 
         EXAMPLES:
 
@@ -544,9 +646,9 @@ class SimpleGraphEditor():
             True
         """
         if color is None:
-            self.colors[v] = self.color_selector.value
+            self._vertex_colors[v] = self.color_selector.value
         else:
-            self.colors[v] = color
+            self._vertex_colors[v] = color
 
     def get_edge_color(self, e):
         """
@@ -593,12 +695,12 @@ class SimpleGraphEditor():
         u, v, *_ = e
 
         if self.graph.is_directed():
-            return self.edge_colors[(u, v)]
+            return self._edge_colors[(u, v)]
 
-        if (v, u) in self.edge_colors:
-            return self.edge_colors[(v, u)]
+        if (v, u) in self._edge_colors:
+            return self._edge_colors[(v, u)]
         else:
-            return self.edge_colors[(u, v)]
+            return self._edge_colors[(u, v)]
 
     def set_edge_color(self, e, color=None):
         """
@@ -637,12 +739,14 @@ class SimpleGraphEditor():
             color = self.drawing_parameters['default_edge_color']
 
         if not self.graph.has_edge(e):
-            raise ValueError("edge " + str(e) + " does not belong to the graph")
+            raise ValueError("edge "
+                             + str(e)
+                             + " does not belong to the graph")
 
-        if (u, v) in self.edge_colors.keys():
-            self.edge_colors[(u, v)] = color
+        if (u, v) in self._edge_colors.keys():
+            self._edge_colors[(u, v)] = color
         else:
-            self.edge_colors[(v, u)] = color
+            self._edge_colors[(v, u)] = color
 
     def _get_coord_on_canvas(self, x, y):
         """
@@ -798,7 +902,7 @@ class SimpleGraphEditor():
 
         for v in self.graph.vertex_iterator():
             v_x, v_y = canvas_pos[v]
-            radius = self._get_radius(v)
+            radius = self.get_vertex_radius(v)
 
             d_x = abs(x - v_x)
             d_y = abs(y - v_y)
@@ -960,7 +1064,7 @@ class SimpleGraphEditor():
 
         # We keep some margin on the sides
 
-        margin = max((self._get_radius(v)
+        margin = max((self.get_vertex_radius(v)
                       for v in self.graph.vertex_iterator())) + 5
 
         target_width = self.multi_canvas.width - 2 * margin
@@ -1066,7 +1170,7 @@ class SimpleGraphEditor():
 
         self.text_output.value = text
 
-    def text_graph_update(self):
+    def _text_graph_update(self):
         """Update the caption with data about the graph.
 
         TESTS::
@@ -1086,28 +1190,28 @@ class SimpleGraphEditor():
     # Graph modification #
     ######################
 
-    def add_vertex_at(self, x, y, name=None, color=None):
+    def _add_vertex_at(self, x, y, name=None, color=None):
         """
         Add a vertex to a given position, color it and draw it.
 
         If ``color`` is ``None``, use the current color of the color
         picker.
         The return value is the same as with
-        :meth:`~GenericGraph.add_vertex`.
+        :meth:`~GenericGraph.add_vertex`. from `~GenericGraph`.
 
         TESTS::
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(0))
-            sage: ed.add_vertex_at(10, 42, name="vert", color='#112233')
+            sage: ed._add_vertex_at(10, 42, name="vert", color='#112233')
             sage: v=next(ed.graph.vertex_iterator())
             sage: v
             'vert'
             sage: ed._get_vertex_pos(v)
             (10, 42)
-            sage: ed.colors[v]
+            sage: ed.get_vertex_color(v)
             '#112233'
-            sage: ed.add_vertex_at(20, 20)
+            sage: ed._add_vertex_at(20, 20)
             0
         """
 
@@ -1123,18 +1227,19 @@ class SimpleGraphEditor():
         self.set_vertex_radius(name)
 
         self._draw_vertex(name)
-        self.text_graph_update()
+        self._text_graph_update()
 
         # Return the vertex name if it was not specified,
         # as the graph add_vertex function:
         if return_name:
             return name
 
-    def add_edge(self, u, v, label=None, color=None):
+    def _add_edge(self, u, v, label=None, color=None):
         """
         Add an edge between two vertices and draw it
 
-        If ``color`` is ``None``, use the default color.
+        If ``color`` is ``None``, use the current color of the color
+        picker.
 
         TESTS::
 
@@ -1142,7 +1247,7 @@ class SimpleGraphEditor():
             sage: ed = SimpleGraphEditor(Graph(2))
             sage: ed.graph.has_edge(0, 1)
             False
-            sage: ed.add_edge(0, 1, color='#112233'); ed.graph.has_edge(0, 1)
+            sage: ed._add_edge(0, 1, color='#112233'); ed.graph.has_edge(0, 1)
             True
             sage: ed.get_edge_color((0, 1))
             '#112233'
@@ -1155,7 +1260,7 @@ class SimpleGraphEditor():
             self._draw_vertex(u)
             self._draw_vertex(v)
 
-        self.text_graph_update()
+        self._text_graph_update()
 
     #####################
     # Drawing functions #
@@ -1178,10 +1283,10 @@ class SimpleGraphEditor():
         if canvas is None:
             canvas = self.canvas
         if color is None:
-            color = self.colors[v]
+            color = self.get_vertex_color(v)
 
         x, y = self._get_vertex_pos(v)
-        radius = self._get_radius(v)
+        radius = self.get_vertex_radius(v)
 
         # The inside of the node
         canvas.fill_style = color
@@ -1239,7 +1344,7 @@ class SimpleGraphEditor():
           (default: ``None``); with the default value,
           ``self.canvas`` is used.
 
-        .. WARNING:
+        .. WARNING::
 
         - The function does not check that ``e`` is an edge of ``self``;
 
@@ -1281,8 +1386,8 @@ class SimpleGraphEditor():
         if self.graph.is_directed():
             # If the graph is directed, we also have to draw the arrow
             # tip; We draw it at the end of the edge (as usual)
-            radius_v = self._get_radius(v)
-            dist_min = radius_v + self._get_radius(u)
+            radius_v = self.get_vertex_radius(v)
+            dist_min = radius_v + self.get_vertex_radius(u)
 
             # We only do it if the vertex shapes do not overlap.
             if (abs(pos_u[0] - pos_v[0]) > dist_min
@@ -1297,7 +1402,7 @@ class SimpleGraphEditor():
                 # draw the arrow there:
                 canvas.translate(radius_v, 0)
                 canvas.fill_style = self.get_edge_color((u, v))
-                SimpleGraphEditor.draw_arrow(canvas)
+                SimpleGraphEditor._draw_arrow(canvas)
                 canvas.restore()
 
         if endpoints:
@@ -1323,12 +1428,13 @@ class SimpleGraphEditor():
             for v in self.selected_vertices:
                 self._draw_vertex(v, highlight=True)
 
-    def refresh(self, vertex=None):
-        self.text_graph_update()
-        if vertex:
-            self._draw_vertex(vertex)
-        else:
-            self._draw_graph()
+    def refresh(self):
+        """
+        Refresh the drawing (redraw the graph) and update the text info.
+        """
+
+        self._text_graph_update()
+        self._draw_graph()
 
     def _select_vertex(self, vertex=None, redraw=True):
         """
@@ -1336,8 +1442,9 @@ class SimpleGraphEditor():
 
         INPUT:
 
-        - `vertex` -- vertex (default: ``None``); the vertex to be (un)selected;
-          if `vertex` is ``None`` then the set of selected vertices is emptied;
+        - `vertex` -- vertex (default: ``None``); the vertex to be
+          (un)selected; if `vertex` is ``None`` then the set of selected
+          vertices is emptied;
         - `redraw` -- Boolean (default: `True`); when True, redraw `vertex`,
           otherwise does not change the drawing (useful when the graph is going
           to be fully redrawn afterwards anyway).
@@ -1352,7 +1459,7 @@ class SimpleGraphEditor():
         - if `redraw` is `True`, `vertex` is redrawn, with or without the
           selection focus depending on whether it was selected or unselected.
 
-        .. WARNING:
+        .. WARNING::
 
         No check is done that `vertex` indeed is a vertex of the graph.
         """
@@ -1374,7 +1481,7 @@ class SimpleGraphEditor():
                                  str(vertex))
 
             # the radius of the selected vertex becomes the default one
-            self.vertex_radius_box.value = (self._get_radius(vertex))
+            self.vertex_radius_box.value = (self.get_vertex_radius(vertex))
 
             if redraw:
                 self._draw_vertex(vertex)
@@ -1413,10 +1520,9 @@ class SimpleGraphEditor():
             except AttributeError:
                 pass
 
-    @output.capture()
-    def mouse_action_select_move(self,
-                                 on_vertex, closest_edge,
-                                 pixel_x, pixel_y):
+    def _mouse_action_select_move(self,
+                                  on_vertex, closest_edge,
+                                  pixel_x, pixel_y):
         """
         Start moving or (un)selecting a vertex or an edge or moving the
         whole graph.
@@ -1479,7 +1585,7 @@ class SimpleGraphEditor():
             self.dragging_canvas_from = [pixel_x, pixel_y]
             return
 
-    def mouse_action_add_ve(self, on_vertex, pixel_x, pixel_y):
+    def _mouse_action_add_ve(self, on_vertex, pixel_x, pixel_y):
         """
         Add a vertex or an edge.
 
@@ -1512,21 +1618,21 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(2))
-            sage: ed.mouse_action_add_ve(0, 0, 0)
+            sage: ed._mouse_action_add_ve(0, 0, 0)
             sage: ed.selected_vertices
             {0}
-            sage: ed.mouse_action_add_ve(None, 0, 0)
+            sage: ed._mouse_action_add_ve(None, 0, 0)
             sage: ed.selected_vertices
             set()
 
-            sage: ed.mouse_action_add_ve(0, 0, 0)
-            sage: ed.mouse_action_add_ve(1, 0, 0)
+            sage: ed._mouse_action_add_ve(0, 0, 0)
+            sage: ed._mouse_action_add_ve(1, 0, 0)
             sage: ed.graph.has_edge(0, 1)
             True
             sage: ed.selected_vertices
             set()
 
-            sage: ed.mouse_action_add_ve(None, 20, 20)
+            sage: ed._mouse_action_add_ve(None, 20, 20)
             sage: len(ed.graph)
             3
         """
@@ -1550,7 +1656,7 @@ class SimpleGraphEditor():
 
                 # A single vertex was selected and we clicked on a new
                 # one: we link it to the previously selected vertex
-                self.add_edge(only_selected_vertex, on_vertex)
+                self._add_edge(only_selected_vertex, on_vertex)
                 self._select_vertex()  # Unselect
                 self.output_text("Added edge from " +
                                  str(only_selected_vertex) +
@@ -1565,10 +1671,10 @@ class SimpleGraphEditor():
                 self.selected_vertices.clear()
             else:
                 # Otherwise, we add a new vertex
-                self.add_vertex_at(pixel_x, pixel_y)
+                self._add_vertex_at(pixel_x, pixel_y)
         self.refresh()
 
-    def mouse_action_del_ve(self, on_vertex, on_edge):
+    def _mouse_action_del_ve(self, on_vertex, on_edge):
         """
         Delete a vertex or an edge.
 
@@ -1593,10 +1699,10 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
-            sage: ed.mouse_action_del_ve(2, None)
+            sage: ed._mouse_action_del_ve(2, None)
             sage: len(ed.graph)
             2
-            sage: ed.mouse_action_del_ve(None, (0, 1))
+            sage: ed._mouse_action_del_ve(None, (0, 1))
             sage: ed.graph.num_edges()
             0
         """
@@ -1609,7 +1715,7 @@ class SimpleGraphEditor():
             return
         self.refresh()
 
-    def mouse_action_add_clique(self, clicked_node, pixel_x, pixel_y):
+    def _mouse_action_add_clique(self, clicked_node, pixel_x, pixel_y):
         """
         Add a vertex to the current clique.
 
@@ -1638,9 +1744,9 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(2))
-            sage: ed.mouse_action_add_clique(0, 0, 0) # add 0 to the current clique
-            sage: ed.mouse_action_add_clique(1, 0, 0) # add 1
-            sage: ed.mouse_action_add_clique(None, 20, 20) # add a new vertex ajacent to the two others
+            sage: ed._mouse_action_add_clique(0, 0, 0) # add 0 to the current clique
+            sage: ed._mouse_action_add_clique(1, 0, 0) # add 1
+            sage: ed._mouse_action_add_clique(None, 20, 20) # add a new vertex adjacent to the two others
             sage: G = ed.graph
             sage: u, v, w = G.vertices()
             sage: G.has_edge(u, v) and G.has_edge(v, w) and G.has_edge(w, u)
@@ -1649,7 +1755,7 @@ class SimpleGraphEditor():
 
         if clicked_node is None:
             # Click on the canvas: we add a vertex
-            clicked_node = self.add_vertex_at(pixel_x, pixel_y)
+            clicked_node = self._add_vertex_at(pixel_x, pixel_y)
 
         if not hasattr(self, 'current_clique'):
             self.current_clique = [clicked_node]
@@ -1660,10 +1766,10 @@ class SimpleGraphEditor():
             return
 
         for u in self.current_clique:
-            self.add_edge(clicked_node, u)
+            self._add_edge(clicked_node, u)
         self.current_clique.append(clicked_node)
 
-    def mouse_action_add_walk(self, clicked_node, pixel_x, pixel_y):
+    def _mouse_action_add_walk(self, clicked_node, pixel_x, pixel_y):
         """
         Add a vertex to the current walk.
 
@@ -1701,14 +1807,14 @@ class SimpleGraphEditor():
             sage: ed = SimpleGraphEditor(Graph(2))
             sage: hasattr(ed, current_walk_vertex)
             False
-            sage: ed.mouse_action_add_walk(0, 0, 0)
+            sage: ed._mouse_action_add_walk(0, 0, 0)
             sage: ed.current_walk_vertex
             0
-            sage: ed.mouse_action_add_walk(None, 20, 20)
-            sage: ed.mouse_action_add_walk(1, 0, 0)
+            sage: ed._mouse_action_add_walk(None, 20, 20)
+            sage: ed._mouse_action_add_walk(1, 0, 0)
             sage: ed.current_walk_vertex
             1
-            sage: ed.mouse_action_add_walk(1, 0, 0)
+            sage: ed._mouse_action_add_walk(1, 0, 0)
             sage: hasattr(ed, current_walk_vertex)
             False
             sage: ed.graph.num_edges()
@@ -1717,7 +1823,7 @@ class SimpleGraphEditor():
 
         if clicked_node is None:
             # Click on the canvas: we add a vertex
-            clicked_node = self.add_vertex_at(pixel_x, pixel_y)
+            clicked_node = self._add_vertex_at(pixel_x, pixel_y)
 
         if not hasattr(self, 'current_walk_vertex'):
             # The clicked vertex is the first vertex of the walk
@@ -1725,26 +1831,25 @@ class SimpleGraphEditor():
                              "click on the last vertex when you are done.")
             self.current_walk_vertex = clicked_node
             self._select_vertex(clicked_node)  # Select and redraw
-            self.text_graph_update()
+            self._text_graph_update()
             return
 
         if clicked_node == self.current_walk_vertex:
             self.output_text("Done constructing walk")
             del self.current_walk_vertex
             self._select_vertex(clicked_node, redraw=False)  # Select
-            self._draw_graph()
-            self.text_graph_update()
+            self.refresh()
             return
 
-        self.add_edge(self.current_walk_vertex, clicked_node)
+        self._add_edge(self.current_walk_vertex, clicked_node)
         self._select_vertex(self.current_walk_vertex)  # Unselect&redraw
         self._select_vertex(clicked_node)  # Select & redraw
         self.current_walk_vertex = clicked_node
 
-    def mouse_action_add_star(self, clicked_node, click_x, click_y):
+    def _mouse_action_add_star(self, clicked_node, click_x, click_y):
         if clicked_node is None:
             # Click on the canvas: we add a vertex
-            clicked_node = self.add_vertex_at(click_x, click_y)
+            clicked_node = self._add_vertex_at(click_x, click_y)
 
         if not hasattr(self, 'current_star_center'):
             # We start drawing a star from the center
@@ -1765,13 +1870,12 @@ class SimpleGraphEditor():
         else:
             # We are drawing a star
             self.current_star_leaf = clicked_node
-            self.add_edge(self.current_star_center,
-                          self.current_star_leaf)
+            self._add_edge(self.current_star_center,
+                           self.current_star_leaf)
             self.output_text('Star with center ' +
                              str(self.current_star_center) +
                              ': click on the leaves')
 
-    @output.capture()
     def _mouse_down_handler(self, click_x, click_y):
         """
         Callback for mouse (down) clicks.
@@ -1794,26 +1898,26 @@ class SimpleGraphEditor():
         closest_edge = None
 
         if self.current_tool() == 'add vertex or edge':
-            return self.mouse_action_add_ve(clicked_node, click_x, click_y)
+            return self._mouse_action_add_ve(clicked_node, click_x, click_y)
         if self.current_tool() == 'add walk':
-            return self.mouse_action_add_walk(clicked_node, click_x, click_y)
+            return self._mouse_action_add_walk(clicked_node, click_x, click_y)
         if self.current_tool() == 'add clique':
-            return self.mouse_action_add_clique(clicked_node, click_x, click_y)
+            return self._mouse_action_add_clique(clicked_node,
+                                                 click_x, click_y)
         if self.current_tool() == 'add star':
-            return self.mouse_action_add_star(clicked_node, click_x, click_y)
+            return self._mouse_action_add_star(clicked_node, click_x, click_y)
 
         if clicked_node is None:
             closest_edge = self._get_edge_at(click_x, click_y)
 
         if self.current_tool() == 'delete vertex or edge':
-            return self.mouse_action_del_ve(clicked_node, closest_edge)
+            return self._mouse_action_del_ve(clicked_node, closest_edge)
         if self.current_tool() == 'select / move':
-            return self.mouse_action_select_move(clicked_node,
-                                                 closest_edge,
-                                                 click_x,
-                                                 click_y)
+            return self._mouse_action_select_move(clicked_node,
+                                                  closest_edge,
+                                                  click_x,
+                                                  click_y)
 
-    @output.capture()
     def _mouse_move_handler(self, pixel_x, pixel_y):
         """
         Callback for mouse movement.
@@ -1852,7 +1956,6 @@ class SimpleGraphEditor():
             self.dragging_canvas_from = [pixel_x, pixel_y]
             self._draw_graph()
 
-    @output.capture()
     def _mouse_up_handler(self, pixel_x, pixel_y):
         """
         Callback for mouse (up) click.
@@ -1921,7 +2024,7 @@ class SimpleGraphEditor():
 
     def _layout_selector_callback(self, change):
         """
-        Apply the graph layout given by ``change['name']`` (if any).
+        Apply the graph layout given by ``change['new']`` (if any).
 
         This function is called when the layout selector is used.
         If applying the layout is not possible, an error message is
@@ -2017,11 +2120,11 @@ class SimpleGraphEditor():
 
             sage: from phitigra import SimpleGraphEditor
             sage: ed = SimpleGraphEditor(Graph(2))
-            sage: r = ed._get_radius(0)
+            sage: r = ed.get_vertex_radius(0)
             sage: ed._select_vertex(1)
             sage: ed.vertex_radius_box.value = 2*r
             sage: ed._radius_button_callback()
-            sage: ed._get_radius(1) == 2*r
+            sage: ed.get_vertex_radius(1) == 2*r
             True
         """
         r = self.vertex_radius_box.value
@@ -2036,7 +2139,7 @@ class SimpleGraphEditor():
         Replaces the current graph with the empty graph and clears the
         canvas.
 
-        .. WARNING:
+        .. WARNING::
 
             The current drawn graph is lost.
         """
@@ -2047,19 +2150,19 @@ class SimpleGraphEditor():
 
     def set_next_callback(self, f):
         """
-        Define a callback for the `Next` button.
+        Define a callback for the "Next" button.
 
         INPUT:
 
-        - ``f`` -- function of arity zero.
+        - ``f`` -- function of arity one.
 
         OUTPUT:
 
-        No output. After calling ``set_next_callback` on a function
-        `f`, that function will be called at each click on the `Next`
-        button.
+        No output. After calling ``set_next_callback`` on a function
+        ``f``, that function will be called on ``self`` at each click
+        on the "Next" button.
         This can be used to show the different steps of an algorithm
-        that processes the drawn graph, where each click on `Next`
+        that processes the drawn graph, where each click on "Next"
         goes to the next step.
         """
-        self.next_button.on_click(lambda x: f())
+        self.next_button.on_click(lambda x: f(self))
