@@ -216,8 +216,6 @@ class SimpleGraphEditor():
           colors of the vertices of ``G``; if ``None`` a random color will be
           used for each vertex;
         - ``default_edge_color`` -- color (default: ``'black'``);
-        - ``drawing_parameters`` -- dictionary (default: `{}`); the initial
-          color of the edges of ``G``.
 
         OUTPUT: a graph editor widget
 
