@@ -236,7 +236,7 @@ class SimpleGraphEditor():
         """
 
         if G is None:
-            G=Graph(0)
+            G = Graph(0)
 
         if G.allows_multiple_edges() or G.allows_loops():
             raise ValueError("Cannot deal with graphs that allow"
@@ -246,10 +246,10 @@ class SimpleGraphEditor():
 
         self._drawing_parameters = {
             # Sizes of the widget
-            'width': width,
-            'height': height,
+            'width': int(width),
+            'height': int(height),
             # Defaults for drawing vertices
-            'default_radius': default_radius,
+            'default_radius': int(default_radius),
             'default_vertex_color': default_vertex_color,
             'default_edge_color': default_edge_color
         }
@@ -594,7 +594,8 @@ class SimpleGraphEditor():
         if radius is None:
             self._vertex_radii[v] = self._vertex_radius_box.value
         else:
-            self._vertex_radii[v] = radius
+            # Casting to int to avoid Sage Integers
+            self._vertex_radii[v] = int(radius)
 
     def get_vertex_color(self, v):
         """
