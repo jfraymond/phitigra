@@ -1,5 +1,7 @@
 # Phitigra
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb)
+
 _Phitigra_ is a graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
 <p><img width="300" src="docs/source/images/phtgr.gif"></p>
@@ -7,7 +9,7 @@ when using the [Jupyter](www.jupyter.org) notebook.
 
 
 
-Try the [demo]() notebook on binder!
+Try the [demo](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb) notebook on binder!
 
 ## Features
 
