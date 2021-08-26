@@ -5,6 +5,10 @@ when using the [Jupyter](www.jupyter.org) notebook.
 <p><img width="300" src="docs/source/images/phtgr.gif"></p>
 (Note: this animation is from an older version of phitigra.)
 
+
+
+Try the [demo]() notebook on binder!
+
 ## Features
 
 With phitigra one can:
@@ -67,6 +71,10 @@ G = e.get_graph()
 ```
 
 ## Changelog
+
+### In v0.2.1
+
+  * Demo notebook
 
 ### In v0.2.0
 
