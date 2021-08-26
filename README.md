@@ -36,13 +36,13 @@ The following are not supported:
   * [ipywidgets](https://github.com/jupyter-widgets/ipywidgets), for user interaction
   * [ipycanvas](https://github.com/martinRenou/ipycanvas), for the drawing
 
-Do not forget the following
+You might need the following
 ```
 jupyter nbextension enable --py widgetsnbextension
 ```
 after you install ipywidgets (see the [documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html)).
 
-_Note:_ Phitigra is not known to work with JupyterLab at the moment.
+_Note:_ phitigra is not known to work with JupyterLab at the moment.
 
 ## Installation
 
@@ -77,6 +77,8 @@ G = e.get_graph()
 ### In v0.2.1
 
   * Demo notebook
+  * Binder link
+  * minor fixes
 
 ### In v0.2.0
 
