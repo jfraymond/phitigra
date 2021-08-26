@@ -1,4 +1,10 @@
 """
+TODO:
+  * reverse coordinates
+  * fix bug with normalize_layout
+
+
+
 Graph editor for sage on jupyter
 
 A simple graph editor where one can see the graph, add vertices/edges,
@@ -413,14 +419,14 @@ class SimpleGraphEditor():
                     'margin': 'auto 1px auto 0px'}
         )
         self._radius_button = Button(description='',
-                                    disabled=False,
-                                    button_style='',
-                                    tooltip=('Change the radius of the '
-                                             'selected vertices'),
-                                    icon='expand',
-                                    layout={'height': '36px',
-                                            'width': '36px',
-                                            'margin': '0px 0px 0px 1px'})
+                                     disabled=False,
+                                     button_style='',
+                                     tooltip=('Change the radius of the '
+                                              'selected vertices'),
+                                     icon='expand',
+                                     layout={'height': '36px',
+                                             'width': '36px',
+                                             'margin': '0px 0px 0px 1px'})
         self._radius_button.on_click((lambda x: self._radius_button_callback()))
 
         self._vertex_name_toggle = ToggleButton(
@@ -499,17 +505,8 @@ class SimpleGraphEditor():
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
             self.graph.layout(layout='spring', save_pos=True)
-
-        # The transformation matrix recording all transformations
-        # done to the graph drawing
-        # There is a "-1" because when drawing, the y-axis goes downwards
-        # see :wikipedia:Transformation_matrix#Affine_transformations
-        self._transform_matrix = matrix([[1, 0, 0],
-                                         [0, -1, 0],
-                                         [0, 0, 1]])
-
-        # Update the transform matrix so that the vertex position
-        # fit the canvas
+            
+        # Rescale the coordinates so that the graph fits well in the canvas
         self._normalize_layout()
 
         self.refresh()
@@ -769,50 +766,9 @@ class SimpleGraphEditor():
         else:
             self._edge_colors[(v, u)] = color
 
-    def _get_coord_on_canvas(self, x, y):
-        """
-        Translate from the basis of the graph vertices to the basis of the
-        canvas.
-
-        INPUT:
-
-        - x,y -- floating point numbers; coordinates in the same basis
-          as the graphs's vertices.
-
-
-        OUTPUT:
-
-        Pair `(a,b)` of integer, which correspond to `(x, y)` in the
-        basis of the canvas.
-        These coordinates are obtained by applying the transformations
-        stored in ``self._transform_matrix`` and casting to integer.
-
-        .. WARNING::
-
-            The output coordinates do not necessarily belong to the
-            canvas range. They are just the coordinates of ``(x,y)``
-            translated and scaled using ``self._transform_matrix``,
-            so they can be negative or over the canvas width/height.
-
-        TESTS::
-
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: x, y = ed.graph.get_pos()[0]
-            sage: cx, cy = ed._get_coord_on_canvas(x, y)
-            sage: abs(cx - 50) < 2 and abs(cy - 50) < 2
-            True
-        """
-
-        m = self._transform_matrix * matrix([[x], [y], [1]])
-        return int(m[0][0]), int(m[1][0])  # New x and y
-
     def _get_vertex_pos(self, v):
         """
-        Return the vertex coordinates on the canvas.
-
-        See :meth:`_get_coord_on_canvas` for details.
+        Return the vertex coordinates.
 
         TESTS::
 
@@ -823,34 +779,7 @@ class SimpleGraphEditor():
             sage: abs(x - 50) < 2 and abs(y - 50) < 2
             True
         """
-        x, y = self.graph.get_pos()[v]
-
-        return self._get_coord_on_canvas(x, y)
-
-    def _get_vertices_pos(self):
-        """
-        Return a dictionary of the coordinates of the vertices on the
-        canvas.
-
-        See :meth:`_get_coord_on_canvas` for details.
-
-        TESTS::
-
-            Interesting tests are actually done in :meth:`_get_coord_on_canvas`.
-
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
-            sage: d = ed._get_vertices_pos()
-            sage: type(d)
-            <class 'dict'>
-            sage: len(d) == len(ed.graph)
-            True
-        """
-
-        graph_pos = self.graph.get_pos()
-        canvas_pos = {v: self._get_coord_on_canvas(*graph_pos[v])
-                      for v in self.graph}
-        return canvas_pos
+        return self.graph.get_pos()[v]
 
     def _set_vertex_pos(self, v, x, y):
         """
@@ -863,10 +792,8 @@ class SimpleGraphEditor():
 
         OUTPUT:
 
-        No output. Only a side effect: the coordinates `x` and `y` are
-        translated to the basis of the coordinates of the other
-        vertices (using the inverse of ``self._transform_matrix``)
-        before being stored.
+        No output. Only a side effect: the coordinates `x` and `y` are stored
+        in the graph position dictionnary.
 
         TESTS::
 
@@ -885,8 +812,7 @@ class SimpleGraphEditor():
             pos = dict()
             self.graph.set_pos(pos)
 
-        m = self._transform_matrix.inverse() * matrix([[x], [y], [1]])
-        pos[v] = [m[0][0], m[1][0]]
+        pos[v] = int(x), int(y)
 
     def _get_vertex_at(self, x, y):
         """
@@ -916,7 +842,7 @@ class SimpleGraphEditor():
             True
         """
 
-        canvas_pos = self._get_vertices_pos()
+        canvas_pos = self.graph.get_pos()
 
         min_dist = self._drawing_parameters['width']  # aka infinity
         arg_min = None
@@ -981,7 +907,7 @@ class SimpleGraphEditor():
             d = [a[0] - b[0], a[1] - b[1]]
             return d[0] * d[0] + d[1] * d[1]
 
-        canvas_pos = self._get_vertices_pos()
+        canvas_pos = self.graph.get_pos()
 
         min_dist = 10  # We don't want edges too far from the click
         closest_edge = None
@@ -1043,8 +969,7 @@ class SimpleGraphEditor():
 
     def _normalize_layout(self):
         """
-        Redefines the transformation matrix so that the graph drawing
-        fits well the canvas.
+        Shift, rescale and cast the coordinate so that they fill the canvas.
 
         ``x`` and ``y`` coordinates are scaled by the same factor and
         the graph is centered.
@@ -1059,7 +984,7 @@ class SimpleGraphEditor():
             sage: ed._set_vertex_pos(3, 10, 8)
             sage: ed._set_vertex_pos(4, 10, 12)
             sage: ed._normalize_layout()
-            sage: d = ed._get_vertices_pos()
+            sage: d = ed.graph.get_pos()
             sage: d[0] == (250, 250)
             True
             sage: d[1][0] <= 25
@@ -1074,7 +999,7 @@ class SimpleGraphEditor():
 
         pos = self.graph.get_pos()
 
-        # Etrema for vertex centers
+        # Extrema for vertex centers
         x_min = min(pos[v][0] for v in self.graph)
         x_max = max(pos[v][0] for v in self.graph)
         y_min = min(pos[v][1] for v in self.graph)
@@ -1100,27 +1025,18 @@ class SimpleGraphEditor():
         x_shift = margin + (target_width - x_range * factor) / 2
         y_shift = margin + (target_height - y_range * factor) / 2
 
-        # See :wikipedia:Transformation_matrix#Affine_transformations
-        translate_to_origin = matrix([[1, 0, -x_min],
-                                      [0, 1, -y_min],
-                                      [0, 0, 1]])
-        scale_to_canvas_size = matrix([[factor, 0,      0],
-                                       [0,      factor, 0],
-                                       [0,      0,      1]])
-        translate_to_center = matrix([[1, 0, x_shift],
-                                      [0, 1, y_shift],
-                                      [0, 0, 1]])
+        new_pos = dict()
+        for v in self.graph:
+            x, y = pos[v]
+            new_pos[v] = (int(x_shift + factor * x),
+                          int(y_shift + factor * y))
 
-        self._transform_matrix = (translate_to_center
-                                  * scale_to_canvas_size
-                                  * translate_to_origin)
+        self.graph.set_pos(new_pos)
 
     def _scale_layout(self, ratio):
         """
         Rescale the vertices coordinates around the center of the image
         and with respect to the given ratio.
-
-        This is done by updating the transform matrix.
 
         TESTS::
 
@@ -1144,16 +1060,19 @@ class SimpleGraphEditor():
         x_shift = self._multi_canvas.width * (1 - ratio) / 2
         y_shift = self._multi_canvas.height * (1 - ratio) / 2
 
-        scale_and_center = matrix([[ratio, 0,     x_shift],
-                                   [0,     ratio, y_shift],
-                                   [0,     0,     1]])
-        self._transform_matrix = scale_and_center * self._transform_matrix
+        pos = self.graph.get_pos()
+
+        new_pos = dict()
+        for v in self.graph:
+            x, y = pos[v]
+            new_pos[v] = (int(x_shift + x * ratio),
+                          int(y_shift + y * ratio))
+
+        self.graph.set_pos(new_pos)            
 
     def _translate_layout(self, vec):
         """
         Translate the vertices coordinates.
-
-        This is done by updating the transform matrix.
 
         TESTS::
 
@@ -1167,10 +1086,15 @@ class SimpleGraphEditor():
         """
 
         x_shift, y_shift = vec
-        translate = matrix([[1, 0, x_shift],
-                            [0, 1, y_shift],
-                            [0, 0, 1]])
-        self._transform_matrix = translate * self._transform_matrix
+
+        pos = self.graph.get_pos()
+
+        new_pos = dict()
+        for v in self.graph:
+            x, y = pos[v]
+            new_pos[v] = (int(x + x_shift), int(y + y_shift))
+
+        self.graph.set_pos(new_pos)
 
     #########################
     # Text output functions #
