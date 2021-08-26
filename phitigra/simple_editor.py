@@ -498,7 +498,7 @@ class SimpleGraphEditor():
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
-            self._random_layout()
+            self.graph.layout(layout='spring', save_pos=True)
 
         # The transformation matrix recording all transformations
         # done to the graph drawing
