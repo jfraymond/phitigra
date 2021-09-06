@@ -18,7 +18,7 @@ class SageTest(TestCommand):
 
 setuptools.setup(
     name="phitigra",
-    version="0.2.0",
+    version="0.2.2",
     author="Jean-Florent Raymond",
     author_email="j-florent.raymond@uca.fr",
     description="A graph editor for jupyter/sagemath",
