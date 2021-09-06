@@ -994,7 +994,7 @@ class SimpleGraphEditor():
         """
 
         if not self.graph:
-            # There is nothing to do with the one vertex graph
+            # There is nothing to do with the one empty graph
             return
 
         pos = self.graph.get_pos()
@@ -1008,8 +1008,7 @@ class SimpleGraphEditor():
         x_range = max(x_max - x_min, 0.1)  # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
 
-        # We keep some margin on the sides
-
+        # Margin to keep on the sides
         margin = max((self.get_vertex_radius(v)
                       for v in self.graph.vertex_iterator())) + 5
 
@@ -1028,8 +1027,12 @@ class SimpleGraphEditor():
         new_pos = dict()
         for v in self.graph:
             x, y = pos[v]
-            new_pos[v] = (int(x_shift + factor * x),
-                          int(y_shift + factor * y))
+
+            # y-coordinate has a special treatment because on the
+            # canvas the y-axis is oriented downwards
+            new_pos[v] = (int(x_shift + factor * (x - x_min)),
+                          int(self._multi_canvas.height
+                              - (y_shift + factor * (y - y_min))))
 
         self.graph.set_pos(new_pos)
 
