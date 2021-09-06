@@ -17,8 +17,8 @@ etc.
     :widths: 30, 70
     :delim: |
 
-    :meth:`~SimpleGraphEditor.show` | Show the widget
-    :meth:`~SimpleGraphEditor.refresh` | Redraw everything
+    :meth:`~GraphEditor.show` | Show the widget
+    :meth:`~GraphEditor.refresh` | Redraw everything
 
 **Graph appearance:**
 
@@ -27,12 +27,12 @@ etc.
     :widths: 30, 70
     :delim: |
 
-    :meth:`~SimpleGraphEditor.set_vertex_radius` | Set the radius of a vertex shape
-    :meth:`~SimpleGraphEditor.get_vertex_radius` | Get the radius of a vertex shape
-    :meth:`~SimpleGraphEditor.set_vertex_color` | Set the color of a vertex
-    :meth:`~SimpleGraphEditor.get_vertex_color` | Get the color of a vertex
-    :meth:`~SimpleGraphEditor.set_edge_color` | Set the color of an edge
-    :meth:`~SimpleGraphEditor.get_edge_color` | Get the color of an edge
+    :meth:`~GraphEditor.set_vertex_radius` | Set the radius of a vertex shape
+    :meth:`~GraphEditor.get_vertex_radius` | Get the radius of a vertex shape
+    :meth:`~GraphEditor.set_vertex_color` | Set the color of a vertex
+    :meth:`~GraphEditor.get_vertex_color` | Get the color of a vertex
+    :meth:`~GraphEditor.set_edge_color` | Set the color of an edge
+    :meth:`~GraphEditor.get_edge_color` | Get the color of an edge
 
 **Misc:**
 
@@ -41,8 +41,8 @@ etc.
     :widths: 30, 70
     :delim: |
 
-    :meth:`~SimpleGraphEditor.output_text` | Write text below the drawing
-    :meth:`~SimpleGraphEditor.set_next_callback` | Register a callback for the "Next" button
+    :meth:`~GraphEditor.output_text` | Write text below the drawing
+    :meth:`~GraphEditor.set_next_callback` | Register a callback for the "Next" button
 
 There are more methods to edit the graph (adding vertices / edges), that
 are private and can be discovered if needed by looking at the source.
@@ -51,8 +51,8 @@ EXAMPLES:
 
 When the editor is called with no argument, an empty graph is created::
 
-    sage: from phitigra import SimpleGraphEditor
-    sage: ed = SimpleGraphEditor()
+    sage: from phitigra import GraphEditor
+    sage: ed = GraphEditor()
     sage: ed.show() # random
     # The canvas is empty and you can add vertices and edges with the mouse
 
@@ -60,9 +60,9 @@ When a graph is given to the editor constructor, this graph is drawn and all
 the changes done with the widget (adding or removing vertices for instance)
 are performed on the given graph::
 
-    sage: from phitigra import SimpleGraphEditor
+    sage: from phitigra import GraphEditor
     sage: G = graphs.RandomGNP(10, 0.5)
-    sage: ed = SimpleGraphEditor(G)
+    sage: ed = GraphEditor(G)
     sage: ed.show() # random
     # Any change done now in the widget is done on G
     # The graph in the widget can be accessed with .graph
@@ -70,11 +70,11 @@ are performed on the given graph::
     True
 
 A copy of the drawn graph can be obtained with the
-:meth:`~SimpleGraphEditor.get_graph` method::
+:meth:`~GraphEditor.get_graph` method::
 
-    sage: from phitigra import SimpleGraphEditor
+    sage: from phitigra import GraphEditor
     sage: G = graphs.RandomGNP(10, 0.5)
-    sage: ed = SimpleGraphEditor(G)
+    sage: ed = GraphEditor(G)
     sage: H = ed.get_graph()
     sage: H == G
     True
@@ -84,9 +84,9 @@ A copy of the drawn graph can be obtained with the
 Changing the color of vertices or edges is possible with the widget but also by
 calling the appropriate methods::
 
-    sage: from phitigra import SimpleGraphEditor
+    sage: from phitigra import GraphEditor
     sage: G = graphs.CompleteGraph(10)
-    sage: ed = SimpleGraphEditor(G)
+    sage: ed = GraphEditor(G)
 
 At first the vertices have the default color::
 
@@ -104,8 +104,8 @@ Same for edges::
 
 One of the text boxes of the widget can be edited::
 
-    sage: from phitigra import SimpleGraphEditor
-    sage: ed = SimpleGraphEditor()
+    sage: from phitigra import GraphEditor
+    sage: ed = GraphEditor()
     sage: ed.show() # random
     sage: ed.output_text("Hello world!")
 
@@ -113,9 +113,9 @@ One of the text boxes of the widget can be edited::
 
 The "Next" button can be used to trigger an action on the graph::
 
-    sage: from phitigra import SimpleGraphEditor
+    sage: from phitigra import GraphEditor
     sage: G = graphs.RandomGNP(10, 0.5)
-    sage: ed = SimpleGraphEditor(G)
+    sage: ed = GraphEditor(G)
     sage: ed.show() # random
 
  We define the function to be called after clicks on "Next"
@@ -163,7 +163,7 @@ from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
 
 
-class SimpleGraphEditor():
+class GraphEditor():
     """
     Base class for the graph editor.
     """
@@ -227,14 +227,14 @@ class SimpleGraphEditor():
 
         EXAMPLES:
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), width=200, height=200)
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph(), width=200, height=200)
             sage: type(ed)
-            <class 'phitigra.simple_editor.SimpleGraphEditor'>
+            <class 'phitigra.graph_editor.GraphEditor'>
 
             sage: g = Graph(0)
             sage: g.allow_multiple_edges(True)
-            sage: SimpleGraphEditor(g)
+            sage: GraphEditor(g)
             Traceback (most recent call last):
             ...
             ValueError: Cannot deal with graphs that allow loops or multiple edges
@@ -520,8 +520,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor()
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
             sage: w = ed.show()
             sage: type(w)
             <class 'ipywidgets.widgets.widget_box.HBox'>
@@ -539,8 +539,8 @@ class SimpleGraphEditor():
 
         The returned graph is different from that of the editor::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph())
             sage: g = ed.get_graph()
             sage: g.delete_vertex(0)
             sage: (len(g), len(ed.graph))
@@ -556,8 +556,8 @@ class SimpleGraphEditor():
 
         EXAMPLES:
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), default_radius=41)
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph(), default_radius=41)
             sage: ed._vertex_radii[0]
             41
             sage: ed.set_vertex_radius(0, 42)
@@ -577,8 +577,8 @@ class SimpleGraphEditor():
 
         EXAMPLES::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph(), default_radius=41)
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph(), default_radius=41)
             sage: ed.get_vertex_radius(0)
             41
             sage: ed.set_vertex_radius(0, 42)
@@ -613,8 +613,8 @@ class SimpleGraphEditor():
 
         We color a vertex and ask for its color::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
             sage: ed.set_vertex_color(0, 'blue')
             sage: ed.get_vertex_color(0)
             'blue'
@@ -648,8 +648,8 @@ class SimpleGraphEditor():
 
         Colors can be given as named colors or hex values::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
             sage: ed.set_vertex_color(0, 'blue')
             sage: ed.get_vertex_color(0)
             'blue'
@@ -659,7 +659,7 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: ed = GraphEditor(Graph(1))
             sage: ed.set_vertex_color(0)
             sage: ed.get_vertex_color(0) == ed._color_selector.value
             True
@@ -685,8 +685,8 @@ class SimpleGraphEditor():
 
         Edge colors for undirected graphs::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph())
             sage: ed.set_edge_color((1, 6), '#123456')
             sage: ed.get_edge_color((1, 6))
             '#123456'
@@ -701,7 +701,7 @@ class SimpleGraphEditor():
 
         Edge colors for directed graphs::
 
-            sage: ed = SimpleGraphEditor(digraphs.Circuit(4))
+            sage: ed = GraphEditor(digraphs.Circuit(4))
             sage: ed.set_edge_color((0, 1), '#123456')
             sage: ed.get_edge_color((0, 1))
             '#123456'
@@ -742,8 +742,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph())
             sage: ed.set_edge_color((1, 6))
             sage: ed.get_edge_color((1,6)) == ed._drawing_parameters['default_edge_color']
             True
@@ -775,8 +775,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: x, y = ed._get_vertex_pos(0)
             sage: abs(x - 50) < 2 and abs(y - 50) < 2
@@ -802,8 +802,8 @@ class SimpleGraphEditor():
 
         Same as in :meth:`_get_vertex_pos`.
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: x, y = ed._get_vertex_pos(0)
             sage: abs(x - 50) < 2 and abs(y - 50) < 2
@@ -833,8 +833,8 @@ class SimpleGraphEditor():
 
         EXAMPLES:
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2), default_radius=20)
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2), default_radius=20)
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._set_vertex_pos(1, 70, 50)
             sage: ed._get_vertex_at(55, 50)
@@ -888,8 +888,8 @@ class SimpleGraphEditor():
 
         EXAMPLES:
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PathGraph(3))
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._set_vertex_pos(1, 50, 100)
             sage: ed._set_vertex_pos(2, 100, 100)
@@ -956,8 +956,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PathGraph(3))
             sage: ed._random_layout()
             sage: x, y = ed.graph.get_pos()[1]
             sage: x >= 0 and x <= 9 and y >= 0 and y <= 9
@@ -979,8 +979,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(5), width=501, height=501)
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(5), width=501, height=501)
             sage: ed._set_vertex_pos(0, 10, 10)
             sage: ed._set_vertex_pos(1, 5, 10)
             sage: ed._set_vertex_pos(2, 15, 10)
@@ -1046,8 +1046,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(5), width=101, height=101)
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(5), width=101, height=101)
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._set_vertex_pos(1, 30, 50)
             sage: ed._set_vertex_pos(2, 70, 50)
@@ -1082,8 +1082,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
             sage: ed._set_vertex_pos(0, 50, 50)
             sage: ed._translate_layout((25, 25))
             sage: x, y = ed._get_vertex_pos(0)
@@ -1112,8 +1112,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
             sage: ed.output_text("Hello world!")
             sage: ed._text_output.value == "Hello world!"
             True
@@ -1126,8 +1126,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph())
             sage: print(ed._text_graph.value)
             Graph on 10 vertices and 15 edges.
         """
@@ -1152,8 +1152,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(0))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(0))
             sage: ed._add_vertex_at(10, 42, name="vert", color='#112233')
             sage: v=next(ed.graph.vertex_iterator())
             sage: v
@@ -1194,8 +1194,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
             sage: ed.graph.has_edge(0, 1)
             False
             sage: ed._add_edge(0, 1, color='#112233'); ed.graph.has_edge(0, 1)
@@ -1218,11 +1218,11 @@ class SimpleGraphEditor():
 
         Also write the vertex name.
         The position is given by
-        :meth:`~SimpleGraphEditor._get_vertex_pos`.
+        :meth:`~GraphEditor._get_vertex_pos`.
         If ``canvas`` is ``None``, the default drawing canvas
         (``self._canvas``) is used.
         If ``color`` is ``None`` the color is as given by
-        :meth:`~SimpleGraphEditor.`get_vertex_color`.
+        :meth:`~GraphEditor.`get_vertex_color`.
         If ``highlight`` is true, also draw the focus on ``v``.
         """
 
@@ -1347,7 +1347,7 @@ class SimpleGraphEditor():
                 # draw the arrow there:
                 canvas.translate(radius_v, 0)
                 canvas.fill_style = self.get_edge_color((u, v))
-                SimpleGraphEditor._draw_arrow(canvas)
+                GraphEditor._draw_arrow(canvas)
                 canvas.restore()
 
         if endpoints:
@@ -1443,8 +1443,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(0))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(0))
             sage: attrs = ['_current_clique', '_current_walk_vertex', '_current_star_center', '_current_star_leaf']
             sage: for attr in attrs: setattr(ed, attr, 42)
             sage: ed._clean_tools()
@@ -1561,8 +1561,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
             sage: ed._mouse_action_add_ve(0, 0, 0)
             sage: ed._selected_vertices
             {0}
@@ -1642,8 +1642,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PathGraph(3))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PathGraph(3))
             sage: ed._mouse_action_del_ve(2, None)
             sage: len(ed.graph)
             2
@@ -1689,8 +1689,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
             sage: ed._mouse_action_add_clique(0, 0, 0) # add 0 to the current clique
             sage: ed._mouse_action_add_clique(1, 0, 0) # add 1
             sage: ed._mouse_action_add_clique(None, 20, 20) # add a new vertex adjacent to the two others
@@ -1750,8 +1750,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
             sage: hasattr(ed, '_current_walk_vertex')
             False
             sage: ed._mouse_action_add_walk(0, 0, 0)
@@ -2067,8 +2067,8 @@ class SimpleGraphEditor():
 
         TESTS::
 
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(2))
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
             sage: r = ed.get_vertex_radius(0)
             sage: ed._select_vertex(1)
             sage: ed._vertex_radius_box.value = 2*r
