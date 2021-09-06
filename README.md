@@ -60,8 +60,8 @@ That's it!
 ## Usage
 
 ```
-from phitigra import SimpleGraphEditor
-e = SimpleGraphEditor(graphs.RandomGNP(10, 0.5))
+from phitigra import GraphEditor
+e = GraphEditor(graphs.RandomGNP(10, 0.5))
 e.show()
 # Now you can play with the graph!
 ```
@@ -72,7 +72,13 @@ G = e.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
+Open the [demo](demo.ipynb) notebook for more examples or run it on [binder](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb).
+
 ## Changelog
+
+### In v0.2.2
+
+Single change: renaming ``SimpleGraphEditor`` into ``GraphEditor``. Code written for previous versions is not compatible with this one, but can be easily fixed.
 
 ### In v0.2.1
 
