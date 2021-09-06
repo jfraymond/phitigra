@@ -1,4 +1,10 @@
 """
+TODO:
+  * reverse coordinates
+  * fix bug with normalize_layout
+
+
+
 Graph editor for sage on jupyter
 
 A simple graph editor where one can see the graph, add vertices/edges,
@@ -216,8 +222,6 @@ class SimpleGraphEditor():
           colors of the vertices of ``G``; if ``None`` a random color will be
           used for each vertex;
         - ``default_edge_color`` -- color (default: ``'black'``);
-        - ``drawing_parameters`` -- dictionary (default: `{}`); the initial
-          color of the edges of ``G``.
 
         OUTPUT: a graph editor widget
 
@@ -238,7 +242,7 @@ class SimpleGraphEditor():
         """
 
         if G is None:
-            G=Graph(0)
+            G = Graph(0)
 
         if G.allows_multiple_edges() or G.allows_loops():
             raise ValueError("Cannot deal with graphs that allow"
@@ -248,10 +252,10 @@ class SimpleGraphEditor():
 
         self._drawing_parameters = {
             # Sizes of the widget
-            'width': width,
-            'height': height,
+            'width': int(width),
+            'height': int(height),
             # Defaults for drawing vertices
-            'default_radius': default_radius,
+            'default_radius': int(default_radius),
             'default_vertex_color': default_vertex_color,
             'default_edge_color': default_edge_color
         }
@@ -263,18 +267,21 @@ class SimpleGraphEditor():
                'overflow': 'visible'}
         # The canvas where to draw
         self._multi_canvas = (
-            MultiCanvas(2,
+            MultiCanvas(4,
                         width=self._drawing_parameters['width'],
                         height=self._drawing_parameters['height'],
                         sync_image_data=True,
                         layout=lyt)
         )
 
-        # It consists in two layers
-        self._canvas = self._multi_canvas[0]    # The main layer
-        # The layer where we draw objects in interaction
-        # (moved vertices, etc.):
-        self._interact_canvas = self._multi_canvas[1]
+        # It consists in 4 layers
+        self._e_canvas = self._multi_canvas[0]    # The main layer for edges
+        self._v_canvas = self._multi_canvas[2]    # The main layer for vertices
+
+        # Same, but for drawing onjects in interaction (eg dragged vertices
+        # without redrawing everything
+        self._e_interact_canvas = self._multi_canvas[1]    # For edges
+        self._v_interact_canvas = self._multi_canvas[3]    # For vertices
 
         self._selected_vertices = set()
         self._selected_edges = set()
@@ -282,12 +289,12 @@ class SimpleGraphEditor():
         self._dragging_canvas_from = None
 
         # Registering callbacks for mouse interaction on the canvas
-        self._interact_canvas.on_mouse_down(self._mouse_down_handler)
-        self._interact_canvas.on_mouse_move(self._mouse_move_handler)
-        self._interact_canvas.on_mouse_up(self._mouse_up_handler)
+        self._multi_canvas[3].on_mouse_down(self._mouse_down_handler)
+        self._multi_canvas[3].on_mouse_move(self._mouse_move_handler)
+        self._multi_canvas[3].on_mouse_up(self._mouse_up_handler)
         # When the mouse leaves the canvas, we free the node that
         # was being dragged, if any:
-        self._interact_canvas.on_mouse_out(self._mouse_up_handler)
+        self._multi_canvas[3].on_mouse_out(self._mouse_up_handler)
 
         # The widgets of the graph editor (besides the canvas):
 
@@ -415,14 +422,14 @@ class SimpleGraphEditor():
                     'margin': 'auto 1px auto 0px'}
         )
         self._radius_button = Button(description='',
-                                    disabled=False,
-                                    button_style='',
-                                    tooltip=('Change the radius of the '
-                                             'selected vertices'),
-                                    icon='expand',
-                                    layout={'height': '36px',
-                                            'width': '36px',
-                                            'margin': '0px 0px 0px 1px'})
+                                     disabled=False,
+                                     button_style='',
+                                     tooltip=('Change the radius of the '
+                                              'selected vertices'),
+                                     icon='expand',
+                                     layout={'height': '36px',
+                                             'width': '36px',
+                                             'margin': '0px 0px 0px 1px'})
         self._radius_button.on_click((lambda x: self._radius_button_callback()))
 
         self._vertex_name_toggle = ToggleButton(
@@ -500,18 +507,9 @@ class SimpleGraphEditor():
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
-            self._random_layout()
-
-        # The transformation matrix recording all transformations
-        # done to the graph drawing
-        # There is a "-1" because when drawing, the y-axis goes downwards
-        # see :wikipedia:Transformation_matrix#Affine_transformations
-        self._transform_matrix = matrix([[1, 0, 0],
-                                         [0, -1, 0],
-                                         [0, 0, 1]])
-
-        # Update the transform matrix so that the vertex position
-        # fit the canvas
+            self.graph.layout(layout='spring', save_pos=True)
+            
+        # Rescale the coordinates so that the graph fits well in the canvas
         self._normalize_layout()
 
         self.refresh()
@@ -596,7 +594,8 @@ class SimpleGraphEditor():
         if radius is None:
             self._vertex_radii[v] = self._vertex_radius_box.value
         else:
-            self._vertex_radii[v] = radius
+            # Casting to int to avoid Sage Integers
+            self._vertex_radii[v] = int(radius)
 
     def get_vertex_color(self, v):
         """
@@ -770,50 +769,9 @@ class SimpleGraphEditor():
         else:
             self._edge_colors[(v, u)] = color
 
-    def _get_coord_on_canvas(self, x, y):
-        """
-        Translate from the basis of the graph vertices to the basis of the
-        canvas.
-
-        INPUT:
-
-        - x,y -- floating point numbers; coordinates in the same basis
-          as the graphs's vertices.
-
-
-        OUTPUT:
-
-        Pair `(a,b)` of integer, which correspond to `(x, y)` in the
-        basis of the canvas.
-        These coordinates are obtained by applying the transformations
-        stored in ``self._transform_matrix`` and casting to integer.
-
-        .. WARNING::
-
-            The output coordinates do not necessarily belong to the
-            canvas range. They are just the coordinates of ``(x,y)``
-            translated and scaled using ``self._transform_matrix``,
-            so they can be negative or over the canvas width/height.
-
-        TESTS::
-
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(Graph(1))
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: x, y = ed.graph.get_pos()[0]
-            sage: cx, cy = ed._get_coord_on_canvas(x, y)
-            sage: abs(cx - 50) < 2 and abs(cy - 50) < 2
-            True
-        """
-
-        m = self._transform_matrix * matrix([[x], [y], [1]])
-        return int(m[0][0]), int(m[1][0])  # New x and y
-
     def _get_vertex_pos(self, v):
         """
-        Return the vertex coordinates on the canvas.
-
-        See :meth:`_get_coord_on_canvas` for details.
+        Return the vertex coordinates.
 
         TESTS::
 
@@ -824,34 +782,7 @@ class SimpleGraphEditor():
             sage: abs(x - 50) < 2 and abs(y - 50) < 2
             True
         """
-        x, y = self.graph.get_pos()[v]
-
-        return self._get_coord_on_canvas(x, y)
-
-    def _get_vertices_pos(self):
-        """
-        Return a dictionary of the coordinates of the vertices on the
-        canvas.
-
-        See :meth:`_get_coord_on_canvas` for details.
-
-        TESTS::
-
-            Interesting tests are actually done in :meth:`_get_coord_on_canvas`.
-
-            sage: from phitigra import SimpleGraphEditor
-            sage: ed = SimpleGraphEditor(graphs.PetersenGraph())
-            sage: d = ed._get_vertices_pos()
-            sage: type(d)
-            <class 'dict'>
-            sage: len(d) == len(ed.graph)
-            True
-        """
-
-        graph_pos = self.graph.get_pos()
-        canvas_pos = {v: self._get_coord_on_canvas(*graph_pos[v])
-                      for v in self.graph}
-        return canvas_pos
+        return self.graph.get_pos()[v]
 
     def _set_vertex_pos(self, v, x, y):
         """
@@ -864,10 +795,8 @@ class SimpleGraphEditor():
 
         OUTPUT:
 
-        No output. Only a side effect: the coordinates `x` and `y` are
-        translated to the basis of the coordinates of the other
-        vertices (using the inverse of ``self._transform_matrix``)
-        before being stored.
+        No output. Only a side effect: the coordinates `x` and `y` are stored
+        in the graph position dictionnary.
 
         TESTS::
 
@@ -886,8 +815,7 @@ class SimpleGraphEditor():
             pos = dict()
             self.graph.set_pos(pos)
 
-        m = self._transform_matrix.inverse() * matrix([[x], [y], [1]])
-        pos[v] = [m[0][0], m[1][0]]
+        pos[v] = int(x), int(y)
 
     def _get_vertex_at(self, x, y):
         """
@@ -917,7 +845,7 @@ class SimpleGraphEditor():
             True
         """
 
-        canvas_pos = self._get_vertices_pos()
+        canvas_pos = self.graph.get_pos()
 
         min_dist = self._drawing_parameters['width']  # aka infinity
         arg_min = None
@@ -982,7 +910,7 @@ class SimpleGraphEditor():
             d = [a[0] - b[0], a[1] - b[1]]
             return d[0] * d[0] + d[1] * d[1]
 
-        canvas_pos = self._get_vertices_pos()
+        canvas_pos = self.graph.get_pos()
 
         min_dist = 10  # We don't want edges too far from the click
         closest_edge = None
@@ -1044,8 +972,7 @@ class SimpleGraphEditor():
 
     def _normalize_layout(self):
         """
-        Redefines the transformation matrix so that the graph drawing
-        fits well the canvas.
+        Shift, rescale and cast the coordinate so that they fill the canvas.
 
         ``x`` and ``y`` coordinates are scaled by the same factor and
         the graph is centered.
@@ -1060,7 +987,7 @@ class SimpleGraphEditor():
             sage: ed._set_vertex_pos(3, 10, 8)
             sage: ed._set_vertex_pos(4, 10, 12)
             sage: ed._normalize_layout()
-            sage: d = ed._get_vertices_pos()
+            sage: d = ed.graph.get_pos()
             sage: d[0] == (250, 250)
             True
             sage: d[1][0] <= 25
@@ -1070,12 +997,12 @@ class SimpleGraphEditor():
         """
 
         if not self.graph:
-            # There is nothing to do with the one vertex graph
+            # There is nothing to do with the one empty graph
             return
 
         pos = self.graph.get_pos()
 
-        # Etrema for vertex centers
+        # Extrema for vertex centers
         x_min = min(pos[v][0] for v in self.graph)
         x_max = max(pos[v][0] for v in self.graph)
         y_min = min(pos[v][1] for v in self.graph)
@@ -1084,8 +1011,7 @@ class SimpleGraphEditor():
         x_range = max(x_max - x_min, 0.1)  # max to avoid division by 0
         y_range = max(y_max - y_min, 0.1)
 
-        # We keep some margin on the sides
-
+        # Margin to keep on the sides
         margin = max((self.get_vertex_radius(v)
                       for v in self.graph.vertex_iterator())) + 5
 
@@ -1101,27 +1027,22 @@ class SimpleGraphEditor():
         x_shift = margin + (target_width - x_range * factor) / 2
         y_shift = margin + (target_height - y_range * factor) / 2
 
-        # See :wikipedia:Transformation_matrix#Affine_transformations
-        translate_to_origin = matrix([[1, 0, -x_min],
-                                      [0, 1, -y_min],
-                                      [0, 0, 1]])
-        scale_to_canvas_size = matrix([[factor, 0,      0],
-                                       [0,      factor, 0],
-                                       [0,      0,      1]])
-        translate_to_center = matrix([[1, 0, x_shift],
-                                      [0, 1, y_shift],
-                                      [0, 0, 1]])
+        new_pos = dict()
+        for v in self.graph:
+            x, y = pos[v]
 
-        self._transform_matrix = (translate_to_center
-                                  * scale_to_canvas_size
-                                  * translate_to_origin)
+            # y-coordinate has a special treatment because on the
+            # canvas the y-axis is oriented downwards
+            new_pos[v] = (int(x_shift + factor * (x - x_min)),
+                          int(self._multi_canvas.height
+                              - (y_shift + factor * (y - y_min))))
+
+        self.graph.set_pos(new_pos)
 
     def _scale_layout(self, ratio):
         """
         Rescale the vertices coordinates around the center of the image
         and with respect to the given ratio.
-
-        This is done by updating the transform matrix.
 
         TESTS::
 
@@ -1145,16 +1066,19 @@ class SimpleGraphEditor():
         x_shift = self._multi_canvas.width * (1 - ratio) / 2
         y_shift = self._multi_canvas.height * (1 - ratio) / 2
 
-        scale_and_center = matrix([[ratio, 0,     x_shift],
-                                   [0,     ratio, y_shift],
-                                   [0,     0,     1]])
-        self._transform_matrix = scale_and_center * self._transform_matrix
+        pos = self.graph.get_pos()
+
+        new_pos = dict()
+        for v in self.graph:
+            x, y = pos[v]
+            new_pos[v] = (int(x_shift + x * ratio),
+                          int(y_shift + y * ratio))
+
+        self.graph.set_pos(new_pos)            
 
     def _translate_layout(self, vec):
         """
         Translate the vertices coordinates.
-
-        This is done by updating the transform matrix.
 
         TESTS::
 
@@ -1168,10 +1092,15 @@ class SimpleGraphEditor():
         """
 
         x_shift, y_shift = vec
-        translate = matrix([[1, 0, x_shift],
-                            [0, 1, y_shift],
-                            [0, 0, 1]])
-        self._transform_matrix = translate * self._transform_matrix
+
+        pos = self.graph.get_pos()
+
+        new_pos = dict()
+        for v in self.graph:
+            x, y = pos[v]
+            new_pos[v] = (int(x + x_shift), int(y + y_shift))
+
+        self.graph.set_pos(new_pos)
 
     #########################
     # Text output functions #
@@ -1276,12 +1205,7 @@ class SimpleGraphEditor():
         """
         self.graph.add_edge((u, v, label))
         self.set_edge_color((u, v), color)
-
-        with hold_canvas(self._canvas):
-            self._draw_edge((u, v, label))
-            self._draw_vertex(u)
-            self._draw_vertex(v)
-
+        self._draw_edge((u, v, label))
         self._text_graph_update()
 
     #####################
@@ -1303,7 +1227,7 @@ class SimpleGraphEditor():
         """
 
         if canvas is None:
-            canvas = self._canvas
+            canvas = self._v_canvas
         if color is None:
             color = self.get_vertex_color(v)
 
@@ -1334,18 +1258,17 @@ class SimpleGraphEditor():
             canvas.stroke_arc(x, y, radius, 0, 2*pi)
             canvas.set_line_dash([])
 
-    def _draw_neighbors(self, v, canvas=None):
+    def _draw_incident_edges(self, v, canvas=None):
         """
-        Draw the neighbors of a vertex and the edges leading to them.
+        Draw the edges incident to a vertex.
         """
+        if canvas is None:
+            canvas = self._e_canvas
 
         # Below We use ignore_direction=True to get all edges incident to a
         # vertex in the case where self.graph is directed
         for e in self.graph.edge_iterator(v, ignore_direction=True):
             self._draw_edge(e, canvas=canvas)
-        # Draw the neighbors:
-        for u in self.graph.neighbor_iterator(v):
-            self._draw_vertex(u, canvas=canvas)
 
     def _draw_edge(self, e, endpoints=False, clear_first=False, canvas=None):
         """
@@ -1364,7 +1287,7 @@ class SimpleGraphEditor():
           together with ``endpoints``);
         - ``canvas`` -- canvas where to draw the edge
           (default: ``None``); with the default value,
-          ``self._canvas`` is used.
+          ``self._e_canvas`` is used.
 
         .. WARNING::
 
@@ -1381,7 +1304,7 @@ class SimpleGraphEditor():
         pos_v = self._get_vertex_pos(v)
 
         if canvas is None:
-            canvas = self._canvas
+            canvas = self._e_canvas
 
         canvas.line_width = 3
 
@@ -1435,19 +1358,16 @@ class SimpleGraphEditor():
         """
         Redraw the whole graph.
 
-        Clear the drawing canvas (``self._canvas``) and draw the whole
-        graph on it.
+        Clear the drawing canvasses (``self._e_canvas`` and
+        ``self._v_canvas``) and draw the whole graph on it.
         """
-        with hold_canvas(self._canvas):
-            self._canvas.clear()
+        with hold_canvas(self._multi_canvas):
+            self._e_canvas.clear()
             for e in self.graph.edge_iterator():
                 self._draw_edge(e)
 
+            self._v_canvas.clear()
             for v in self.graph.vertex_iterator():
-                self._draw_vertex(v, highlight=False)
-
-            # Selected vertices are (re)drawn on top
-            for v in self._selected_vertices:
                 self._draw_vertex(v, highlight=True)
 
     def refresh(self):
@@ -1566,7 +1486,7 @@ class SimpleGraphEditor():
         No output. Only side effects:
 
         - if `on_vertex` is not ``None``, draw this vertex and its neighbors
-          on the interact canvas (`self._interact_canvas`) and the rest of the
+          on the interact canvas (`self._v_interact_canvas`) and the rest of the
           graph on the main canvas (so that we can move `on_vertex` without
           redrawing the whole graph many times;
         - otherwise, if `closest_edge` is not ``None``, (un)select it;
@@ -1581,16 +1501,19 @@ class SimpleGraphEditor():
             with hold_canvas(self._multi_canvas):
 
                 # On the interact canvas we draw the moved vertex and
-                # its neighbors
-                self._interact_canvas.clear()
-                self._draw_neighbors(on_vertex, canvas=self._interact_canvas)
-                self._draw_vertex(on_vertex, canvas=self._interact_canvas)
+                # its incident edges
+                self._v_interact_canvas.clear()
+                self._e_interact_canvas.clear()
+                self._draw_incident_edges(on_vertex,
+                                          canvas=self._e_interact_canvas)
+                self._draw_vertex(on_vertex, canvas=self._v_interact_canvas)
 
                 # Draw everything else on the main canvas
-                self._canvas.clear()
+                self._e_canvas.clear()
                 for (u1, u2, label) in self.graph.edge_iterator():
                     if (on_vertex != u1 and on_vertex != u2):
                         self._draw_edge((u1, u2, label))
+                self._v_canvas.clear()
                 for u in self.graph.vertex_iterator():
                     if u != on_vertex:
                         self._draw_vertex(u)
@@ -1963,14 +1886,15 @@ class SimpleGraphEditor():
             v = self._dragged_vertex
             self._set_vertex_pos(v, pixel_x, pixel_y)
 
-            with hold_canvas(self._interact_canvas):
+            with hold_canvas(self._multi_canvas):
                 # We only redraw what changes: the position of the
                 # dragged vertex, the edges incident to it and also its
                 # neighbors (so that the redrawn edges are not drawn on
                 # the neighbors shapes):
-                self._interact_canvas.clear()
-                self._draw_neighbors(v, canvas=self._interact_canvas)
-                self._draw_vertex(v, canvas=self._interact_canvas)
+                self._e_interact_canvas.clear()
+                self._draw_incident_edges(v, canvas=self._e_interact_canvas)
+                self._v_interact_canvas.clear()
+                self._draw_vertex(v, canvas=self._v_interact_canvas)
 
         elif self._dragging_canvas_from is not None:
             # We are dragging the canvas
@@ -2002,9 +1926,9 @@ class SimpleGraphEditor():
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 # (Un)select
                 self._select_vertex(self._dragged_vertex, redraw=False)
-                with hold_canvas(self._canvas):
+                with hold_canvas(self._v_canvas):
                     # We redraw these on the main canvas
-                    self._draw_neighbors(self._dragged_vertex)
+                    self._draw_incident_edges(self._dragged_vertex)
                     self._draw_vertex(self._dragged_vertex)
                 self._dragged_vertex = None
             else:
@@ -2013,7 +1937,8 @@ class SimpleGraphEditor():
 
             self._dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
-            self._interact_canvas.clear()
+            self._v_interact_canvas.clear()
+            self._e_interact_canvas.clear()
 
         elif self._dragging_canvas_from is not None:
             # We stop dragging the canvas
