@@ -78,7 +78,8 @@ G = e.get_graph()
 
   * Demo notebook
   * Binder link
-  * minor fixes
+  * Improved update time when moving vertices
+  * Minor fixes
 
 ### In v0.2.0
 
