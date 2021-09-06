@@ -267,18 +267,21 @@ class SimpleGraphEditor():
                'overflow': 'visible'}
         # The canvas where to draw
         self._multi_canvas = (
-            MultiCanvas(2,
+            MultiCanvas(4,
                         width=self._drawing_parameters['width'],
                         height=self._drawing_parameters['height'],
                         sync_image_data=True,
                         layout=lyt)
         )
 
-        # It consists in two layers
-        self._canvas = self._multi_canvas[0]    # The main layer
-        # The layer where we draw objects in interaction
-        # (moved vertices, etc.):
-        self._interact_canvas = self._multi_canvas[1]
+        # It consists in 4 layers
+        self._e_canvas = self._multi_canvas[0]    # The main layer for edges
+        self._v_canvas = self._multi_canvas[2]    # The main layer for vertices
+
+        # Same, but for drawing onjects in interaction (eg dragged vertices
+        # without redrawing everything
+        self._e_interact_canvas = self._multi_canvas[1]    # For edges
+        self._v_interact_canvas = self._multi_canvas[3]    # For vertices
 
         self._selected_vertices = set()
         self._selected_edges = set()
@@ -286,12 +289,12 @@ class SimpleGraphEditor():
         self._dragging_canvas_from = None
 
         # Registering callbacks for mouse interaction on the canvas
-        self._interact_canvas.on_mouse_down(self._mouse_down_handler)
-        self._interact_canvas.on_mouse_move(self._mouse_move_handler)
-        self._interact_canvas.on_mouse_up(self._mouse_up_handler)
+        self._multi_canvas[3].on_mouse_down(self._mouse_down_handler)
+        self._multi_canvas[3].on_mouse_move(self._mouse_move_handler)
+        self._multi_canvas[3].on_mouse_up(self._mouse_up_handler)
         # When the mouse leaves the canvas, we free the node that
         # was being dragged, if any:
-        self._interact_canvas.on_mouse_out(self._mouse_up_handler)
+        self._multi_canvas[3].on_mouse_out(self._mouse_up_handler)
 
         # The widgets of the graph editor (besides the canvas):
 
@@ -1202,12 +1205,7 @@ class SimpleGraphEditor():
         """
         self.graph.add_edge((u, v, label))
         self.set_edge_color((u, v), color)
-
-        with hold_canvas(self._canvas):
-            self._draw_edge((u, v, label))
-            self._draw_vertex(u)
-            self._draw_vertex(v)
-
+        self._draw_edge((u, v, label))
         self._text_graph_update()
 
     #####################
@@ -1229,7 +1227,7 @@ class SimpleGraphEditor():
         """
 
         if canvas is None:
-            canvas = self._canvas
+            canvas = self._v_canvas
         if color is None:
             color = self.get_vertex_color(v)
 
@@ -1260,18 +1258,17 @@ class SimpleGraphEditor():
             canvas.stroke_arc(x, y, radius, 0, 2*pi)
             canvas.set_line_dash([])
 
-    def _draw_neighbors(self, v, canvas=None):
+    def _draw_incident_edges(self, v, canvas=None):
         """
-        Draw the neighbors of a vertex and the edges leading to them.
+        Draw the edges incident to a vertex.
         """
+        if canvas is None:
+            canvas = self._e_canvas
 
         # Below We use ignore_direction=True to get all edges incident to a
         # vertex in the case where self.graph is directed
         for e in self.graph.edge_iterator(v, ignore_direction=True):
             self._draw_edge(e, canvas=canvas)
-        # Draw the neighbors:
-        for u in self.graph.neighbor_iterator(v):
-            self._draw_vertex(u, canvas=canvas)
 
     def _draw_edge(self, e, endpoints=False, clear_first=False, canvas=None):
         """
@@ -1290,7 +1287,7 @@ class SimpleGraphEditor():
           together with ``endpoints``);
         - ``canvas`` -- canvas where to draw the edge
           (default: ``None``); with the default value,
-          ``self._canvas`` is used.
+          ``self._e_canvas`` is used.
 
         .. WARNING::
 
@@ -1307,7 +1304,7 @@ class SimpleGraphEditor():
         pos_v = self._get_vertex_pos(v)
 
         if canvas is None:
-            canvas = self._canvas
+            canvas = self._e_canvas
 
         canvas.line_width = 3
 
@@ -1361,19 +1358,16 @@ class SimpleGraphEditor():
         """
         Redraw the whole graph.
 
-        Clear the drawing canvas (``self._canvas``) and draw the whole
-        graph on it.
+        Clear the drawing canvasses (``self._e_canvas`` and
+        ``self._v_canvas``) and draw the whole graph on it.
         """
-        with hold_canvas(self._canvas):
-            self._canvas.clear()
+        with hold_canvas(self._multi_canvas):
+            self._e_canvas.clear()
             for e in self.graph.edge_iterator():
                 self._draw_edge(e)
 
+            self._v_canvas.clear()
             for v in self.graph.vertex_iterator():
-                self._draw_vertex(v, highlight=False)
-
-            # Selected vertices are (re)drawn on top
-            for v in self._selected_vertices:
                 self._draw_vertex(v, highlight=True)
 
     def refresh(self):
@@ -1492,7 +1486,7 @@ class SimpleGraphEditor():
         No output. Only side effects:
 
         - if `on_vertex` is not ``None``, draw this vertex and its neighbors
-          on the interact canvas (`self._interact_canvas`) and the rest of the
+          on the interact canvas (`self._v_interact_canvas`) and the rest of the
           graph on the main canvas (so that we can move `on_vertex` without
           redrawing the whole graph many times;
         - otherwise, if `closest_edge` is not ``None``, (un)select it;
@@ -1507,16 +1501,19 @@ class SimpleGraphEditor():
             with hold_canvas(self._multi_canvas):
 
                 # On the interact canvas we draw the moved vertex and
-                # its neighbors
-                self._interact_canvas.clear()
-                self._draw_neighbors(on_vertex, canvas=self._interact_canvas)
-                self._draw_vertex(on_vertex, canvas=self._interact_canvas)
+                # its incident edges
+                self._v_interact_canvas.clear()
+                self._e_interact_canvas.clear()
+                self._draw_incident_edges(on_vertex,
+                                          canvas=self._e_interact_canvas)
+                self._draw_vertex(on_vertex, canvas=self._v_interact_canvas)
 
                 # Draw everything else on the main canvas
-                self._canvas.clear()
+                self._e_canvas.clear()
                 for (u1, u2, label) in self.graph.edge_iterator():
                     if (on_vertex != u1 and on_vertex != u2):
                         self._draw_edge((u1, u2, label))
+                self._v_canvas.clear()
                 for u in self.graph.vertex_iterator():
                     if u != on_vertex:
                         self._draw_vertex(u)
@@ -1889,14 +1886,15 @@ class SimpleGraphEditor():
             v = self._dragged_vertex
             self._set_vertex_pos(v, pixel_x, pixel_y)
 
-            with hold_canvas(self._interact_canvas):
+            with hold_canvas(self._multi_canvas):
                 # We only redraw what changes: the position of the
                 # dragged vertex, the edges incident to it and also its
                 # neighbors (so that the redrawn edges are not drawn on
                 # the neighbors shapes):
-                self._interact_canvas.clear()
-                self._draw_neighbors(v, canvas=self._interact_canvas)
-                self._draw_vertex(v, canvas=self._interact_canvas)
+                self._e_interact_canvas.clear()
+                self._draw_incident_edges(v, canvas=self._e_interact_canvas)
+                self._v_interact_canvas.clear()
+                self._draw_vertex(v, canvas=self._v_interact_canvas)
 
         elif self._dragging_canvas_from is not None:
             # We are dragging the canvas
@@ -1928,9 +1926,9 @@ class SimpleGraphEditor():
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 # (Un)select
                 self._select_vertex(self._dragged_vertex, redraw=False)
-                with hold_canvas(self._canvas):
+                with hold_canvas(self._v_canvas):
                     # We redraw these on the main canvas
-                    self._draw_neighbors(self._dragged_vertex)
+                    self._draw_incident_edges(self._dragged_vertex)
                     self._draw_vertex(self._dragged_vertex)
                 self._dragged_vertex = None
             else:
@@ -1939,7 +1937,8 @@ class SimpleGraphEditor():
 
             self._dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
-            self._interact_canvas.clear()
+            self._v_interact_canvas.clear()
+            self._e_interact_canvas.clear()
 
         elif self._dragging_canvas_from is not None:
             # We stop dragging the canvas
