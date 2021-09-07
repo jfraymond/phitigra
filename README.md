@@ -44,7 +44,16 @@ after you install ipywidgets (see the [documentation](https://ipywidgets.readthe
 
 _Note:_ phitigra is not known to work with JupyterLab at the moment.
 
-## Installation
+## How to try it?
+
+### On binder
+
+(Runs online, nothing to install.)  
+Clicking [here](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb) will open the demo notebook on binder in a new tab. Note that this uses the development version of phitigra, which may differ from the one in the `master` branch. 
+
+### From a standalone SageMath installation
+
+This assumes that SageMath is installed on your system. See http://www.sagemath.org for install instructions.
 
 Clone the source from the repository
 ```
@@ -53,26 +62,34 @@ git clone https://gitlab.limos.fr/jfraymon/phitigra
 
 Change to the root directory of the cloned repository and run:
 ```
-$ sage -pip install --upgrade --no-index -v .
+sage -pip install .
 ```
+
 That's it!
 
 ## Usage
 
 ```
 from phitigra import GraphEditor
-e = GraphEditor(graphs.RandomGNP(10, 0.5))
-e.show()
+editor = GraphEditor(graphs.RandomGNP(10, 0.5))
+editor.show()
 # Now you can play with the graph!
 ```
 
 A copy of the currently drawn graph can be obtained with the `get_graph` function:
 ```
-G = e.get_graph()
+G = editor.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
-Open the [demo](demo.ipynb) notebook for more examples or run it on [binder](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb).
+There are more examples in the [demo](demo.ipynb) notebook.
+
+## Tests
+
+As with SageMath's code, tests and code quality checks can be started with the `--tox` option (from the cloned directory):
+```
+sage --tox phitigra
+```
 
 ## Changelog
 
