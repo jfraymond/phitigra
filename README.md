@@ -98,10 +98,22 @@ As with SageMath's code, tests and code quality checks can be started with the `
 sage --tox src/phitigra
 ```
 
+## Building the documentation
+
+From the package directory
+```
+cd docs
+sage -sh -c "make html"
+```
+
+The main file of the documentation is then in `docs/build/html/index.html`.
+A recent build of the documentation can be found [here](https://perso.limos.fr/~jfraymon/phitigra_docs/html/).
+
 ## Changelog
 
 ### v0.2.3
 
+  * Improved doc
   * Polished code, which now passes all tests 
   * Changed package structure to follows [python guidelines](https://packaging.python.org/tutorials/packaging-projects/)
 

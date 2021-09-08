@@ -1394,11 +1394,10 @@ class GraphEditor():
 
         TESTS::
 
-        A dummy test, for this drawing function can hardly be tested::
-
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor()
-            sage: ed.refresh()
+            sage: ed.refresh() is None
+            True
         """
         self._text_graph_update()
         with hold_canvas(self._multi_canvas):
