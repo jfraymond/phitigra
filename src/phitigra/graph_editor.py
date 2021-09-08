@@ -324,7 +324,7 @@ class GraphEditor():
             icons=['']*5,
             layout={'width': '150px', "margin": "0px 2px 0px auto"}
         )
-        # We unselect any possibly selected vertex when the currrent
+        # We unselect any possibly selected vertex when the current
         # tool is changed, in order to avoid problems with the deletion
         # tool
         self._tool_selector.observe(lambda _: self._tool_selector_clbk())
@@ -799,7 +799,7 @@ class GraphEditor():
         OUTPUT:
 
         No output. Only a side effect: the coordinates `x` and `y` are stored
-        in the graph position dictionnary.
+        in the graph position dictionary.
 
         TESTS::
 
@@ -860,7 +860,7 @@ class GraphEditor():
             d_x = abs(x - v_x)
             d_y = abs(y - v_y)
             if (d_x < radius and d_y < radius):
-                # The user clicked close to vertex v (approximatively)!
+                # The user clicked close to vertex v (approximately)!
                 d = sqrt(d_x*d_x + d_y*d_y)
                 if d <= radius and d < min_dist:
                     min_dist = d
@@ -1551,7 +1551,7 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor()
-            sage: ed._mouse_action_select_move(10, -230)
+            sage: ed._mouse_action_select_move(None, None, int(10), int(-230))
         """
 
         if on_vertex is not None:
@@ -2077,7 +2077,7 @@ class GraphEditor():
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(2))
             sage: ed._select_vertex(0)
-            sage: ed._tool_selector_clbk(42)
+            sage: ed._tool_selector_clbk()
             sage: 0 in ed._selected_vertices
             False
         """
@@ -2180,8 +2180,8 @@ class GraphEditor():
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(2))
             sage: ed._select_vertex(0)
-            sage: self._color_selector.value = '#420042'
-            sage: self._color_button_clbk()
+            sage: ed._color_selector.value = '#420042'
+            sage: ed._color_button_clbk()
             sage: ed.get_vertex_color(0)
             '#420042'
         """
@@ -2267,7 +2267,7 @@ class GraphEditor():
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor()
             sage: def f(w):w._add_vertex_at(10, 10)
-            sage: ed.set_next_callback(f)
+            sage: ed.set_next_clbk(f)
             sage: ed._next_button.click()
             sage: len(ed.graph)
             1

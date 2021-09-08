@@ -60,12 +60,19 @@ Clone the source from the repository
 git clone https://gitlab.limos.fr/jfraymon/phitigra
 ```
 
-Change to the root directory of the cloned repository and run:
+To install or upgrade with pip:
 ```
-sage -pip install .
+sage -pip install --upgrade path/to/the/cloned/repository
 ```
 
 That's it!
+
+To uninstall:
+```
+sage -pip uninstall phitigra
+```
+
+Note that the above commands should not be run from the repository directory, otherwise `pip` [might](https://github.com/pypa/pip/issues/6703) complain that it did not find files to uninstall.
 
 ## Usage
 
@@ -88,23 +95,28 @@ There are more examples in the [demo](demo.ipynb) notebook.
 
 As with SageMath's code, tests and code quality checks can be started with the `--tox` option (from the cloned directory):
 ```
-sage --tox phitigra
+sage --tox src/phitigra
 ```
 
 ## Changelog
 
-### In v0.2.2
+### v0.2.3
 
-Single change: renaming ``SimpleGraphEditor`` into ``GraphEditor``. Code written for previous versions is not compatible with this one, but can be easily fixed.
+  * Polished code, which now passes all tests 
+  * Changed package structure to follows [python guidelines](https://packaging.python.org/tutorials/packaging-projects/)
 
-### In v0.2.1
+### v0.2.2
+
+  * Single (major) change: renaming ``SimpleGraphEditor`` into ``GraphEditor``. Code written for previous versions is not compatible with this one, but can be easily fixed.
+
+### v0.2.1
 
   * Demo notebook
   * Binder link
   * Improved update time when moving vertices
   * Minor fixes
 
-### In v0.2.0
+### v0.2.0
 
   * Docstrings and doctests in (almost) all functions
   * Hiding of internal objects
