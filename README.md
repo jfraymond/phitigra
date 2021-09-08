@@ -4,8 +4,7 @@
 
 _Phitigra_ is a graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
-<p><img width="300" src="docs/source/images/phtgr.gif"></p>
-(Note: this animation is from an older version of phitigra.)
+<p><img width="600" src="https://gitlab.limos.fr/jfraymon/phitigra/-/raw/master/docs/source/images/editor.png"></p>
 
 
 
@@ -55,12 +54,21 @@ Clicking [here](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfra
 
 This assumes that SageMath is installed on your system. See http://www.sagemath.org for install instructions.
 
+#### Stable version
+
+The _stable_ version is on [pypi](https://pypi.org/project/phitigra/) so it can be installed as follows
+```
+sage -pip install --upgrade phitigra
+```
+
+#### Development version
+
 Clone the source from the repository
 ```
 git clone https://gitlab.limos.fr/jfraymon/phitigra
 ```
 
-To install or upgrade with pip:
+Install or upgrade with pip:
 ```
 sage -pip install --upgrade path/to/the/cloned/repository
 ```
@@ -89,7 +97,7 @@ G = editor.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
-There are more examples in the [demo](demo.ipynb) notebook.
+There are more examples in the [demo](https://gitlab.limos.fr/jfraymon/phitigra/-/blob/master/demo.ipynb) notebook.
 
 ## Tests
 
