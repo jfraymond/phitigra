@@ -1,11 +1,11 @@
 .. nodoctest
 
-.. _simple_editor:
+.. _graph_editor:
 
 Graph editor
 =============
 
-.. automodule:: phitigra.simple_editor
+.. automodule:: phitigra.graph_editor
    :members:
    :undoc-members:
    :show-inheritance:

@@ -16,7 +16,7 @@
 project = u"phitigra"
 copyright = u'2021, Jean-Florent Raymond'
 package_name = 'phitigra'
-package_folder = "../../phitigra"
+package_folder = "../../src/phitigra"
 authors = u"Jean-Florent Raymond"
 
 import six
@@ -158,7 +158,7 @@ from pkg_resources import get_distribution, DistributionNotFound
 try:
     release = get_distribution('sage-numerical-interactive-mip').version
 except DistributionNotFound:
-    release = "0.2"
+    release = "0.2.3"
 #print("############# release reported: {} ##################".format(release))
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
