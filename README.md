@@ -44,50 +44,91 @@ after you install ipywidgets (see the [documentation](https://ipywidgets.readthe
 
 _Note:_ phitigra is not known to work with JupyterLab at the moment.
 
-## Installation
+## How to try it?
+
+### On binder
+
+(Runs online, nothing to install.)  
+Clicking [here](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb) will open the demo notebook on binder in a new tab. Note that this uses the development version of phitigra, which may differ from the one in the `master` branch. 
+
+### From a standalone SageMath installation
+
+This assumes that SageMath is installed on your system. See http://www.sagemath.org for install instructions.
 
 Clone the source from the repository
 ```
 git clone https://gitlab.limos.fr/jfraymon/phitigra
 ```
 
-Change to the root directory of the cloned repository and run:
+To install or upgrade with pip:
 ```
-$ sage -pip install --upgrade --no-index -v .
+sage -pip install --upgrade path/to/the/cloned/repository
 ```
+
 That's it!
+
+To uninstall:
+```
+sage -pip uninstall phitigra
+```
+
+Note that the above commands should not be run from the repository directory, otherwise `pip` [might](https://github.com/pypa/pip/issues/6703) complain that it did not find files to uninstall.
 
 ## Usage
 
 ```
 from phitigra import GraphEditor
-e = GraphEditor(graphs.RandomGNP(10, 0.5))
-e.show()
+editor = GraphEditor(graphs.RandomGNP(10, 0.5))
+editor.show()
 # Now you can play with the graph!
 ```
 
 A copy of the currently drawn graph can be obtained with the `get_graph` function:
 ```
-G = e.get_graph()
+G = editor.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
-Open the [demo](demo.ipynb) notebook for more examples or run it on [binder](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb).
+There are more examples in the [demo](demo.ipynb) notebook.
+
+## Tests
+
+As with SageMath's code, tests and code quality checks can be started with the `--tox` option (from the cloned directory):
+```
+sage --tox src/phitigra
+```
+
+## Building the documentation
+
+From the package directory
+```
+cd docs
+sage -sh -c "make html"
+```
+
+The main file of the documentation is then in `docs/build/html/index.html`.
+A recent build of the documentation can be found [here](https://perso.limos.fr/~jfraymon/phitigra_docs/html/).
 
 ## Changelog
 
-### In v0.2.2
+### v0.2.3
 
-Single change: renaming ``SimpleGraphEditor`` into ``GraphEditor``. Code written for previous versions is not compatible with this one, but can be easily fixed.
+  * Improved doc
+  * Polished code, which now passes all tests 
+  * Changed package structure to follows [python guidelines](https://packaging.python.org/tutorials/packaging-projects/)
 
-### In v0.2.1
+### v0.2.2
+
+  * Single (major) change: renaming ``SimpleGraphEditor`` into ``GraphEditor``. Code written for previous versions is not compatible with this one, but can be easily fixed.
+
+### v0.2.1
 
   * Demo notebook
   * Binder link
   * Improved update time when moving vertices
   * Minor fixes
 
-### In v0.2.0
+### v0.2.0
 
   * Docstrings and doctests in (almost) all functions
   * Hiding of internal objects

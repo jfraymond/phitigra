@@ -1,10 +1,4 @@
 """
-TODO:
-  * reverse coordinates
-  * fix bug with normalize_layout
-
-
-
 Graph editor for sage on jupyter
 
 A simple graph editor where one can see the graph, add vertices/edges,
@@ -42,7 +36,7 @@ etc.
     :delim: |
 
     :meth:`~GraphEditor.output_text` | Write text below the drawing
-    :meth:`~GraphEditor.set_next_callback` | Register a callback for the "Next" button
+    :meth:`~GraphEditor.set_next_clbk` | Register a callback for "Next" button
 
 There are more methods to edit the graph (adding vertices / edges), that
 are private and can be discovered if needed by looking at the source.
@@ -99,7 +93,8 @@ We set vertices color depending on parity:
 
 Same for edges::
 
-    sage: for (u, v, _) in G.edge_iterator(): ed.set_edge_color((u, v), 'green' if is_odd(u+v) else 'orange')
+    sage: for (u, v, _) in G.edge_iterator():
+    ....:     ed.set_edge_color((u, v), 'green' if is_odd(u+v) else 'orange')
     sage: ed.refresh()
 
 One of the text boxes of the widget can be edited::
@@ -124,13 +119,13 @@ The "Next" button can be used to trigger an action on the graph::
     ....:     v = randint(0, 9)
     ....:     c = f"#{randrange(0x1000000):06x}" # random color
     ....:     w.set_vertex_color(v, c)
-    sage: ed.set_next_callback(callback)
+    sage: ed.set_next_clbk(callback)
 
 Now clicks on "Next" randomly recolor random vertices, one at a time
-Calling `set_next_callback` again adds a new callback and does not
+Calling `set_next_clbk` again adds a new callback and does not
 cancel the one previously set::
 
-    sage: ed.set_next_callback(callback)
+    sage: ed.set_next_clbk(callback)
 
 Now clicks on "Next" randomly recolor random vertices, *two* at a time.
 
@@ -159,7 +154,6 @@ from math import pi, sqrt, atan2
 from copy import copy
 
 from sage.graphs.all import Graph
-from sage.matrix.constructor import matrix
 from sage.modules.free_module_element import vector
 
 
@@ -185,6 +179,14 @@ class GraphEditor():
         OUTPUT:
 
         No output, only side effects. Draws an arrow on the canvas.
+
+        TESTS::
+
+        A dummy test, for this drawing function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: ed._draw_arrow(ed._multi_canvas[0])
         """
         a_x = 15  # Length of the arrow
         a_y = 8   # Half-width of the arrow
@@ -228,7 +230,7 @@ class GraphEditor():
         EXAMPLES:
 
             sage: from phitigra import GraphEditor
-            sage: ed = GraphEditor(graphs.PetersenGraph(), width=200, height=200)
+            sage: ed = GraphEditor(graphs.PetersenGraph(), width=200)
             sage: type(ed)
             <class 'phitigra.graph_editor.GraphEditor'>
 
@@ -237,7 +239,7 @@ class GraphEditor():
             sage: GraphEditor(g)
             Traceback (most recent call last):
             ...
-            ValueError: Cannot deal with graphs that allow loops or multiple edges
+            ValueError: The graph allows loops or multiedges
 
         """
 
@@ -245,12 +247,11 @@ class GraphEditor():
             G = Graph(0)
 
         if G.allows_multiple_edges() or G.allows_loops():
-            raise ValueError("Cannot deal with graphs that allow"
-                             " loops or multiple edges")
+            raise ValueError("The graph allows loops or multiedges")
 
         self.graph = G
 
-        self._drawing_parameters = {
+        self._drawing_param = {
             # Sizes of the widget
             'width': int(width),
             'height': int(height),
@@ -262,14 +263,14 @@ class GraphEditor():
 
         # The layout (+6 to account for the 3px border on both sides)
         lyt = {'border': '3px solid lightgrey',
-               'width': str(self._drawing_parameters['width'] + 6) + 'px',
-               'height': str(self._drawing_parameters['height'] + 6) + 'px',
+               'width': str(self._drawing_param['width'] + 6) + 'px',
+               'height': str(self._drawing_param['height'] + 6) + 'px',
                'overflow': 'visible'}
         # The canvas where to draw
         self._multi_canvas = (
             MultiCanvas(4,
-                        width=self._drawing_parameters['width'],
-                        height=self._drawing_parameters['height'],
+                        width=self._drawing_param['width'],
+                        height=self._drawing_param['height'],
                         sync_image_data=True,
                         layout=lyt)
         )
@@ -323,10 +324,10 @@ class GraphEditor():
             icons=['']*5,
             layout={'width': '150px', "margin": "0px 2px 0px auto"}
         )
-        # We unselect any possibly selected vertex when the currrent
+        # We unselect any possibly selected vertex when the current
         # tool is changed, in order to avoid problems with the deletion
         # tool
-        self._tool_selector.observe(lambda _: self._tool_selector_callback())
+        self._tool_selector.observe(lambda _: self._tool_selector_clbk())
         self._current_tool = lambda: self._tool_selector.value
 
         # Selector to change layout
@@ -343,7 +344,7 @@ class GraphEditor():
             description='',
             layout={'width': '150px', "margin": "1px 2px 1px auto"}
         )
-        self._layout_selector.observe(self._layout_selector_callback)
+        self._layout_selector.observe(self._layout_selector_clbk)
 
         # Buttons to rescale:
         self._zoom_in_button = Button(description='',
@@ -355,17 +356,17 @@ class GraphEditor():
                                               'width': '36px',
                                               'margin': '0px 1px 0px 0px'})
         self._zoom_in_button.on_click(lambda x: (self._scale_layout(1.5),
-                                                self._draw_graph()))
+                                                 self.refresh()))
         self._zoom_to_fit_button = Button(description='',
                                           disabled=False,
                                           button_style='',
                                           tooltip=('Zoom to fit'),
                                           icon='compress',
                                           layout={'height': '36px',
-                                                 'width': '36px',
-                                                 'margin': '0px 1px 0px 1px'})
+                                                  'width': '36px',
+                                                  'margin': '0px 1px 0px 1px'})
         self._zoom_to_fit_button.on_click(lambda x: (self._normalize_layout(),
-                                                    self._draw_graph()))
+                                                     self.refresh()))
         self._zoom_out_button = Button(description='',
                                        disabled=False,
                                        button_style='',
@@ -375,7 +376,7 @@ class GraphEditor():
                                                'width': '36px',
                                                'margin': '0px 1px 0px 1px'})
         self._zoom_out_button.on_click(lambda x: (self._scale_layout(2/3),
-                                                  self._draw_graph()))
+                                                  self.refresh()))
 
         # To clear the drawing
         self._clear_drawing_button = Button(description="",
@@ -388,7 +389,7 @@ class GraphEditor():
                                                     'width': '36px',
                                                     'margin': ('0px 0px '
                                                                '0px 1px')})
-        self._clear_drawing_button.on_click(self._clear_drawing_button_callback)
+        self._clear_drawing_button.on_click(self._clear_drawing_button_clbk)
 
         # Selector to change the color of the selected vertex
         self._color_selector = ColorPicker(
@@ -401,18 +402,18 @@ class GraphEditor():
                     'margin': '0px 1px 0px 0px'}
         )
         self._color_button = Button(description='',
-                                   disabled=False,
-                                   button_style='',
-                                   tooltip=('Apply color to the '
-                                            'selected elements'),
-                                   icon='paint-brush',
-                                   layout={'height': '36px',
-                                           'width': '36px',
-                                           'margin': '0px 0px 0px 1px'})
-        self._color_button.on_click((lambda x: self._color_button_callback()))
+                                    disabled=False,
+                                    button_style='',
+                                    tooltip=('Apply color to the '
+                                             'selected elements'),
+                                    icon='paint-brush',
+                                    layout={'height': '36px',
+                                            'width': '36px',
+                                            'margin': '0px 0px 0px 1px'})
+        self._color_button.on_click((lambda x: self._color_button_clbk()))
 
         self._vertex_radius_box = BoundedIntText(
-            value=self._drawing_parameters['default_radius'],
+            value=self._drawing_param['default_radius'],
             min=1,
             max=100,
             step=1,
@@ -430,7 +431,7 @@ class GraphEditor():
                                      layout={'height': '36px',
                                              'width': '36px',
                                              'margin': '0px 0px 0px 1px'})
-        self._radius_button.on_click((lambda x: self._radius_button_callback()))
+        self._radius_button.on_click((lambda x: self._radius_button_clbk()))
 
         self._vertex_name_toggle = ToggleButton(
             value=True,
@@ -441,14 +442,14 @@ class GraphEditor():
             icon='',
             layout={"width": "150px", "margin": "1px 2px 1px auto"}
         )
-        self._vertex_name_toggle.observe(lambda _: self._draw_graph())
+        self._vertex_name_toggle.observe(lambda _: self.refresh())
 
         # A 'next' button to call a custom function
         self._next_button = Button(description='Next',
                                    disabled=False,
                                    button_style='',
                                    tooltip=('Call a custom function. Define it'
-                                            ' via the \'set_next_callback\''
+                                            ' via the \'set_next_clbk\''
                                             ' method.'),
                                    icon='forward',
                                    layout={"width": "150px",
@@ -477,7 +478,8 @@ class GraphEditor():
                                                      }),
                                        self._vertex_radius_box,
                                        self._radius_button],
-                                      layout=Layout(margin="1px 2px 1px auto")),
+                                      layout=Layout(margin=('1px 2px '
+                                                            '1px auto'))),
                                  self._vertex_name_toggle,
                                  self._next_button],
                                   layout=Layout(min_width='160px',
@@ -494,21 +496,21 @@ class GraphEditor():
 
         for v in self.graph.vertex_iterator():
             self.set_vertex_radius(v,
-                                   self._drawing_parameters['default_radius'])
-            c = self._drawing_parameters['default_vertex_color']
+                                   self._drawing_param['default_radius'])
+            c = self._drawing_param['default_vertex_color']
             if c is None:
                 c = f"#{randrange(0x1000000):06x}"    # Random color
             self.set_vertex_color(v, c)
 
         self._edge_colors = dict()
-        c = self._drawing_parameters['default_edge_color']
+        c = self._drawing_param['default_edge_color']
         for e in self.graph.edge_iterator(labels=False):
             self.set_edge_color(e, c)
 
         if self.graph.get_pos() is None:
             # The graph has no predefined positions: we pick some
             self.graph.layout(layout='spring', save_pos=True)
-            
+
         # Rescale the coordinates so that the graph fits well in the canvas
         self._normalize_layout()
 
@@ -558,14 +560,14 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(graphs.PetersenGraph(), default_radius=41)
-            sage: ed._vertex_radii[0]
+            sage: ed.get_vertex_radius(0)
             41
             sage: ed.set_vertex_radius(0, 42)
-            sage: ed._vertex_radii[0]
+            sage: ed.get_vertex_radius(0)
             42
         """
         return self._vertex_radii.get(v,
-                                     self._drawing_parameters['default_radius'])
+                                      self._drawing_param['default_radius'])
 
     def set_vertex_radius(self, v, radius=None):
         """
@@ -743,9 +745,10 @@ class GraphEditor():
         TESTS::
 
             sage: from phitigra import GraphEditor
-            sage: ed = GraphEditor(graphs.PetersenGraph())
+            sage: P = graphs.PetersenGraph()
+            sage: ed = GraphEditor(P, default_edge_color='pink')
             sage: ed.set_edge_color((1, 6))
-            sage: ed.get_edge_color((1,6)) == ed._drawing_parameters['default_edge_color']
+            sage: ed.get_edge_color((1,6)) == 'pink'
             True
             sage: ed.set_edge_color((1,5))
             Traceback (most recent call last):
@@ -755,7 +758,7 @@ class GraphEditor():
 
         u, v, *_ = e
         if color is None:
-            color = self._drawing_parameters['default_edge_color']
+            color = self._drawing_param['default_edge_color']
 
         if not self.graph.has_edge(e):
             raise ValueError("edge "
@@ -796,7 +799,7 @@ class GraphEditor():
         OUTPUT:
 
         No output. Only a side effect: the coordinates `x` and `y` are stored
-        in the graph position dictionnary.
+        in the graph position dictionary.
 
         TESTS::
 
@@ -847,7 +850,7 @@ class GraphEditor():
 
         canvas_pos = self.graph.get_pos()
 
-        min_dist = self._drawing_parameters['width']  # aka infinity
+        min_dist = self._drawing_param['width']  # aka infinity
         arg_min = None
 
         for v in self.graph.vertex_iterator():
@@ -857,7 +860,7 @@ class GraphEditor():
             d_x = abs(x - v_x)
             d_y = abs(y - v_y)
             if (d_x < radius and d_y < radius):
-                # The user clicked close to vertex v (approximatively)!
+                # The user clicked close to vertex v (approximately)!
                 d = sqrt(d_x*d_x + d_y*d_y)
                 if d <= radius and d < min_dist:
                     min_dist = d
@@ -1074,7 +1077,7 @@ class GraphEditor():
             new_pos[v] = (int(x_shift + x * ratio),
                           int(y_shift + y * ratio))
 
-        self.graph.set_pos(new_pos)            
+        self.graph.set_pos(new_pos)
 
     def _translate_layout(self, vec):
         """
@@ -1130,12 +1133,16 @@ class GraphEditor():
             sage: ed = GraphEditor(graphs.PetersenGraph())
             sage: print(ed._text_graph.value)
             Graph on 10 vertices and 15 edges.
+            sage: ed.graph.add_vertex(42)
+            sage: ed._text_graph_update()
+            sage: print(ed._text_graph.value)
+            Graph on 11 vertices and 15 edges.
         """
 
         self._text_graph.value = ("Graph on " + str(self.graph.order())
-                                 + " vertices and "
-                                 + str(self.graph.num_edges())
-                                 + " edges.")
+                                  + " vertices and "
+                                  + str(self.graph.num_edges())
+                                  + " edges.")
 
     ######################
     # Graph modification #
@@ -1224,6 +1231,14 @@ class GraphEditor():
         If ``color`` is ``None`` the color is as given by
         :meth:`~GraphEditor.`get_vertex_color`.
         If ``highlight`` is true, also draw the focus on ``v``.
+
+        TESTS::
+
+        A dummy test, for this drawing function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(1))
+            sage: ed._draw_vertex(0)
         """
 
         if canvas is None:
@@ -1261,6 +1276,14 @@ class GraphEditor():
     def _draw_incident_edges(self, v, canvas=None):
         """
         Draw the edges incident to a vertex.
+
+        TESTS::
+
+        A dummy test, for this drawing function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.CompleteGraph(2))
+            sage: ed._draw_incident_edges(0)
         """
         if canvas is None:
             canvas = self._e_canvas
@@ -1297,6 +1320,14 @@ class GraphEditor():
           its endpoint vertices, so it is necessary to redraw these
           vertices after drawing the edge. The keyword ``endpoints``
           exists for that purpose.
+
+        TESTS::
+
+        A dummy test, for this drawing function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.CompleteGraph(2))
+            sage: ed._draw_edge((0,1,'label'))
         """
 
         u, v, *_ = e
@@ -1354,13 +1385,21 @@ class GraphEditor():
             self._draw_vertex(u, canvas=canvas)
             self._draw_vertex(v, canvas=canvas)
 
-    def _draw_graph(self):
+    def refresh(self):
         """
-        Redraw the whole graph.
+        Redraw the whole graph and update the text info.
 
         Clear the drawing canvasses (``self._e_canvas`` and
         ``self._v_canvas``) and draw the whole graph on it.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: ed.refresh() is None
+            True
         """
+        self._text_graph_update()
         with hold_canvas(self._multi_canvas):
             self._e_canvas.clear()
             for e in self.graph.edge_iterator():
@@ -1369,14 +1408,6 @@ class GraphEditor():
             self._v_canvas.clear()
             for v in self.graph.vertex_iterator():
                 self._draw_vertex(v, highlight=True)
-
-    def refresh(self):
-        """
-        Refresh the drawing (redraw the graph) and update the text info.
-        """
-
-        self._text_graph_update()
-        self._draw_graph()
 
     def _select_vertex(self, vertex=None, redraw=True):
         """
@@ -1404,6 +1435,25 @@ class GraphEditor():
         .. WARNING::
 
         No check is done that `vertex` indeed is a vertex of the graph.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
+            sage: 0 in ed._selected_vertices
+            False
+            sage: ed._select_vertex(0, redraw=False)
+            sage: ed._select_vertex(1, redraw=False)
+            sage: 0 in ed._selected_vertices
+            True
+            sage: ed._select_vertex(0, redraw=False)
+            sage: 0 in ed._selected_vertices
+            False
+            sage: 1 in ed._selected_vertices
+            True
+            sage: ed._select_vertex(None, redraw=False)
+            sage: 1 in ed._selected_vertices
+            False
         """
 
         if vertex is None:
@@ -1445,7 +1495,8 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(0))
-            sage: attrs = ['_current_clique', '_current_walk_vertex', '_current_star_center', '_current_star_leaf']
+            sage: attrs = ['_current_clique', '_current_walk_vertex']
+            sage: attrs.extend(['_current_star_center', '_current_star_leaf'])
             sage: for attr in attrs: setattr(ed, attr, 42)
             sage: ed._clean_tools()
             sage: any((hasattr(ed, a) for a in attrs))
@@ -1486,12 +1537,20 @@ class GraphEditor():
         No output. Only side effects:
 
         - if `on_vertex` is not ``None``, draw this vertex and its neighbors
-          on the interact canvas (`self._v_interact_canvas`) and the rest of the
-          graph on the main canvas (so that we can move `on_vertex` without
+          on the interact canvas (`self._v_interact_canvas`) and the rest of
+          the graph on the main canvas (so that we can move `on_vertex` without
           redrawing the whole graph many times;
         - otherwise, if `closest_edge` is not ``None``, (un)select it;
         - otherwise, the click was done on the canvas: record its position
           in order to later move the drawing when the mouse is moved.
+
+        TESTS::
+
+        A dummy test, for this function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: ed._mouse_action_select_move(None, None, int(10), int(-230))
         """
 
         if on_vertex is not None:
@@ -1549,13 +1608,13 @@ class GraphEditor():
 
         - if the click is not on a vertex (i.e. ``on_vertex`` is ``None``) and
           there is a selected vertex : empty the set of selected vertices;
-        - if the click is not on a vertex and there is no selected vertex :
-          add a new vertex at the clicked position;
+        - if the click is not on a vertex and there is no selected vertex: add
+          a new vertex at the clicked position;
         - if the click is on a vertex ``v``, that is selected: unselect ``v``;
         - if the click is on an unselected vertex ``v`` and there is a selected
           vertex ``u``: add the edge ``uv``;
-        - if the click is on a vertex ``v`` and there is no selected vertex:
-          select ``v``.
+        - if the click is on a vertex ``v`` and there is no selected
+          vertex: select ``v``.
 
         In all cases redraw the graph.
 
@@ -1691,9 +1750,9 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(2))
-            sage: ed._mouse_action_add_clique(0, 0, 0) # add 0 to the current clique
+            sage: ed._mouse_action_add_clique(0, 0, 0) # add 0
             sage: ed._mouse_action_add_clique(1, 0, 0) # add 1
-            sage: ed._mouse_action_add_clique(None, 20, 20) # add a new vertex adjacent to the two others
+            sage: ed._mouse_action_add_clique(None, 20, 20) # add a new vertex
             sage: G = ed.graph
             sage: u, v, w = G.vertices()
             sage: G.has_edge(u, v) and G.has_edge(v, w) and G.has_edge(w, u)
@@ -1794,6 +1853,30 @@ class GraphEditor():
         self._current_walk_vertex = clicked_node
 
     def _mouse_action_add_star(self, clicked_node, click_x, click_y):
+        """
+        Start or continue the drawing of a star.
+
+        If no star is being drawn, start drawing a star with `clicked_node`
+        as center. Otherwise, add `clicked_node` as leaf to the star that is
+        being drawn.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
+            sage: ed._mouse_action_add_star(None, 10, 10)
+            sage: ed._current_star_center
+            2
+            sage: ed._mouse_action_add_star(None, 10, 10)
+            sage: ed._mouse_action_add_star(0, 10, 10)
+            sage: ed._mouse_action_add_star(1, 10, 10)
+            sage: ed.graph.has_edge(2, 3) and ed.graph.has_edge(2, 0)
+            True
+            sage: ed._mouse_action_add_star(2, 10, 10)
+            sage: hasattr(ed, '_current_star_center')
+            False
+        """
+
         if clicked_node is None:
             # Click on the canvas: we add a vertex
             clicked_node = self._add_vertex_at(click_x, click_y)
@@ -1813,7 +1896,7 @@ class GraphEditor():
             del self._current_star_center
             del self._current_star_leaf
             self._select_vertex(redraw=False)
-            self._draw_graph()
+            self.refresh()
         else:
             # We are drawing a star
             self._current_star_leaf = clicked_node
@@ -1838,6 +1921,14 @@ class GraphEditor():
         OUTPUT:
 
         No output, just a call to the appropriate function.
+
+        TESTS::
+
+        A dummy test, for this function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: ed._mouse_down_handler(10, -230)
         """
 
         self.initial_click_pos = (click_x, click_y)
@@ -1879,6 +1970,14 @@ class GraphEditor():
         OUTPUT:
 
         No output, just a call to the appropriate function.
+
+        TESTS::
+
+        A dummy test, for this function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: ed._mouse_move_handler(10, -230)
         """
         if self._dragged_vertex is not None:
             # We are dragging a vertex...
@@ -1902,7 +2001,7 @@ class GraphEditor():
                            pixel_y - self._dragging_canvas_from[1]]
             self._translate_layout(translation)
             self._dragging_canvas_from = [pixel_x, pixel_y]
-            self._draw_graph()
+            self.refresh()
 
     def _mouse_up_handler(self, pixel_x, pixel_y):
         """
@@ -1918,6 +2017,14 @@ class GraphEditor():
         OUTPUT:
 
         No output, just a call to the appropriate function.
+
+        TESTS::
+
+        A dummy test, for this function can hardly be tested::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: ed._mouse_up_handler(10, -230)
         """
         if self._dragged_vertex is not None:
             # If we dragged the vertex very close to its initial
@@ -1933,7 +2040,7 @@ class GraphEditor():
                 self._dragged_vertex = None
             else:
                 self.output_text("Done dragging vertex.")
-                self._draw_graph()
+                self.refresh()
 
             self._dragged_vertex = None
             # Should be after _draw_graph to prevent screen flickering:
@@ -1956,7 +2063,7 @@ class GraphEditor():
     # Callback functions for the widget elements #
     ##############################################
 
-    def _tool_selector_callback(self):
+    def _tool_selector_clbk(self):
         """
         Called when changing tools.
 
@@ -1964,6 +2071,14 @@ class GraphEditor():
         variables used with some tools (when constructing cliques
         for instance).
 
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
+            sage: ed._select_vertex(0)
+            sage: ed._tool_selector_clbk()
+            sage: 0 in ed._selected_vertices
+            False
         """
         self._clean_tools()
         self._select_vertex(redraw=False)
@@ -1971,13 +2086,21 @@ class GraphEditor():
         self.refresh()
         self.output_text('')
 
-    def _layout_selector_callback(self, change):
+    def _layout_selector_clbk(self, change):
         """
         Apply the graph layout given by ``change['new']`` (if any).
 
         This function is called when the layout selector is used.
         If applying the layout is not possible, an error message is
         written to the text output widget.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.CompleteGraph(5))
+            sage: ed._layout_selector_clbk({'name': 'value', 'new': 'planar'})
+            sage: print(ed._text_output.value)
+            'planar' layout impossible: the graph is not planar!
         """
         if change['name'] != 'value':
             return
@@ -2041,15 +2164,25 @@ class GraphEditor():
             self.graph.layout(**layout_kw)
 
         self._normalize_layout()  # Rescale so that it fits well
-        self._draw_graph()
+        self.refresh()
         self.output_text('Done updating layout.')
 
-    def _color_button_callback(self):
+    def _color_button_clbk(self):
         """
         Change the color of the selected elements (if any).
 
         The new color is that of the color wheel:
         ``self._color_selector.value``.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
+            sage: ed._select_vertex(0)
+            sage: ed._color_selector.value = '#420042'
+            sage: ed._color_button_clbk()
+            sage: ed.get_vertex_color(0)
+            '#420042'
         """
         new_color = self._color_selector.value
 
@@ -2059,7 +2192,7 @@ class GraphEditor():
             self.set_vertex_color(v, new_color)
         self.refresh()
 
-    def _radius_button_callback(self):
+    def _radius_button_clbk(self):
         """
         Change the radius of the selected vertices (if any).
 
@@ -2072,7 +2205,7 @@ class GraphEditor():
             sage: r = ed.get_vertex_radius(0)
             sage: ed._select_vertex(1)
             sage: ed._vertex_radius_box.value = 2*r
-            sage: ed._radius_button_callback()
+            sage: ed._radius_button_clbk()
             sage: ed.get_vertex_radius(1) == 2*r
             True
         """
@@ -2081,7 +2214,7 @@ class GraphEditor():
             self.set_vertex_radius(v, r)
         self.refresh()
 
-    def _clear_drawing_button_callback(self, _):
+    def _clear_drawing_button_clbk(self, _):
         """
         Callback for the ``clear_drawing_button``.
 
@@ -2091,13 +2224,27 @@ class GraphEditor():
         .. WARNING::
 
             The current drawn graph is lost.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
+            sage: ed._clear_drawing_button.click()
+            sage: len(ed.graph)
+            0
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(2))
+            sage: ed._clear_drawing_button_clbk(42)
+            sage: len(ed.graph)
+            0
         """
         self.graph = Graph(0)
         self._select_vertex(redraw=None)
         self.refresh()
         self.output_text("Cleared drawing.")
 
-    def set_next_callback(self, f):
+    def set_next_clbk(self, f):
         """
         Define a callback for the "Next" button.
 
@@ -2107,11 +2254,21 @@ class GraphEditor():
 
         OUTPUT:
 
-        No output. After calling ``set_next_callback`` on a function
+        No output. After calling ``set_next_clbk`` on a function
         ``f``, that function will be called on ``self`` at each click
         on the "Next" button.
         This can be used to show the different steps of an algorithm
         that processes the drawn graph, where each click on "Next"
         goes to the next step.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor()
+            sage: def f(w):w._add_vertex_at(10, 10)
+            sage: ed.set_next_clbk(f)
+            sage: ed._next_button.click()
+            sage: len(ed.graph)
+            1
         """
         self._next_button.on_click(lambda x: f(self))
