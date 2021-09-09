@@ -200,7 +200,8 @@ class GraphEditor():
 
     def __init__(self, G=None,
                  width=600, height=400, default_radius=20,
-                 default_vertex_color=None, default_edge_color='black'):
+                 default_vertex_color=None, default_edge_color='black',
+                 show_vertex_labels=True, show_edge_labels=True):
         """
         Prepare the widget with the given graph.
 
@@ -224,6 +225,8 @@ class GraphEditor():
           colors of the vertices of ``G``; if ``None`` a random color will be
           used for each vertex;
         - ``default_edge_color`` -- color (default: ``'black'``);
+        - ``show_vertex_labels`` and ``show_edge_labels`` -- boolean
+          (default: True); whether to display vertex and edge labels.
 
         OUTPUT: a graph editor widget
 
@@ -258,7 +261,9 @@ class GraphEditor():
             # Defaults for drawing vertices
             'default_radius': int(default_radius),
             'default_vertex_color': default_vertex_color,
-            'default_edge_color': default_edge_color
+            'default_edge_color': default_edge_color,
+            'show_vertex_labels': show_vertex_labels,
+            'show_edge_labels': show_edge_labels
         }
 
         # The layout (+6 to account for the 3px border on both sides)
@@ -433,8 +438,8 @@ class GraphEditor():
                                              'margin': '0px 0px 0px 1px'})
         self._radius_button.on_click((lambda x: self._radius_button_clbk()))
 
-        self._vertex_name_toggle = ToggleButton(
-            value=True,
+        self._vertex_label_toggle = ToggleButton(
+            value=self._drawing_param['show_vertex_labels'],
             description='Show vertex labels',
             disabled=False,
             button_style='',
@@ -442,7 +447,18 @@ class GraphEditor():
             icon='',
             layout={"width": "150px", "margin": "1px 2px 1px auto"}
         )
-        self._vertex_name_toggle.observe(lambda _: self.refresh())
+        self._vertex_label_toggle.observe(lambda _: self.refresh())
+
+        self._edge_label_toggle = ToggleButton(
+            value=self._drawing_param['show_edge_labels'],
+            description='Show edge labels',
+            disabled=False,
+            button_style='',
+            tooltip='Should the edge label be drawn?',
+            icon='',
+            layout={"width": "150px", "margin": "1px 2px 1px auto"}
+        )
+        self._edge_label_toggle.observe(lambda _: self.refresh())
 
         # A 'next' button to call a custom function
         self._next_button = Button(description='Next',
@@ -480,7 +496,8 @@ class GraphEditor():
                                        self._radius_button],
                                       layout=Layout(margin=('1px 2px '
                                                             '1px auto'))),
-                                 self._vertex_name_toggle,
+                                 self._vertex_label_toggle,
+                                 self._edge_label_toggle,
                                  self._next_button],
                                   layout=Layout(min_width='160px',
                                                 width="160px"))
@@ -1258,7 +1275,7 @@ class GraphEditor():
         canvas.stroke_style = 'black'
         canvas.stroke_arc(x, y, radius, 0, 2*pi)
 
-        if self._vertex_name_toggle.value:
+        if self._vertex_label_toggle.value:
             # The vertex name
             canvas.font = '20px sans'
             canvas.text_align = 'center'
@@ -1350,6 +1367,22 @@ class GraphEditor():
         canvas.stroke()
 
         canvas.set_line_dash([])  # Reset dash pattern
+
+        lbl = self.graph.edge_label(u, v)
+        if lbl is not None:
+            # draw the edge label at the middle of the edge
+            pos_uv = [(pos_u[0] + pos_v[0]) / 2, (pos_u[1] + pos_v[1]) / 2]
+            canvas.move_to(*pos_uv)
+            if self._edge_label_toggle.value:
+                # Clear the background
+                canvas.fill_style = 'white'
+                canvas.fill_arc(*pos_uv, 12, 0, 2*pi)
+                # Write the label
+                canvas.font = '20px sans'
+                canvas.text_align = 'center'
+                canvas.text_baseline = 'middle'
+                canvas.fill_style = 'black'
+                canvas.fill_text(str(lbl), *pos_uv)
 
         if self.graph.is_directed():
             # If the graph is directed, we also have to draw the arrow
