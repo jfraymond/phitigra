@@ -1,14 +1,14 @@
 # Phitigra
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb)
 
 _Phitigra_ is a graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
-<p><img width="600" src="https://gitlab.limos.fr/jfraymon/phitigra/-/raw/master/docs/source/images/editor.png"></p>
+<p><img width="600" src="https://raw.githubusercontent.com/jfraymond/phitigra/master/docs/source/images/editor.png"></p>
 
 
 
-Try the [demo](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb) notebook on binder!
+Try the [demo](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) notebook on binder!
 
 ## Features
 
@@ -48,7 +48,7 @@ _Note:_ phitigra is not known to work with JupyterLab at the moment.
 ### On binder
 
 (Runs online, nothing to install.)  
-Clicking [here](https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb) will open the demo notebook on binder in a new tab. Note that this uses the development version of phitigra, which may differ from the one in the `master` branch. 
+Clicking [here](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) will open the demo notebook on binder in a new tab. Note that this uses the development version of phitigra, which may differ from the one in the `master` branch. 
 
 ### From a standalone SageMath installation
 
@@ -65,7 +65,7 @@ sage -pip install --upgrade phitigra
 
 Clone the source from the repository
 ```
-git clone https://gitlab.limos.fr/jfraymon/phitigra
+git clone https://github.com/jfraymond/phitigra.git
 ```
 
 Install or upgrade with pip:
@@ -97,7 +97,7 @@ G = editor.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
-There are more examples in the [demo](https://gitlab.limos.fr/jfraymon/phitigra/-/blob/master/demo.ipynb) notebook.
+There are many more examples in the [demo](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) notebook.
 
 ## Tests
 

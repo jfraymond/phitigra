@@ -4,7 +4,7 @@ phitigra
 
 This package provides a simple graph editor widget for SageMath/Jupyter.
 
-The documentation of the package can be found at the following link:
+The reference manual of the package can be found at the following link:
 
 .. toctree::
    :maxdepth: 1
@@ -25,6 +25,6 @@ A gif made with a previous version of the widget:
 
 See http://www.sagemath.org/doc/tutorial/ for information on how to use Sage.
 
-Install instructions can be found in the README file of the `git repository <https://gitlab.limos.fr/jfraymon/phitigra>`_.
+Install instructions can be found in the README file of the `git repository <https://github.com/jfraymond/phitigra>`_.
 
-More examples can be found on the `demo file <https://gitlab.limos.fr/jfraymon/phitigra/-/raw/master/demo.ipynb?inline=false>`_, that you can also try online on `binder <https://mybinder.org/v2/git/https%3A%2F%2Fgitlab.limos.fr%2Fjfraymon%2Fphitigra/develop?filepath=demo.ipynb>`_.
+More examples can be found on the `demo file <https://github.com/jfraymond/phitigra/blob/master/demo.ipynb>`_, that you can also try online on `binder <https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb>`_.
