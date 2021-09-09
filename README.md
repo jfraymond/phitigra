@@ -117,7 +117,12 @@ sage -sh -c "make html"
 The main file of the documentation is then in `docs/build/html/index.html`.
 A recent build of the documentation can be found [here](https://perso.limos.fr/~jfraymon/phitigra_docs/html/).
 
-## Changelog
+## What's new
+
+### v0.2.4
+
+  * updating links after move to github
+  * small fix in the demo notebook
 
 ### v0.2.3
 

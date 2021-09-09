@@ -158,7 +158,7 @@ from pkg_resources import get_distribution, DistributionNotFound
 try:
     release = get_distribution('sage-numerical-interactive-mip').version
 except DistributionNotFound:
-    release = "0.2.3"
+    release = "0.2.4"
 #print("############# release reported: {} ##################".format(release))
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
