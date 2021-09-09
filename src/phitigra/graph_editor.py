@@ -1293,7 +1293,7 @@ class GraphEditor():
         for e in self.graph.edge_iterator(v, ignore_direction=True):
             self._draw_edge(e, canvas=canvas)
 
-    def _draw_edge(self, e, endpoints=False, clear_first=False, canvas=None):
+    def _draw_edge(self, e, clear_first=False, canvas=None):
         """
         Draw an edge.
 
@@ -1303,11 +1303,8 @@ class GraphEditor():
 
         - ``e`` -- edge; of the form (first_end, second_end, label); the
           label is ignored;
-        - ``endpoints`` -- Boolean (default: ``False``), whether to
-          redraw the endpoints of the edge;
         - ``clear_first`` -- Boolean (default: ``False``), whether to
-          erase the edge first by drawing a white edge over it (to use
-          together with ``endpoints``);
+          erase the edge first by drawing a white edge over it;
         - ``canvas`` -- canvas where to draw the edge
           (default: ``None``); with the default value,
           ``self._e_canvas`` is used.
@@ -1315,11 +1312,6 @@ class GraphEditor():
         .. WARNING::
 
         - The function does not check that ``e`` is an edge of ``self``;
-
-        - The drawn edge start and end at the centers of the shapes of
-          its endpoint vertices, so it is necessary to redraw these
-          vertices after drawing the edge. The keyword ``endpoints``
-          exists for that purpose.
 
         TESTS::
 
@@ -1380,10 +1372,6 @@ class GraphEditor():
                 canvas.fill_style = self.get_edge_color((u, v))
                 GraphEditor._draw_arrow(canvas)
                 canvas.restore()
-
-        if endpoints:
-            self._draw_vertex(u, canvas=canvas)
-            self._draw_vertex(v, canvas=canvas)
 
     def refresh(self):
         """
@@ -1583,7 +1571,7 @@ class GraphEditor():
                 self._selected_edges.remove(closest_edge)
             else:
                 self._selected_edges.add(closest_edge)
-            self._draw_edge(closest_edge, endpoints=True, clear_first=True)
+            self._draw_edge(closest_edge, clear_first=True)
         else:
             # The click was neither on a vertex nor on an edge
             self._dragging_canvas_from = [pixel_x, pixel_y]
