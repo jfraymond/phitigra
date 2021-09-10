@@ -14,7 +14,7 @@ etc.
     :meth:`~GraphEditor.show` | Show the widget
     :meth:`~GraphEditor.refresh` | Redraw everything
 
-**Graph appearance:**
+**Widget appearance:**
 
 .. csv-table::
     :class: contentstable
@@ -27,16 +27,7 @@ etc.
     :meth:`~GraphEditor.get_vertex_color` | Get the color of a vertex
     :meth:`~GraphEditor.set_edge_color` | Set the color of an edge
     :meth:`~GraphEditor.get_edge_color` | Get the color of an edge
-
-**Misc:**
-
-.. csv-table::
-    :class: contentstable
-    :widths: 30, 70
-    :delim: |
-
     :meth:`~GraphEditor.output_text` | Write text below the drawing
-    :meth:`~GraphEditor.set_next_clbk` | Register a callback for "Next" button
 
 There are more methods to edit the graph (adding vertices / edges), that
 are private and can be discovered if needed by looking at the source.
@@ -105,30 +96,6 @@ One of the text boxes of the widget can be edited::
     sage: ed.output_text("Hello world!")
 
 "Hello world" should appear below the drawing.
-
-The "Next" button can be used to trigger an action on the graph::
-
-    sage: from phitigra import GraphEditor
-    sage: G = graphs.RandomGNP(10, 0.5)
-    sage: ed = GraphEditor(G)
-    sage: ed.show() # random
-
- We define the function to be called after clicks on "Next"
-
-    sage: def callback(w):
-    ....:     v = randint(0, 9)
-    ....:     c = f"#{randrange(0x1000000):06x}" # random color
-    ....:     w.set_vertex_color(v, c)
-    sage: ed.set_next_clbk(callback)
-
-Now clicks on "Next" randomly recolor random vertices, one at a time
-Calling `set_next_clbk` again adds a new callback and does not
-cancel the one previously set::
-
-    sage: ed.set_next_clbk(callback)
-
-Now clicks on "Next" randomly recolor random vertices, *two* at a time.
-
 
 AUTHORS:
 
@@ -460,17 +427,6 @@ class GraphEditor():
         )
         self._edge_label_toggle.observe(lambda _: self.refresh())
 
-        # A 'next' button to call a custom function
-        self._next_button = Button(description='Next',
-                                   disabled=False,
-                                   button_style='',
-                                   tooltip=('Call a custom function. Define it'
-                                            ' via the \'set_next_clbk\''
-                                            ' method.'),
-                                   icon='forward',
-                                   layout={"width": "150px",
-                                           "margin": "1px 2px 0px auto"})
-
         # The final widget, which contains all the parts defined above
         self._widget = HBox([VBox([self._multi_canvas,
                                    HBox([self._text_graph, self._text_output]),
@@ -497,8 +453,7 @@ class GraphEditor():
                                       layout=Layout(margin=('1px 2px '
                                                             '1px auto'))),
                                  self._vertex_label_toggle,
-                                 self._edge_label_toggle,
-                                 self._next_button],
+                                 self._edge_label_toggle],
                                   layout=Layout(min_width='160px',
                                                 width="160px"))
                              ], layout=Layout(width='100%',
@@ -2264,32 +2219,3 @@ class GraphEditor():
         self._select_vertex(redraw=None)
         self.refresh()
         self.output_text("Cleared drawing.")
-
-    def set_next_clbk(self, f):
-        """
-        Define a callback for the "Next" button.
-
-        INPUT:
-
-        - ``f`` -- function of arity one.
-
-        OUTPUT:
-
-        No output. After calling ``set_next_clbk`` on a function
-        ``f``, that function will be called on ``self`` at each click
-        on the "Next" button.
-        This can be used to show the different steps of an algorithm
-        that processes the drawn graph, where each click on "Next"
-        goes to the next step.
-
-        TESTS::
-
-            sage: from phitigra import GraphEditor
-            sage: ed = GraphEditor()
-            sage: def f(w):w._add_vertex_at(10, 10)
-            sage: ed.set_next_clbk(f)
-            sage: ed._next_button.click()
-            sage: len(ed.graph)
-            1
-        """
-        self._next_button.on_click(lambda x: f(self))
