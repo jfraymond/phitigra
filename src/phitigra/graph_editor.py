@@ -21,6 +21,8 @@ etc.
     :widths: 30, 70
     :delim: |
 
+    :meth:`~GraphEditor.set_vertex_pos` | Set the position of a vertex shape
+    :meth:`~GraphEditor.get_vertex_pos` | Get the position of a vertex shape
     :meth:`~GraphEditor.set_vertex_radius` | Set the radius of a vertex shape
     :meth:`~GraphEditor.get_vertex_radius` | Get the radius of a vertex shape
     :meth:`~GraphEditor.set_vertex_color` | Set the color of a vertex
@@ -28,6 +30,8 @@ etc.
     :meth:`~GraphEditor.set_edge_color` | Set the color of an edge
     :meth:`~GraphEditor.get_edge_color` | Get the color of an edge
     :meth:`~GraphEditor.output_text` | Write text below the drawing
+
+
 
 There are more methods to edit the graph (adding vertices / edges), that
 are private and can be discovered if needed by looking at the source.
@@ -744,7 +748,7 @@ class GraphEditor():
         else:
             self._edge_colors[(v, u)] = color
 
-    def _get_vertex_pos(self, v):
+    def get_vertex_pos(self, v):
         """
         Return the vertex coordinates.
 
@@ -752,14 +756,14 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(1))
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: x, y = ed._get_vertex_pos(0)
-            sage: abs(x - 50) < 2 and abs(y - 50) < 2
+            sage: ed.set_vertex_pos(0, 24, 42)
+            sage: x, y = ed.get_vertex_pos(0)
+            sage: x == 24 and y == 42
             True
         """
         return self.graph.get_pos()[v]
 
-    def _set_vertex_pos(self, v, x, y):
+    def set_vertex_pos(self, v, x, y):
         """
         Set the position of a vertex.
 
@@ -773,15 +777,17 @@ class GraphEditor():
         No output. Only a side effect: the coordinates `x` and `y` are stored
         in the graph position dictionary.
 
+        .. WARNING:: This function does not redraw the graph.
+
         TESTS::
 
-        Same as in :meth:`_get_vertex_pos`.
+        Same as in :meth:`get_vertex_pos`.
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(1))
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: x, y = ed._get_vertex_pos(0)
-            sage: abs(x - 50) < 2 and abs(y - 50) < 2
+            sage: ed.set_vertex_pos(0, 24, 42)
+            sage: x, y = ed.get_vertex_pos(0)
+            sage: x == 24 and y == 42
             True
         """
 
@@ -810,8 +816,8 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(2), default_radius=20)
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: ed._set_vertex_pos(1, 70, 50)
+            sage: ed.set_vertex_pos(0, 50, 50)
+            sage: ed.set_vertex_pos(1, 70, 50)
             sage: ed._get_vertex_at(55, 50)
             0
             sage: ed._get_vertex_at(65, 50)
@@ -865,10 +871,10 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(graphs.PathGraph(3))
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: ed._set_vertex_pos(1, 50, 100)
-            sage: ed._set_vertex_pos(2, 100, 100)
-            sage: ed._set_vertex_pos(3, 100, 50)
+            sage: ed.set_vertex_pos(0, 50, 50)
+            sage: ed.set_vertex_pos(1, 50, 100)
+            sage: ed.set_vertex_pos(2, 100, 100)
+            sage: ed.set_vertex_pos(3, 100, 50)
             sage: ed._get_edge_at(50, 75)
             (0, 1)
             sage: ed._get_edge_at(51, 75)
@@ -956,11 +962,11 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(5), width=501, height=501)
-            sage: ed._set_vertex_pos(0, 10, 10)
-            sage: ed._set_vertex_pos(1, 5, 10)
-            sage: ed._set_vertex_pos(2, 15, 10)
-            sage: ed._set_vertex_pos(3, 10, 8)
-            sage: ed._set_vertex_pos(4, 10, 12)
+            sage: ed.set_vertex_pos(0, 10, 10)
+            sage: ed.set_vertex_pos(1, 5, 10)
+            sage: ed.set_vertex_pos(2, 15, 10)
+            sage: ed.set_vertex_pos(3, 10, 8)
+            sage: ed.set_vertex_pos(4, 10, 12)
             sage: ed._normalize_layout()
             sage: d = ed.graph.get_pos()
             sage: d[0] == (250, 250)
@@ -1023,18 +1029,18 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(5), width=101, height=101)
-            sage: ed._set_vertex_pos(0, 50, 50)
-            sage: ed._set_vertex_pos(1, 30, 50)
-            sage: ed._set_vertex_pos(2, 70, 50)
-            sage: ed._set_vertex_pos(3, 50, 30)
-            sage: ed._set_vertex_pos(4, 50, 70)
+            sage: ed.set_vertex_pos(0, 50, 50)
+            sage: ed.set_vertex_pos(1, 30, 50)
+            sage: ed.set_vertex_pos(2, 70, 50)
+            sage: ed.set_vertex_pos(3, 50, 30)
+            sage: ed.set_vertex_pos(4, 50, 70)
             sage: ed._scale_layout(1.5)
-            sage: x, y = ed._get_vertex_pos(0)
+            sage: x, y = ed.get_vertex_pos(0)
             sage: abs(x - 50) <= 1 and abs(y - 50) <= 1
             True
-            sage: ed._get_vertex_pos(1)[0] <= 21
+            sage: ed.get_vertex_pos(1)[0] <= 21
             True
-            sage: abs(ed._get_vertex_pos(1)[1] - 50) <= 1
+            sage: abs(ed.get_vertex_pos(1)[1] - 50) <= 1
             True
         """
 
@@ -1059,9 +1065,9 @@ class GraphEditor():
 
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(1))
-            sage: ed._set_vertex_pos(0, 50, 50)
+            sage: ed.set_vertex_pos(0, 50, 50)
             sage: ed._translate_layout((25, 25))
-            sage: x, y = ed._get_vertex_pos(0)
+            sage: x, y = ed.get_vertex_pos(0)
             sage: abs(x - 75) + abs(y - 75) <= 2
             True
         """
@@ -1137,7 +1143,7 @@ class GraphEditor():
             sage: v=next(ed.graph.vertex_iterator())
             sage: v
             'vert'
-            sage: ed._get_vertex_pos(v)
+            sage: ed.get_vertex_pos(v)
             (10, 42)
             sage: ed.get_vertex_color(v)
             '#112233'
@@ -1152,7 +1158,7 @@ class GraphEditor():
             self.graph.add_vertex(name)
             return_name = False
 
-        self._set_vertex_pos(name, x, y)
+        self.set_vertex_pos(name, x, y)
         self.set_vertex_color(name, color)
         self.set_vertex_radius(name)
 
@@ -1197,7 +1203,7 @@ class GraphEditor():
 
         Also write the vertex name.
         The position is given by
-        :meth:`~GraphEditor._get_vertex_pos`.
+        :meth:`~GraphEditor.get_vertex_pos`.
         If ``canvas`` is ``None``, the default drawing canvas
         (``self._canvas``) is used.
         If ``color`` is ``None`` the color is as given by
@@ -1218,7 +1224,7 @@ class GraphEditor():
         if color is None:
             color = self.get_vertex_color(v)
 
-        x, y = self._get_vertex_pos(v)
+        x, y = self.get_vertex_pos(v)
         radius = self.get_vertex_radius(v)
 
         # The inside of the node
@@ -1295,8 +1301,8 @@ class GraphEditor():
         """
 
         u, v, *_ = e
-        pos_u = self._get_vertex_pos(u)
-        pos_v = self._get_vertex_pos(v)
+        pos_u = self.get_vertex_pos(u)
+        pos_v = self.get_vertex_pos(v)
 
         if canvas is None:
             canvas = self._e_canvas
@@ -1959,7 +1965,7 @@ class GraphEditor():
             # We are dragging a vertex...
             self.output_text("Dragging vertex " + str(self._dragged_vertex))
             v = self._dragged_vertex
-            self._set_vertex_pos(v, pixel_x, pixel_y)
+            self.set_vertex_pos(v, pixel_x, pixel_y)
 
             with hold_canvas(self._multi_canvas):
                 # We only redraw what changes: the position of the
