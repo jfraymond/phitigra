@@ -761,7 +761,26 @@ class GraphEditor():
             sage: x == 24 and y == 42
             True
         """
-        return self.graph.get_pos()[v]
+        x, y = self.graph.get_pos()[v]
+        # -y because the y axis of the canvas goes downwards
+        return x, -y
+
+    def get_vertices_pos(self):
+        """
+        Return the vertices coordinates dictionary.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(Graph(10))
+            sage: p = ed.get_vertices_pos()
+            sage: all(p.has_key(v) for v in self.graph())
+            True
+        """
+        p = self.graph.get_pos()
+        # -p[v][1] because the y axis of the canvas goes downwards
+        return {v: (p[v][0], -p[v][1])
+                for v in self.graph}
 
     def set_vertex_pos(self, v, x, y):
         """
@@ -790,13 +809,35 @@ class GraphEditor():
             sage: x == 24 and y == 42
             True
         """
+        self.set_vertices_pos({v: (int(x), int(y))})
+
+    def set_vertices_pos(self, new_pos):
+        """
+        Set the position of some vertices.
+
+        INPUT:
+
+        - `new_pos` -- dictionnary; the dictionary of the new positions,
+          indexed by vertices.
+
+        OUTPUT:
+
+        No output. Only a side effect: the coordinates are updated with
+        values contained in `new_pos`.
+
+        .. WARNING:: This function does not redraw the graph.
+
+        """
 
         pos = self.graph.get_pos()
         if pos is None:
             pos = dict()
             self.graph.set_pos(pos)
 
-        pos[v] = int(x), int(y)
+        for v in new_pos.keys():
+            # -new_pos[v][1] because the y axis of the canvas goes downwards
+            pos[v] = (new_pos[v][0],
+                      -new_pos[v][1])
 
     def _get_vertex_at(self, x, y):
         """
@@ -826,7 +867,7 @@ class GraphEditor():
             True
         """
 
-        canvas_pos = self.graph.get_pos()
+        canvas_pos = self.get_vertices_pos()
 
         min_dist = self._drawing_param['width']  # aka infinity
         arg_min = None
@@ -891,7 +932,7 @@ class GraphEditor():
             d = [a[0] - b[0], a[1] - b[1]]
             return d[0] * d[0] + d[1] * d[1]
 
-        canvas_pos = self.graph.get_pos()
+        canvas_pos = self.get_vertices_pos()
 
         min_dist = 10  # We don't want edges too far from the click
         closest_edge = None
@@ -940,7 +981,7 @@ class GraphEditor():
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(graphs.PathGraph(3))
             sage: ed._random_layout()
-            sage: x, y = ed.graph.get_pos()[1]
+            sage: x, y = ed.get_vertex_pos(1)
             sage: x >= 0 and x <= 9 and y >= 0 and y <= 9
             True
         """
@@ -949,7 +990,7 @@ class GraphEditor():
         rnd_pos = {v: (randint(0, n2),
                        randint(0, n2))
                    for v in self.graph.vertex_iterator()}
-        self.graph.set_pos(rnd_pos)
+        self.set_vertices_pos(rnd_pos)
 
     def _normalize_layout(self):
         """
@@ -968,7 +1009,7 @@ class GraphEditor():
             sage: ed.set_vertex_pos(3, 10, 8)
             sage: ed.set_vertex_pos(4, 10, 12)
             sage: ed._normalize_layout()
-            sage: d = ed.graph.get_pos()
+            sage: d = ed.get_vertices_pos()
             sage: d[0] == (250, 250)
             True
             sage: d[1][0] <= 25
@@ -981,7 +1022,7 @@ class GraphEditor():
             # There is nothing to do with the one empty graph
             return
 
-        pos = self.graph.get_pos()
+        pos = self.get_vertices_pos()
 
         # Extrema for vertex centers
         x_min = min(pos[v][0] for v in self.graph)
@@ -1015,10 +1056,12 @@ class GraphEditor():
             # y-coordinate has a special treatment because on the
             # canvas the y-axis is oriented downwards
             new_pos[v] = (int(x_shift + factor * (x - x_min)),
-                          int(self._multi_canvas.height
-                              - (y_shift + factor * (y - y_min))))
+                          int(y_shift + factor * (y - y_min)))
+#            new_pos[v] = (int(x_shift + factor * (x - x_min)),
+#                          int(self._multi_canvas.height
+#                              - (y_shift + factor * (y - y_min))))
 
-        self.graph.set_pos(new_pos)
+        self.set_vertices_pos(new_pos)
 
     def _scale_layout(self, ratio):
         """
@@ -1047,7 +1090,7 @@ class GraphEditor():
         x_shift = self._multi_canvas.width * (1 - ratio) / 2
         y_shift = self._multi_canvas.height * (1 - ratio) / 2
 
-        pos = self.graph.get_pos()
+        pos = self.get_vertices_pos()
 
         new_pos = dict()
         for v in self.graph:
@@ -1055,7 +1098,7 @@ class GraphEditor():
             new_pos[v] = (int(x_shift + x * ratio),
                           int(y_shift + y * ratio))
 
-        self.graph.set_pos(new_pos)
+        self.set_vertices_pos(new_pos)
 
     def _translate_layout(self, vec):
         """
@@ -1074,14 +1117,14 @@ class GraphEditor():
 
         x_shift, y_shift = vec
 
-        pos = self.graph.get_pos()
+        pos = self.get_vertices_pos()
 
         new_pos = dict()
         for v in self.graph:
             x, y = pos[v]
             new_pos[v] = (int(x + x_shift), int(y + y_shift))
 
-        self.graph.set_pos(new_pos)
+        self.set_vertices_pos(new_pos)
 
     #########################
     # Text output functions #
