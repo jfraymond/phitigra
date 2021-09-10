@@ -526,6 +526,9 @@ class GraphEditor():
         """
         return copy(self.graph)
 
+    def get_vertex_label(self, v):
+        return str(v)
+
     def get_vertex_radius(self, v):
         """
         Return the radius of a vertex.
@@ -1285,7 +1288,7 @@ class GraphEditor():
             canvas.text_align = 'center'
             canvas.text_baseline = 'middle'
             canvas.fill_style = 'black'
-            canvas.fill_text(str(v), x, y, max_width=2*radius)
+            canvas.fill_text(self.get_vertex_label(v), x, y, max_width=2*radius)
 
         if highlight and v in self._selected_vertices:
             # Draw the focus
