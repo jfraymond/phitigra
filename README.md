@@ -121,8 +121,12 @@ A recent build of the documentation can be found [here](https://perso.limos.fr/~
 
 ### v0.2.4
 
+  * show/hide edge labels
+  * user-defined vertex labels
+  * exposing vertex positioning functions
+  * removing the `Next` button
   * updating links after move to github
-  * small fix in the demo notebook
+  * more examples in the demo notebook
 
 ### v0.2.3
 

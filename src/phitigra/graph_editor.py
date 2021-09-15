@@ -21,16 +21,18 @@ etc.
     :widths: 30, 70
     :delim: |
 
-    :meth:`~GraphEditor.set_vertex_pos` | Set the position of a vertex shape
-    :meth:`~GraphEditor.get_vertex_pos` | Get the position of a vertex shape
-    :meth:`~GraphEditor.set_vertex_radius` | Set the radius of a vertex shape
-    :meth:`~GraphEditor.get_vertex_radius` | Get the radius of a vertex shape
+    :meth:`~GraphEditor.set_vertex_pos` | Set the position of a vertex
+    :meth:`~GraphEditor.set_vertices_pos` | Set the position of vertices
+    :meth:`~GraphEditor.get_vertex_pos` | Get the position of a vertex
+    :meth:`~GraphEditor.get_vertices_pos` | Get the position of vertices
+    :meth:`~GraphEditor.set_vertex_radius` | Set the radius of a vertex
+    :meth:`~GraphEditor.get_vertex_radius` | Get the radius of a vertex
     :meth:`~GraphEditor.set_vertex_color` | Set the color of a vertex
     :meth:`~GraphEditor.get_vertex_color` | Get the color of a vertex
     :meth:`~GraphEditor.set_edge_color` | Set the color of an edge
     :meth:`~GraphEditor.get_edge_color` | Get the color of an edge
+    :meth:`~GraphEditor.get_vertex_label` | Get the label of a vertex
     :meth:`~GraphEditor.output_text` | Write text below the drawing
-
 
 
 There are more methods to edit the graph (adding vertices / edges), that
@@ -527,6 +529,26 @@ class GraphEditor():
         return copy(self.graph)
 
     def get_vertex_label(self, v):
+        """Return the label of a vertex.
+
+        INPUT:
+
+        - `v` -- vertex; the vertex of which we want to know the label.
+
+        OUTPUT:
+
+        A string, that will be printed on ``v``'s shape if
+        `self._drawing_param['show_vertex_labels']` is `True`.
+
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PetersenGraph())
+            sage: v = ed.graph.random_vertex()
+            sage: isinstance(ed.get_vertex_label(v), str)
+            True
+        """
+
         return str(v)
 
     def get_vertex_radius(self, v):
@@ -777,7 +799,7 @@ class GraphEditor():
             sage: from phitigra import GraphEditor
             sage: ed = GraphEditor(Graph(10))
             sage: p = ed.get_vertices_pos()
-            sage: all(p.has_key(v) for v in self.graph())
+            sage: all(v in p.keys() for v in ed.graph)
             True
         """
         p = self.graph.get_pos()
@@ -820,7 +842,7 @@ class GraphEditor():
 
         INPUT:
 
-        - `new_pos` -- dictionnary; the dictionary of the new positions,
+        - `new_pos` -- dictionary; the dictionary of the new positions,
           indexed by vertices.
 
         OUTPUT:
@@ -830,6 +852,13 @@ class GraphEditor():
 
         .. WARNING:: This function does not redraw the graph.
 
+        TESTS::
+
+            sage: from phitigra import GraphEditor
+            sage: ed = GraphEditor(graphs.PathGraph(3))
+            sage: ed.set_vertices_pos({0:(10, 10), 1:(20, 20), 2:(30, 5)})
+            sage: ed.graph.get_pos()
+            {0: (10, -10), 1: (20, -20), 2: (30, -5)}
         """
 
         pos = self.graph.get_pos()
