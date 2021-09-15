@@ -7,4 +7,4 @@ FROM sagemath/sagemath:latest
 COPY --chown=sage:sage . ${HOME}
 
 # Install this package and dependencies
-RUN sage -pip install ${HOME}/phitigra
+RUN sage -pip install .
