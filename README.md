@@ -9,6 +9,7 @@ when using the [Jupyter](www.jupyter.org) notebook.
 
 
 Try the [demo](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) notebook on binder!
+**Note:** for some unknown reason the above link stopped working.
 
 ## Features
 
@@ -49,6 +50,7 @@ _Note:_ phitigra is not known to work with JupyterLab at the moment.
 
 (Runs online, nothing to install.)  
 Clicking [here](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) will open the demo notebook on binder in a new tab. Note that this uses the development version of phitigra, which may differ from the one in the `master` branch. 
+**Note:** for some unknown reason the above link stopped working.
 
 ### From a standalone SageMath installation
 
@@ -97,7 +99,7 @@ G = editor.get_graph()
 # Now G is a copy of the graph drawn in editor e
 ```
 
-There are many more examples in the [demo](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) notebook.
+There are many more examples in the demo notebook.
 
 ## Tests
 
