@@ -1,5 +1,6 @@
 # Dockerfile for binder
-# Reference: https://mybinder.readthedocs.io/en/latest/dockerfile.html#preparing-your-dockerfile
+
+RUN pip install --no-cache-dir notebook
 
 FROM sagemath/sagemath:latest
 
