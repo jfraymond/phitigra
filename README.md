@@ -36,13 +36,13 @@ The following are not supported:
   * [ipywidgets](https://github.com/jupyter-widgets/ipywidgets), for user interaction
   * [ipycanvas](https://github.com/martinRenou/ipycanvas), for the drawing
 
-You might need the following
+With jupyter, you might need the following
 ```
 jupyter nbextension enable --py widgetsnbextension
 ```
 after you install ipywidgets (see the [documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html)).
 
-_Note:_ phitigra is not known to work with JupyterLab at the moment.
+With jupyterlab, the `jupyterlab_widgets` package is also required for the widget to show.
 
 ## How to try it?
 
