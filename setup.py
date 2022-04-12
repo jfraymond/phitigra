@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="phitigra",
-    version="0.2.4",
+    version="0.2.5",
     author="Jean-Florent Raymond",
     author_email="j-florent.raymond@uca.fr",
     description="A graph editor for SageMath/Jupyter",
@@ -19,7 +19,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Mathematics"
     ],
