@@ -6,8 +6,6 @@ _Phitigra_ is a graph editor widget for [SageMath](www.sagemath.org)
 when using the [Jupyter](www.jupyter.org) notebook.
 <p><img width="600" src="https://raw.githubusercontent.com/jfraymond/phitigra/master/docs/source/images/editor.png"></p>
 
-
-
 Try the [demo](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) notebook on mybinder!  
 **Note:** for some unknown reason the above link stopped working.
 
@@ -40,7 +38,8 @@ With jupyter, you might need the following
 ```
 jupyter nbextension enable --py widgetsnbextension
 ```
-after you install ipywidgets (see the [documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html)).
+after you install ipywidgets, and possibly more if using virtualenv and working in an activated virtual environment, see [ipywidget's documentation](https://ipywidgets.readthedocs.io/en/latest/user_install.html) for full details.  
+**This is the first thing to check if the import of the package works fine but nothing shows when you try to display the widget.**
 
 With jupyterlab, the `jupyterlab_widgets` package is also required for the widget to show.
 
@@ -49,8 +48,9 @@ With jupyterlab, the `jupyterlab_widgets` package is also required for the widge
 ### On mybinder
 
 (Runs online, nothing to install.)  
+
+**Note:** for some unknown reason the link below stopped working.
 Clicking [here](https://mybinder.org/v2/gh/jfraymond/phitigra/master?filepath=demo.ipynb) will open the demo notebook on mybinder in a new tab. Note that this uses the _stable_ version of phitigra (that from the `master` branch), which may differ from the one in the `develop` branch.  
-**Note:** for some unknown reason the above link stopped working.
 
 ### From a standalone SageMath installation
 
@@ -120,6 +120,11 @@ The main file of the documentation is then in `docs/build/html/index.html`.
 A recent build of the documentation can be found [here](https://perso.limos.fr/~jfraymon/phitigra_docs/html/).
 
 ## What's new
+
+### v0.2.5
+
+  * minor fixes in the documentation
+  * fixed an issue when building the documentation
 
 ### v0.2.4
 

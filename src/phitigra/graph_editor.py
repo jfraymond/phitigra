@@ -576,7 +576,9 @@ class GraphEditor():
 
         If ``radius`` is ``None``, use the radius in the radius box.
 
-        .. WARNING:: This function does not redraw the graph.
+        .. WARNING::
+
+            This function does not redraw the graph.
 
         EXAMPLES::
 
@@ -813,15 +815,17 @@ class GraphEditor():
 
         INPUT:
 
-        - `v` -- vertex; the vertex that needs to have its position set
-        - `x`, `y` -- integers; the coordinates on the canvas for `v`.
+        - ``v`` -- vertex; the vertex that needs to have its position set.
+        - ``x``, ``y`` -- integers; the coordinates on the canvas for ``v``.
 
         OUTPUT:
 
-        No output. Only a side effect: the coordinates `x` and `y` are stored
+        No output. Only a side effect: the coordinates ``x`` and ``y`` are stored
         in the graph position dictionary.
 
-        .. WARNING:: This function does not redraw the graph.
+        .. WARNING::
+
+            This function does not redraw the graph.
 
         TESTS::
 
@@ -842,15 +846,16 @@ class GraphEditor():
 
         INPUT:
 
-        - `new_pos` -- dictionary; the dictionary of the new positions,
+        - ``new_pos`` -- dictionary; the dictionary of the new positions,
           indexed by vertices.
 
         OUTPUT:
 
         No output. Only a side effect: the coordinates are updated with
-        values contained in `new_pos`.
+        values contained in ``new_pos``.
 
-        .. WARNING:: This function does not redraw the graph.
+        .. WARNING::
+            This function does not redraw the graph.
 
         TESTS::
 
