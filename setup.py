@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="phitigra",
-    version="0.2.5",
+    version="0.2.6",
     author="Jean-Florent Raymond",
     author_email="j-florent.raymond@uca.fr",
     description="A graph editor for SageMath/Jupyter",
@@ -26,6 +26,6 @@ setuptools.setup(
     package_dir={"": "src"},
     packages=setuptools.find_packages(where="src"),
     python_requires=">=3.6",
-    install_requires=["ipycanvas",
+    install_requires=["ipycanvas>=0.12.0",
                       "ipywidgets"]
 )

@@ -121,19 +121,23 @@ A recent build of the documentation can be found [here](https://perso.limos.fr/~
 
 ## What's new
 
+### v0.2.6
+
+  * Minor change to adapt to the new ipycanvas; this version will not work with ipycanvas < 0.12.0
+
 ### v0.2.5
 
-  * minor fixes in the documentation
-  * fixed an issue when building the documentation
+  * Minor fixes in the documentation
+  * Fixed an issue when building the documentation
 
 ### v0.2.4
 
-  * show/hide edge labels
-  * user-defined vertex labels
-  * exposing vertex positioning functions
-  * removing the `Next` button
-  * updating links after move to github
-  * more examples in the demo notebook
+  * Show/hide edge labels
+  * User-defined vertex labels
+  * Exposing vertex positioning functions
+  * Removing the `Next` button
+  * Updating links after move to github
+  * More examples in the demo notebook
 
 ### v0.2.3
 
