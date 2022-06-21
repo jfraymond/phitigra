@@ -1462,7 +1462,7 @@ class GraphEditor():
             True
         """
         self._text_graph_update()
-        with hold_canvas(self._multi_canvas):
+        with hold_canvas():
             self._e_canvas.clear()
             for e in self.graph.edge_iterator():
                 self._draw_edge(e)
@@ -1619,7 +1619,7 @@ class GraphEditor():
             # Click was on a vertex
             self._dragged_vertex = on_vertex
             self.output_text("Click on vertex " + str(on_vertex))
-            with hold_canvas(self._multi_canvas):
+            with hold_canvas():
 
                 # On the interact canvas we draw the moved vertex and
                 # its incident edges
@@ -2047,7 +2047,7 @@ class GraphEditor():
             v = self._dragged_vertex
             self.set_vertex_pos(v, pixel_x, pixel_y)
 
-            with hold_canvas(self._multi_canvas):
+            with hold_canvas():
                 # We only redraw what changes: the position of the
                 # dragged vertex, the edges incident to it and also its
                 # neighbors (so that the redrawn edges are not drawn on
@@ -2095,7 +2095,7 @@ class GraphEditor():
                     and abs(pixel_y - self.initial_click_pos[1]) < 10):
                 # (Un)select
                 self._select_vertex(self._dragged_vertex, redraw=False)
-                with hold_canvas(self._v_canvas):
+                with hold_canvas():
                     # We redraw these on the main canvas
                     self._draw_incident_edges(self._dragged_vertex)
                     self._draw_vertex(self._dragged_vertex)
